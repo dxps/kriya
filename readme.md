@@ -135,6 +135,17 @@ debounces changes, and rebuilds WASM. Build status is pushed over the persistent
 A failed build displays an
 overlay; compiler diagnostics appear in the terminal. Fix and save to recover.
 Reload resets demonstration state. Restart the server after editing `tools/dev`.
+Each section's content and demo state live in its own file under `apps/gallery/`
+(`buttons.odin`, `checkboxes.odin`, `typography.odin`, `composition.odin`). The
+shared shell and renderer remain in `main.odin`, with view registration in
+`views.odin`.
+
+When the window is shorter than the content, scroll the main view with the mouse
+wheel/trackpad or drag the rounded scrollbar thumb. The sidebar stays fixed and
+each section retains its own scroll position while navigating. The scrollbar
+appears on mouse movement or scrolling, holds for 0.25 seconds, then fades over
+0.5 seconds. It stays visible while hovered or dragged and is hidden when all
+content fits. Drawing and interaction are clipped to the scroll viewport.
 EventSource reconnects automatically if the server becomes unavailable. SSE
 connections receive an initial build snapshot and periodic heartbeat comments.
 Multiple tabs can subscribe while static assets continue to load concurrently.
@@ -156,7 +167,7 @@ management are Odin.
 
 ## Packages
 
-- `kriya/ui`: widgets, interaction and renderer-neutral draw commands.
+- `kriya/ui`: widgets, interaction, scroll views, and renderer-neutral draw commands.
 - `apps/gallery`: workshop and initial Sokol command renderer.
 - `backends/font`: minimal stb_truetype C bindings.
 - `backends/web`: browser navigation bridge.
@@ -178,7 +189,8 @@ be implemented. The Sokol renderer will move out of the gallery as its API settl
 
 Use `"$ODIN" test kriya/ui` or `odin test kriya/ui` with an external compiler.
 Tests cover matching press/release activation, disabled controls, and checkbox
-label activation and cursor behavior.
+label activation and cursor behavior, scroll bounds, clipping, thumb dragging,
+and scrollbar visibility/fading.
 
 ## Dependencies
 

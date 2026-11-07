@@ -33,9 +33,6 @@ sampler:sg.Sampler
 pipeline:sgl.Pipeline
 selected:int
 sections:=routes.SECTIONS
-count:int
-enabled:=true
-dark:=true
 storage:[16*1024*1024]u8
 arena:mem.Arena
 temp_storage:[1024*1024]u8
@@ -79,6 +76,24 @@ font_atlas :: proc(size,dpi:f32)->^Font_Atlas {
 quad :: proc(r:ui.Rect) {
     sgl.v2f(r.x,r.y);sgl.v2f(r.x+r.w,r.y);sgl.v2f(r.x+r.w,r.y+r.h);sgl.v2f(r.x,r.y+r.h)
 }
+rounded_box :: proc(r:ui.Rect,requested_radius:f32) {
+    radius:=min(requested_radius,min(r.w,r.h)/2)
+    // A triangle fan with six segments per corner makes a smooth pill thumb.
+    centers:=[4][2]f32{{r.x+r.w-radius,r.y+radius},{r.x+r.w-radius,r.y+r.h-radius},{r.x+radius,r.y+r.h-radius},{r.x+radius,r.y+radius}}
+    first,previous:[2]f32
+    sgl.begin_triangles()
+    for center,corner in centers {
+        for step in 0..=6 {
+            angle:=(-math.PI/2+f32(corner)*math.PI/2)+f32(step)*math.PI/12
+            point:=[2]f32{center[0]+math.cos(angle)*radius,center[1]+math.sin(angle)*radius}
+            if corner==0 && step==0 {first=point}
+            else {sgl.v2f(r.x+r.w/2,r.y+r.h/2);sgl.v2f(previous[0],previous[1]);sgl.v2f(point[0],point[1])}
+            previous=point
+        }
+    }
+    sgl.v2f(r.x+r.w/2,r.y+r.h/2);sgl.v2f(previous[0],previous[1]);sgl.v2f(first[0],first[1])
+    sgl.end()
+}
 measure_text :: proc(text:string,size:f32)->f32 {
     dpi:=sapp.dpi_scale()
     a:=font_atlas(size,dpi)
@@ -100,8 +115,15 @@ render :: proc() {
     sgl.defaults();sgl.load_pipeline(pipeline)
     sgl.matrix_mode_projection();sgl.ortho(0,sapp.widthf()/dpi,sapp.heightf()/dpi,0,-1,1)
     for c in ctx.commands {
+        if c.clipped {sgl.scissor_rectf(c.clip.x*dpi,c.clip.y*dpi,c.clip.w*dpi,c.clip.h*dpi,true)}
+        else {sgl.scissor_rect(0,0,sapp.width(),sapp.height(),true)}
         sgl.c4f(c.color[0],c.color[1],c.color[2],c.color[3])
-        if len(c.text)==0 { sgl.disable_texture();sgl.begin_quads();quad(c.rect);sgl.end();continue }
+        if len(c.text)==0 {
+            sgl.disable_texture()
+            if c.radius>0 {rounded_box(c.rect,c.radius)}
+            else {sgl.begin_quads();quad(c.rect);sgl.end()}
+            continue
+        }
         a:=font_atlas(c.size,dpi)
         sgl.enable_texture();sgl.texture(a.view,sampler);sgl.begin_quads()
         // Snap the baseline and glyph quads in physical pixels. Advances retain
@@ -141,34 +163,18 @@ frame :: proc "c" () {
         }
     }
     ui.label(&ctx,28,h-40,"ODIN + SOKOL",13)
+    view:=views[selected]
+    scroll:=&view_scroll[selected]
+    ui.begin_scroll(&ctx,scroll,{230,0,max(0,w-230),max(0,h-28)},view.content_height,f32(sapp.frame_duration()))
     ui.label(&ctx,274,52,"LIBRARY / EXPLORER",13,{0.47,0.56,0.61,1})
     ui.label(&ctx,274,110,sections[selected].title,40)
     ui.label(&ctx,274,146,"Small primitives. Shared behavior. Built in Odin.",18)
     ui.box(&ctx,{274,184,max(420,w-318),350},{0.10,0.14,0.17,1})
     ui.label(&ctx,302,220,"INTERACTIVE PREVIEW",12,{0.47,0.56,0.61,1})
-    switch selected {
-    case 0:
-        if ui.button(&ctx,1,{302,258,162,46},"Click me") {count+=1}
-        ui.button(&ctx,2,{482,258,162,46},"Disabled",true)
-        ui.label(&ctx,302,356,fmt.tprintf("Button pressed %d times",count),24)
-        ui.label(&ctx,302,400,"Hover, press and release to explore each state.",17)
-    case 1:
-        ui.checkbox(&ctx,3,302,270,"Enable notifications",&enabled)
-        ui.checkbox(&ctx,4,302,326,"Use dark appearance",&dark)
-        ui.label(&ctx,302,410,"Each checkbox owns an independent value.",17)
-    case 2:
-        ui.label(&ctx,302,280,"Work Sans",48)
-        ui.label(&ctx,302,328,"A clear voice for everyday interfaces.",24)
-        ui.label(&ctx,302,374,"ABCDEFGHIJKLMNOPQRSTUVWXYZ",18)
-        ui.label(&ctx,302,410,"abcdefghijklmnopqrstuvwxyz 0123456789",18)
-    case 3:
-        ui.label(&ctx,302,274,"Project settings",28)
-        ui.checkbox(&ctx,5,302,310,"Publish preview",&enabled)
-        if ui.button(&ctx,6,{302,378,162,46},"Save settings") {count+=1}
-        ui.label(&ctx,302,474,fmt.tprintf("Saved %d times",count),17)
-    }
+    view.draw(&ctx)
     ui.label(&ctx,274,578,"WORK SANS / GPU GLYPH ATLAS",12,{0.47,0.56,0.61,1})
-    ui.label(&ctx,274,612,"Edit apps/gallery/main.odin and save to reload.",17)
+    ui.label(&ctx,274,612,fmt.tprintf("Edit %s and save to reload.",view.source),17)
+    ui.end_scroll(&ctx,scroll,view.content_height)
     sapp.set_mouse_cursor(ctx.pointer_cursor ? .POINTING_HAND : .DEFAULT)
     render();ui.end(&ctx)
     free_all(context.temp_allocator)
@@ -181,6 +187,8 @@ event :: proc "c" (e:^sapp.Event) {
     case .MOUSE_UP: if e.mouse_button==.LEFT {ctx.released=true;ctx.down=false}
     case .UNFOCUSED: ctx.down=false;ctx.active=0
     case .MOUSE_LEAVE: ctx.mx=-1;ctx.my=-1
+    case .MOUSE_MOVE: ctx.moved=true
+    case .MOUSE_SCROLL: ctx.wheel_y-=e.scroll_y*32
     case:
     }
 }
@@ -202,7 +210,6 @@ kriya_start :: proc "c" () {
     context.temp_allocator=mem.arena_allocator(&temp_arena)
     app_context=context
     kriya_route_changed()
-    enabled=true;dark=true
     sapp.run({init_cb=init,frame_cb=frame,event_cb=event,cleanup_cb=cleanup,width=1200,height=760,high_dpi=true,window_title="Kriya",html5={canvas_selector="#canvas"},logger={func=slog.func}})
 }
 main :: proc() {kriya_start()}
