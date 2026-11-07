@@ -1,0 +1,8 @@
+.tools/
+build/
+web/app.js
+web/app.wasm
+web/app.wasm.map
+web/app.o
+vendor/sokol-odin-main/**/*.a
+vendor/sokol-odin-main/**/*.o
