@@ -9,10 +9,10 @@ View :: struct {
 }
 
 views:=[?]View{
-    {draw_buttons,"apps/gallery/buttons.odin",660},
-    {draw_checkboxes,"apps/gallery/checkboxes.odin",660},
-    {draw_typography,"apps/gallery/typography.odin",660},
-    {draw_composition,"apps/gallery/composition.odin",660},
+    {draw_buttons,"apps/gallery/buttons.odin",594},
+    {draw_checkboxes,"apps/gallery/checkboxes.odin",594},
+    {draw_typography,"apps/gallery/typography.odin",594},
+    {draw_composition,"apps/gallery/composition.odin",594},
 }
 view_scroll:[len(views)]ui.Scroll_State
 #assert(len(views)==len(routes.SECTIONS))

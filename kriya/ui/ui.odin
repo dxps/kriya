@@ -1,8 +1,9 @@
 package ui
 
 Color :: [4]f32
+Font :: enum { Body, Mono }
 Rect :: struct { x,y,w,h:f32 }
-Command :: struct { rect:Rect, color:Color, text:string, size:f32, radius:f32, clip:Rect, clipped:bool }
+Command :: struct { rect:Rect, color:Color, text:string, size:f32, font:Font, radius:f32, clip:Rect, clipped:bool }
 Context :: struct {
     commands:[dynamic]Command,
     mx,my:f32,
@@ -23,7 +24,7 @@ box :: proc(c:^Context,r:Rect,color:Color,radius:f32=0) {
     translated:=r;translated.y+=c.offset_y
     append(&c.commands,Command{rect=translated,color=color,radius=radius,clip=c.clip,clipped=c.clipped})
 }
-label :: proc(c:^Context,x,y:f32,text:string,size:f32=18,color:Color={0.84,0.89,0.92,1}) { append(&c.commands,Command{rect={x=x,y=y+c.offset_y},text=text,size=size,color=color,clip=c.clip,clipped=c.clipped}) }
+label :: proc(c:^Context,x,y:f32,text:string,size:f32=18,color:Color={0.84,0.89,0.92,1},font:Font=.Body) { append(&c.commands,Command{rect={x=x,y=y+c.offset_y},text=text,size=size,font=font,color=color,clip=c.clip,clipped=c.clipped}) }
 point_in_rect :: proc(x,y:f32,r:Rect)->bool {return x>=r.x && x<r.x+r.w && y>=r.y && y<r.y+r.h}
 contains :: proc(c:^Context,r:Rect)->bool {
     translated:=r;translated.y+=c.offset_y

@@ -173,7 +173,7 @@ management are Odin.
 - `backends/web`: browser navigation bridge.
 - `gallery/routes`: shared section titles and URL paths used by the app and server.
 - `tools/dev`: loopback-only HTTP server and rebuild management.
-- `web/fonts`: Work Sans variable font and SIL Open Font License.
+- `web/fonts`: Work Sans and Hasklig Regular, with their SIL Open Font Licenses.
 
 This milestone has pointer-operated buttons and checkboxes, simple rectangle and
 text commands, and four example views. Layout is currently explicit coordinates,
@@ -197,5 +197,15 @@ and scrollbar visibility/fading.
 Vendored Sokol Odin snapshot: `dee4e716bd7cf072b3be75f6a80228b408200dcc`
 from https://github.com/floooh/sokol-odin. Its upstream license is retained.
 Work Sans is from https://github.com/google/fonts/tree/main/ofl/worksans;
-its license is in `web/fonts/OFL.txt`. stb_truetype is supplied by the Odin
+its license is in `web/fonts/OFL.txt`. Hasklig Regular, used for highlighted source
+paths in the shared view footer, is from the official
+[Hasklig 1.2 release](https://github.com/i-tu/Hasklig/releases/tag/v1.2);
+its license is in `web/fonts/Hasklig-LICENSE.md`. Both fonts are bundled, with no
+external font requests. The current glyph renderer does not apply OpenType ligatures.
+The page uses `web/favicon.svg` with a multi-size `web/favicon.ico` fallback.
+After changing icon routes, restart the Odin server; browsers may also need a
+hard refresh or reopened tab to discard cached favicons. The committed ICO can
+optionally be regenerated with `node tools/build-favicon.mjs` (requires librsvg's
+`rsvg-convert`; neither tool is needed to use the existing icon).
+stb_truetype is supplied by the Odin
 distribution and compiled against Emscripten's C runtime.

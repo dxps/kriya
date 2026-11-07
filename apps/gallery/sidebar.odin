@@ -31,5 +31,4 @@ draw_sidebar :: proc(h:f32) {
             web.kriya_navigate(section.path)
         }
     }
-    ui.label(&ctx,28,h-40,"ODIN + SOKOL",13)
 }

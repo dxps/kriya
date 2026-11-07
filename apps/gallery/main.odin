@@ -1,7 +1,6 @@
 package main
 
 import "base:runtime"
-import "core:fmt"
 import "core:mem"
 import "core:math"
 import ui "kriya:ui"
@@ -15,9 +14,11 @@ import web "../../backends/web"
 import "../../gallery/routes"
 
 font := #load("../../web/fonts/WorkSans.ttf")
+mono_font := #load("../../web/fonts/Hasklig-Regular.ttf")
 ctx:ui.Context
 Font_Atlas :: struct {
     physical_size:i32,
+    font:ui.Font,
     dimension:i32,
     glyphs:[95]tt.bakedchar,
     image:sg.Image,
@@ -53,19 +54,21 @@ clear_atlases :: proc() {
     }
     atlas_count=0
 }
-font_atlas :: proc(size,dpi:f32)->^Font_Atlas {
+font_atlas :: proc(size,dpi:f32,face:ui.Font=.Body)->^Font_Atlas {
     if dpi!=atlas_dpi {clear_atlases();atlas_dpi=dpi}
     physical_size:=i32(math.round(size*dpi))
     for i in 0..<atlas_count {
-        if atlases[i].physical_size==physical_size {return &atlases[i]}
+        if atlases[i].physical_size==physical_size && atlases[i].font==face {return &atlases[i]}
     }
     assert(atlas_count<len(atlases),"Font atlas cache exhausted")
     a:=&atlases[atlas_count]
     a.physical_size=physical_size
+    a.font=face
     a.dimension=128
     for a.dimension<physical_size*12 && a.dimension<2048 {a.dimension*=2}
     pixel_count:=int(a.dimension*a.dimension)
-    used:=tt.BakeFontBitmap(raw_data(font),0,f32(physical_size),raw_data(atlas_bitmap[:]),a.dimension,a.dimension,32,95,raw_data(a.glyphs[:]))
+    data:=face==.Mono ? mono_font : font
+    used:=tt.BakeFontBitmap(raw_data(data),0,f32(physical_size),raw_data(atlas_bitmap[:]),a.dimension,a.dimension,32,95,raw_data(a.glyphs[:]))
     assert(used>0,"Glyphs do not fit in the font atlas")
     for alpha,i in atlas_bitmap[:pixel_count] {atlas_pixels[i]=0x00ffffff | (u32(alpha)<<24)}
     a.image=sg.make_image({width=a.dimension,height=a.dimension,data={ptr=&atlas_pixels[0],size=uint(pixel_count*4)}})
@@ -95,8 +98,11 @@ rounded_box :: proc(r:ui.Rect,requested_radius:f32) {
     sgl.end()
 }
 measure_text :: proc(text:string,size:f32)->f32 {
+    return measure_font_text(text,size,.Body)
+}
+measure_font_text :: proc(text:string,size:f32,face:ui.Font)->f32 {
     dpi:=sapp.dpi_scale()
-    a:=font_atlas(size,dpi)
+    a:=font_atlas(size,dpi,face)
     advance:f32
     right:f32
     for ch in text {
@@ -111,7 +117,7 @@ render :: proc() {
     dpi:=sapp.dpi_scale()
     // Upload fonts before recording draw commands. Each font is rasterized at
     // its actual framebuffer size, avoiding reduction of a shared 40px bitmap.
-    for c in ctx.commands {if len(c.text)>0 {_=font_atlas(c.size,dpi)}}
+    for c in ctx.commands {if len(c.text)>0 {_=font_atlas(c.size,dpi,c.font)}}
     sgl.defaults();sgl.load_pipeline(pipeline)
     sgl.matrix_mode_projection();sgl.ortho(0,sapp.widthf()/dpi,sapp.heightf()/dpi,0,-1,1)
     for c in ctx.commands {
@@ -124,7 +130,7 @@ render :: proc() {
             else {sgl.begin_quads();quad(c.rect);sgl.end()}
             continue
         }
-        a:=font_atlas(c.size,dpi)
+        a:=font_atlas(c.size,dpi,c.font)
         sgl.enable_texture();sgl.texture(a.view,sampler);sgl.begin_quads()
         // Snap the baseline and glyph quads in physical pixels. Advances retain
         // their fractional precision; only the final glyph origin is rounded.
@@ -160,8 +166,7 @@ frame :: proc "c" () {
     ui.box(&ctx,{274,184,max(420,w-318),350},{0.10,0.14,0.17,1})
     ui.label(&ctx,302,220,"INTERACTIVE PREVIEW",12,{0.47,0.56,0.61,1})
     view.draw(&ctx)
-    ui.label(&ctx,274,578,"WORK SANS / GPU GLYPH ATLAS",12,{0.47,0.56,0.61,1})
-    ui.label(&ctx,274,612,fmt.tprintf("Edit %s and save to reload.",view.source),17)
+    draw_source_hint(&ctx,view.source)
     ui.end_scroll(&ctx,scroll,view.content_height)
     sapp.set_mouse_cursor(ctx.pointer_cursor ? .POINTING_HAND : .DEFAULT)
     render();ui.end(&ctx)

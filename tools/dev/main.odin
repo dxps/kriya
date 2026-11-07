@@ -38,7 +38,7 @@ fingerprint :: proc()->u64 {
         }
         os.walker_destroy(&walker)
     }
-    for path in ([]string{"web/index.html","web/odin-library.js"}) {
+    for path in ([]string{"web/index.html","web/odin-library.js","web/favicon.svg","web/favicon.ico"}) {
         data,_:=os.read_entire_file(path,context.temp_allocator)
         for b in data {h=(h~u64(b))*1099511628211}
     }
@@ -131,6 +131,9 @@ serve :: proc(client:net.TCP_Socket) {
         case "/app.js": file="web/app.js";mime="text/javascript"
         case "/app.wasm": file="web/app.wasm";mime="application/wasm"
         case "/fonts/WorkSans.ttf": file="web/fonts/WorkSans.ttf";mime="font/ttf"
+        case "/fonts/Hasklig-Regular.ttf": file="web/fonts/Hasklig-Regular.ttf";mime="font/ttf"
+        case "/favicon.svg": file="web/favicon.svg";mime="image/svg+xml"
+        case "/favicon.ico": file="web/favicon.ico";mime="image/x-icon"
         case: respond(client,"404 Not Found","text/plain",transmute([]u8)string("Not found"));return
         }
     }
