@@ -3,7 +3,118 @@
 An Odin UI library taking its first steps: renderer-independent widget commands,
 a Sokol/WebGL2 component workshop, bundled Work Sans font, and an Odin development server.
 
-## Run on this machine
+## Prerequisites
+
+`.tools/` is ignored by Git. Cloning this repository does **not** install or copy
+the compiler or SDK, and the development launcher does not download them.
+Complete the following setup once on each machine, from the repository root.
+
+The current scripts target macOS and Linux with a POSIX shell. On Windows, use
+a Linux environment such as WSL2 and follow the Linux steps; native Windows
+scripts are not implemented. Only macOS ARM64 has been verified so far.
+
+Required tools:
+
+| Tool | Version / purpose |
+| --- | --- |
+| Odin | `dev-2026-11a`, the compiler version used by this project |
+| Emscripten SDK | `4.0.19`, compiles Sokol C code and links the browser bundle |
+| Native C toolchain | Xcode Command Line Tools on macOS; Clang and build tools on Linux, for the Odin server |
+| Git, Python 3, curl, tar | SDK installation and release extraction |
+| Browser | A current browser with WebGL2, WebAssembly, and EventSource support |
+
+Sokol and Work Sans are already committed to the repository. Emscripten installs
+its own Node.js and LLVM tools; npm, Deno, and a separate file watcher are not
+needed. This build emits an Odin object and links it with Emscripten, so a separate
+`wasm-ld` installation is not required for this workflow.
+
+### 1. Install system tools
+
+On macOS, install Apple's command-line tools if they are not already installed:
+
+```sh
+xcode-select --install
+```
+
+You also need `python3` available to run the SDK installer. If it is missing,
+install Python 3 from [python.org](https://www.python.org/downloads/), or with
+`brew install python` if you use Homebrew.
+
+On Debian/Ubuntu Linux (including Ubuntu under WSL2):
+
+```sh
+sudo apt update
+sudo apt install build-essential clang git python3 curl ca-certificates xz-utils
+```
+
+On other Linux distributions, install the equivalent packages.
+
+### 2. Install Odin
+
+Download the archive for your OS and CPU from the
+[Odin dev-2026-11a release](https://github.com/odin-lang/Odin/releases/tag/dev-2026-11a).
+Use `uname -s` and `uname -m` to identify your machine. The release offers
+macOS ARM64, Linux AMD64, and Linux ARM64 archives. Use the matching name below
+as `ODIN_ARCHIVE`:
+
+```sh
+# Choose ONE matching your machine:
+ODIN_ARCHIVE=odin-macos-arm64-dev-2026-11a.tar.gz
+# ODIN_ARCHIVE=odin-linux-amd64-dev-2026-11a.tar.gz
+# ODIN_ARCHIVE=odin-linux-arm64-dev-2026-11a.tar.gz
+
+mkdir -p .tools/odin
+curl -fL "https://github.com/odin-lang/Odin/releases/download/dev-2026-11a/$ODIN_ARCHIVE" -o .tools/odin.tar.gz
+tar -xzf .tools/odin.tar.gz -C .tools/odin --strip-components=1
+.tools/odin/odin version
+```
+
+Keep the **entire** extracted distribution, including `base`, `core`, `vendor`,
+and its libraries, alongside the executable. For a machine without a matching
+release archive, build the `dev-2026-11a` tag using the
+[official Odin installation instructions](https://odin-lang.org/docs/install/),
+then set `ODIN` to that compiler's absolute path. Building Odin itself also
+requires the LLVM dependencies listed there.
+
+If you already have the matching Odin version installed elsewhere, you can skip
+the download: put `odin` on `PATH` or export `ODIN=/absolute/path/to/odin`.
+
+### 3. Install Emscripten
+
+From the repository root:
+
+```sh
+git clone https://github.com/emscripten-core/emsdk.git .tools/emsdk
+.tools/emsdk/emsdk install 4.0.19
+.tools/emsdk/emsdk activate 4.0.19
+. .tools/emsdk/emsdk_env.sh
+emcc --version
+```
+
+The launcher activates `.tools/emsdk` automatically on subsequent runs. If you
+keep an SDK elsewhere, install and activate `4.0.19` there, then source its
+`emsdk_env.sh` in each terminal before launching the project. See the
+[official Emscripten SDK guide](https://emscripten.org/docs/getting_started/downloads.html).
+
+Do not copy `.tools/` between operating systems or CPU architectures; install the
+appropriate tools on the destination machine instead.
+
+### 4. Verify and launch
+
+```sh
+.tools/odin/odin version
+emcc --version
+./scripts/dev.sh
+```
+
+The examples above use a local Odin installation. With an external compiler,
+verify it using `"$ODIN" version` or `odin version` instead.
+
+The launcher resolves Odin in this order: explicit `ODIN`, `.tools/odin/odin`,
+`odin` on `PATH`, then the original macOS ARM64 installation directory for
+backward compatibility. It reports missing dependencies before starting the server.
+
+## Local development
 
 ```sh
 ./scripts/dev.sh
@@ -31,15 +142,7 @@ To use another local port: `KRIYA_PORT=8001 ./scripts/dev.sh`.
 
 ## Toolchain
 
-The current machine has project-local tools under ignored `.tools/`:
-
-- Odin dev-2026-11a (reports dev-2026-11-nightly:9a69916), macOS ARM64.
-- Emscripten 4.0.19.
-
-The launcher uses these automatically. With a separately installed toolchain,
-activate Emscripten in your shell and run `ODIN=/path/to/odin sh scripts/dev.sh`.
-The Odin server is portable source; build orchestration currently uses POSIX shell
-(macOS/Linux). Windows bootstrap and native gallery builds are future work.
+Odin `dev-2026-11a` reports `dev-2026-11-nightly:9a69916` in `odin version`.
 
 The browser build compiles Odin to a freestanding WASM object and links it with
 Sokol and stb_truetype using Emscripten. The entry point explicitly initializes
@@ -70,10 +173,12 @@ be implemented. The Sokol renderer will move out of the gallery as its API settl
 ## Tests
 
 ```sh
-.tools/odin-macos-arm64-nightly+2026-11-03/odin test kriya/ui
+.tools/odin/odin test kriya/ui
 ```
 
-Tests cover matching press/release activation and disabled controls.
+Use `"$ODIN" test kriya/ui` or `odin test kriya/ui` with an external compiler.
+Tests cover matching press/release activation, disabled controls, and checkbox
+label activation and cursor behavior.
 
 ## Dependencies
 
