@@ -11,6 +11,8 @@ import sgl "sokol:gl"
 import glue "sokol:glue"
 import slog "sokol:log"
 import tt "../../backends/font"
+import web "../../backends/web"
+import "../../gallery/routes"
 
 font := #load("../../web/fonts/WorkSans.ttf")
 ctx:ui.Context
@@ -30,6 +32,7 @@ atlas_pixels:[2048*2048]u32
 sampler:sg.Sampler
 pipeline:sgl.Pipeline
 selected:int
+sections:=routes.SECTIONS
 count:int
 enabled:=true
 dark:=true
@@ -129,15 +132,17 @@ frame :: proc "c" () {
     ui.label(&ctx,28,52,"kriya",36,{0.32,0.83,0.69,1})
     ui.label(&ctx,28,82,"COMPONENT WORKSHOP",12)
     ui.label(&ctx,28,140,"FOUNDATIONS / 01",12,{0.47,0.56,0.61,1})
-    for name,i in ([]string{"Buttons","Checkboxes","Typography","Composition"}) {
+    for section,i in routes.SECTIONS {
         y:=f32(164+i*52)
         if selected==i {ui.box(&ctx,{16,y,198,42},{0.14,0.22,0.24,1})}
-        if ui.button(&ctx,u64(100+i),{24,y+3,182,36},name) {selected=i}
+        if ui.button(&ctx,u64(100+i),{24,y+3,182,36},section.title) {
+            selected=i
+            web.kriya_navigate(section.path)
+        }
     }
     ui.label(&ctx,28,h-40,"ODIN + SOKOL",13)
     ui.label(&ctx,274,52,"LIBRARY / EXPLORER",13,{0.47,0.56,0.61,1})
-    titles:=[]string{"Buttons","Checkboxes","Typography","Composition"}
-    ui.label(&ctx,274,110,titles[selected],40)
+    ui.label(&ctx,274,110,sections[selected].title,40)
     ui.label(&ctx,274,146,"Small primitives. Shared behavior. Built in Odin.",18)
     ui.box(&ctx,{274,184,max(420,w-318),350},{0.10,0.14,0.17,1})
     ui.label(&ctx,302,220,"INTERACTIVE PREVIEW",12,{0.47,0.56,0.61,1})
@@ -181,6 +186,13 @@ event :: proc "c" (e:^sapp.Event) {
 }
 cleanup :: proc "c" () {context=app_context;clear_atlases();sg.destroy_sampler(sampler);sgl.shutdown();sg.shutdown()}
 @(export)
+kriya_route_changed :: proc "c" () {
+    context=app_context
+    for section,i in routes.SECTIONS {
+        if web.kriya_path_matches(section.path) {selected=i;return}
+    }
+}
+@(export)
 kriya_start :: proc "c" () {
     context=runtime.default_context()
     runtime._startup_runtime()
@@ -189,6 +201,7 @@ kriya_start :: proc "c" () {
     context.allocator=mem.arena_allocator(&arena)
     context.temp_allocator=mem.arena_allocator(&temp_arena)
     app_context=context
+    kriya_route_changed()
     enabled=true;dark=true
     sapp.run({init_cb=init,frame_cb=frame,event_cb=event,cleanup_cb=cleanup,width=1200,height=760,high_dpi=true,window_title="Kriya",html5={canvas_selector="#canvas"},logger={func=slog.func}})
 }
