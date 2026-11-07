@@ -150,19 +150,7 @@ frame :: proc "c" () {
     ctx.measure_text=measure_text
     w:=sapp.widthf()/sapp.dpi_scale()
     h:=sapp.heightf()/sapp.dpi_scale()
-    ui.box(&ctx,{0,0,230,h},{0.085,0.115,0.135,1})
-    ui.label(&ctx,28,52,"kriya",36,{0.32,0.83,0.69,1})
-    ui.label(&ctx,28,82,"COMPONENT WORKSHOP",12)
-    ui.label(&ctx,28,140,"FOUNDATIONS / 01",12,{0.47,0.56,0.61,1})
-    for section,i in routes.SECTIONS {
-        y:=f32(164+i*52)
-        if selected==i {ui.box(&ctx,{16,y,198,42},{0.14,0.22,0.24,1})}
-        if ui.button(&ctx,u64(100+i),{24,y+3,182,36},section.title) {
-            selected=i
-            web.kriya_navigate(section.path)
-        }
-    }
-    ui.label(&ctx,28,h-40,"ODIN + SOKOL",13)
+    draw_sidebar(h)
     view:=views[selected]
     scroll:=&view_scroll[selected]
     ui.begin_scroll(&ctx,scroll,{230,0,max(0,w-230),max(0,h-28)},view.content_height,f32(sapp.frame_duration()))
