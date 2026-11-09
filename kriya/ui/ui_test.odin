@@ -141,3 +141,33 @@ dropdown_opens_and_selects_an_option :: proc(t:^testing.T) {
     testing.expect(t,value.selected==1)
     testing.expect(t,!value.open)
 }
+
+@(test)
+widgets_support_default_context_and_per_instance_radii :: proc(t:^testing.T) {
+    c:=Context{measure_text=test_text_width}
+    defer delete(c.commands)
+
+    button(&c,1,{0,0,100,40},"Save")
+    testing.expect(t,c.commands[0].radius==6)
+    clear(&c.commands)
+
+    set_corner_radius(&c,10)
+    checked:=true
+    checkbox(&c,2,0,0,"Enabled",&checked)
+    testing.expect(t,c.commands[0].radius==10)
+    clear(&c.commands)
+
+    input_value:Text_Input
+    input(&c,3,{0,0,200,44},"Name",&input_value)
+    testing.expect(t,c.commands[0].radius==10)
+    clear(&c.commands)
+
+    dropdown_value:Dropdown
+    dropdown(&c,4,{0,0,200,44},[]string{"Odin"},&dropdown_value,2)
+    testing.expect(t,c.commands[0].radius==2)
+
+    clear(&c.commands)
+    set_corner_radius(&c,0)
+    button(&c,5,{0,0,100,40},"Square")
+    testing.expect(t,c.commands[0].radius==0)
+}

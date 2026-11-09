@@ -175,6 +175,11 @@ management are Odin.
 - `tools/dev`: loopback-only HTTP server and rebuild management.
 - `web/fonts`: Work Sans and Hasklig Regular, with their SIL Open Font Licenses.
 
+Buttons, checkboxes, inputs, and dropdowns use a 6px corner radius by default.
+Call `ui.set_corner_radius(&ctx, value)` to change the default for every widget in
+a context. Each widget also accepts an optional final `radius` argument, which
+takes precedence for that instance.
+
 This milestone has pointer-operated buttons, checkboxes, inputs, and dropdowns,
 simple rectangle and text commands, and six example views. Layout is currently
 explicit coordinates, best viewed at desktop widths. Touch, advanced text editing, clipping,

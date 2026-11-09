@@ -2,6 +2,8 @@ package ui
 
 Color :: [4]f32
 Font :: enum { Body, Mono }
+DEFAULT_CORNER_RADIUS :: 6.0
+USE_CONTEXT_CORNER_RADIUS :: -1.0
 Rect :: struct { x,y,w,h:f32 }
 Command :: struct { rect:Rect, color:Color, text:string, size:f32, font:Font, radius:f32, clip:Rect, clipped:bool, line,triangle:bool, x2,y2,x3,y3,width:f32 }
 Context :: struct {
@@ -21,9 +23,20 @@ Context :: struct {
     typed:[32]u8,
     typed_len:int,
     backspace:bool,
+    corner_radius:f32,
+    corner_radius_set:bool,
 }
 begin :: proc(c:^Context) { clear(&c.commands);c.pointer_cursor=false;c.offset_y=0;c.clipped=false;c.input_blocked=false }
 end :: proc(c:^Context) { c.pressed=false; c.released=false;c.moved=false;c.wheel_y=0;c.typed_len=0;c.backspace=false }
+set_corner_radius :: proc(c:^Context,radius:f32) {
+    c.corner_radius=max(0,radius)
+    c.corner_radius_set=true
+}
+resolve_corner_radius :: proc(c:^Context,radius:f32)->f32 {
+    if radius>=0 {return radius}
+    if c.corner_radius_set {return c.corner_radius}
+    return DEFAULT_CORNER_RADIUS
+}
 box :: proc(c:^Context,r:Rect,color:Color,radius:f32=0) {
     translated:=r;translated.y+=c.offset_y
     append(&c.commands,Command{rect=translated,color=color,radius=radius,clip=c.clip,clipped=c.clipped})
@@ -40,7 +53,8 @@ contains :: proc(c:^Context,r:Rect)->bool {
     translated:=r;translated.y+=c.offset_y
     return !c.input_blocked && (!c.clipped || point_in_rect(c.mx,c.my,c.clip)) && point_in_rect(c.mx,c.my,translated)
 }
-button :: proc(c:^Context,id:u64,r:Rect,text:string,disabled:=false)->bool {
+button :: proc(c:^Context,id:u64,r:Rect,text:string,disabled:=false,radius:f32=USE_CONTEXT_CORNER_RADIUS)->bool {
+    corner_radius:=resolve_corner_radius(c,radius)
     hover:=contains(c,r) && !disabled
     if hover {c.pointer_cursor=true}
     if hover && c.pressed { c.active=id }
@@ -49,11 +63,12 @@ button :: proc(c:^Context,id:u64,r:Rect,text:string,disabled:=false)->bool {
     if hover { color={0.29,0.78,0.66,1} }
     if c.active==id && c.down { color={0.14,0.48,0.42,1} }
     if disabled { color={0.20,0.25,0.28,1} }
-    box(c,r,color); label(c,r.x+18,r.y+28,text,18,{0.06,0.11,0.12,1})
+    box(c,r,color,corner_radius); label(c,r.x+18,r.y+28,text,18,{0.06,0.11,0.12,1})
     if c.released && c.active==id { c.active=0 }
     return clicked
 }
-checkbox :: proc(c:^Context,id:u64,x,y:f32,text:string,value:^bool) {
+checkbox :: proc(c:^Context,id:u64,x,y:f32,text:string,value:^bool,radius:f32=USE_CONTEXT_CORNER_RADIUS) {
+    corner_radius:=resolve_corner_radius(c,radius)
     r:=Rect{x,y,18,18}
     hit:=r
     if len(text)>0 {
@@ -67,10 +82,10 @@ checkbox :: proc(c:^Context,id:u64,x,y:f32,text:string,value:^bool) {
     border:Color={0.20,0.67,0.57,1}
     if hover {border={0.29,0.78,0.66,1}}
     if c.active==id && c.down {border={0.14,0.48,0.42,1}}
-    box(c,r,border)
+    box(c,r,border,corner_radius)
     // One logical pixel of border, independent of the checked indicator.
-    box(c,{x+1,y+1,16,16},{0.10,0.14,0.17,1})
-    if value^ {box(c,{x+3,y+3,12,12},border)}
+    box(c,{x+1,y+1,16,16},{0.10,0.14,0.17,1},max(0,corner_radius-1))
+    if value^ {box(c,{x+3,y+3,12,12},border,max(0,corner_radius-3))}
     if c.released && c.active==id {c.active=0}
     label(c,x+28,y+14,text)
 }
@@ -86,7 +101,8 @@ set_text :: proc(value:^Text_Input,text:string) {
     copy(value.data[:value.len],transmute([]u8)text[:value.len])
 }
 
-input :: proc(c:^Context,id:u64,r:Rect,placeholder:string,value:^Text_Input,password:=false) {
+input :: proc(c:^Context,id:u64,r:Rect,placeholder:string,value:^Text_Input,password:=false,radius:f32=USE_CONTEXT_CORNER_RADIUS) {
+    corner_radius:=resolve_corner_radius(c,radius)
     hover:=contains(c,r)
     eye_w:f32=password ? 44 : 0
     text_hit:=Rect{r.x,r.y,r.w-eye_w,r.h}
@@ -107,8 +123,8 @@ input :: proc(c:^Context,id:u64,r:Rect,placeholder:string,value:^Text_Input,pass
     border:Color={0.25,0.34,0.38,1}
     if hover {border={0.36,0.48,0.52,1}}
     if focused {border={0.32,0.83,0.69,1}}
-    box(c,r,border,4)
-    box(c,{r.x+1,r.y+1,r.w-2,r.h-2},{0.075,0.105,0.125,1},3)
+    box(c,r,border,corner_radius)
+    box(c,{r.x+1,r.y+1,r.w-2,r.h-2},{0.075,0.105,0.125,1},max(0,corner_radius-1))
     shown:=placeholder
     masked:=password && !value.revealed && value.len>0
     color:=Color{0.47,0.56,0.61,1}
@@ -170,7 +186,8 @@ Dropdown :: struct {
     open:bool,
 }
 
-dropdown :: proc(c:^Context,id:u64,r:Rect,options:[]string,value:^Dropdown) {
+dropdown :: proc(c:^Context,id:u64,r:Rect,options:[]string,value:^Dropdown,radius:f32=USE_CONTEXT_CORNER_RADIUS) {
+    corner_radius:=resolve_corner_radius(c,radius)
     assert(len(options)>0,"Dropdowns require at least one option")
     value.selected=clamp(value.selected,0,len(options)-1)
     hover:=contains(c,r)
@@ -179,8 +196,8 @@ dropdown :: proc(c:^Context,id:u64,r:Rect,options:[]string,value:^Dropdown) {
     if hover && c.released && c.active==id {value.open=!value.open}
     border:Color={0.25,0.34,0.38,1}
     if hover || value.open {border={0.32,0.83,0.69,1}}
-    box(c,r,border,4)
-    box(c,{r.x+1,r.y+1,r.w-2,r.h-2},{0.075,0.105,0.125,1},3)
+    box(c,r,border,corner_radius)
+    box(c,{r.x+1,r.y+1,r.w-2,r.h-2},{0.075,0.105,0.125,1},max(0,corner_radius-1))
     label(c,r.x+14,r.y+29,options[value.selected],17)
     arrow_x:=r.x+r.w-22
     arrow_y:=r.y+r.h/2
