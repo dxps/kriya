@@ -126,7 +126,19 @@ render :: proc() {
         sgl.c4f(c.color[0],c.color[1],c.color[2],c.color[3])
         if len(c.text)==0 {
             sgl.disable_texture()
-            if c.radius>0 {rounded_box(c.rect,c.radius)}
+            if c.line {
+                dx:=c.x2-c.rect.x
+                dy:=c.y2-c.rect.y
+                length:=math.sqrt(dx*dx+dy*dy)
+                nx:=-dy/length*c.width/2
+                ny:=dx/length*c.width/2
+                sgl.begin_quads()
+                sgl.v2f(c.rect.x+nx,c.rect.y+ny)
+                sgl.v2f(c.x2+nx,c.y2+ny)
+                sgl.v2f(c.x2-nx,c.y2-ny)
+                sgl.v2f(c.rect.x-nx,c.rect.y-ny)
+                sgl.end()
+            } else if c.radius>0 {rounded_box(c.rect,c.radius)}
             else {sgl.begin_quads();quad(c.rect);sgl.end()}
             continue
         }
@@ -182,6 +194,12 @@ event :: proc "c" (e:^sapp.Event) {
     case .MOUSE_LEAVE: ctx.mx=-1;ctx.my=-1
     case .MOUSE_MOVE: ctx.moved=true
     case .MOUSE_SCROLL: ctx.wheel_y-=e.scroll_y*32
+    case .CHAR:
+        if e.char_code>=32 && e.char_code<=126 && ctx.typed_len<len(ctx.typed) {
+            ctx.typed[ctx.typed_len]=u8(e.char_code)
+            ctx.typed_len+=1
+        }
+    case .KEY_DOWN: if e.key_code==.BACKSPACE {ctx.backspace=true}
     case:
     }
 }
@@ -202,6 +220,7 @@ kriya_start :: proc "c" () {
     context.allocator=mem.arena_allocator(&arena)
     context.temp_allocator=mem.arena_allocator(&temp_arena)
     app_context=context
+    init_input_examples()
     kriya_route_changed()
     sapp.run({init_cb=init,frame_cb=frame,event_cb=event,cleanup_cb=cleanup,width=1200,height=760,high_dpi=true,window_title="Kriya",html5={canvas_selector="#canvas"},logger={func=slog.func}})
 }

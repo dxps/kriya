@@ -123,11 +123,11 @@ backward compatibility. It reports missing dependencies before starting the serv
 Open **http://localhost:8000** in a desktop browser. Keep the terminal running;
 Ctrl+C stops it. The first build compiles the Sokol C modules; subsequent builds reuse them.
 
-Sections have shareable paths: `/buttons`, `/checkboxes`, `/typography`, and
-`/composition`. `/` redirects to `/buttons`. Sidebar navigation updates browser
+Sections have shareable paths: `/buttons`, `/checkboxes`, `/inputs`, `/dropdowns`,
+`/typography`, and `/composition`. `/` redirects to `/buttons`. Sidebar navigation updates browser
 history; Back/Forward and refreshing a section retain the selected view.
 
-Explore Buttons, Checkboxes, Typography and Composition in the sidebar. Click the
+Explore Buttons, Checkboxes, Inputs, Dropdowns, Typography and Composition in the sidebar. Click the
 button to increment its counter. Edit `apps/gallery/main.odin` or `kriya/ui/ui.odin`
 and save: the Odin server watches sources independently of browser requests,
 debounces changes, and rebuilds WASM. Build status is pushed over the persistent
@@ -175,9 +175,9 @@ management are Odin.
 - `tools/dev`: loopback-only HTTP server and rebuild management.
 - `web/fonts`: Work Sans and Hasklig Regular, with their SIL Open Font Licenses.
 
-This milestone has pointer-operated buttons and checkboxes, simple rectangle and
-text commands, and four example views. Layout is currently explicit coordinates,
-best viewed at desktop widths. Keyboard focus, touch, text editing, clipping,
+This milestone has pointer-operated buttons, checkboxes, inputs, and dropdowns,
+simple rectangle and text commands, and six example views. Layout is currently
+explicit coordinates, best viewed at desktop widths. Touch, advanced text editing, clipping,
 automatic layout, Unicode shaping, accessibility and native packaging remain to
 be implemented. The Sokol renderer will move out of the gallery as its API settles.
 
