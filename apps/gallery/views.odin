@@ -10,9 +10,9 @@ View :: struct {
 
 views:=[?]View{
     {draw_buttons,"apps/gallery/buttons.odin",594},
-    {draw_checkboxes,"apps/gallery/checkboxes.odin",594},
     {draw_inputs,"apps/gallery/inputs.odin",594},
     {draw_dropdowns,"apps/gallery/dropdowns.odin",650},
+    {draw_checkboxes,"apps/gallery/checkboxes.odin",594},
     {draw_typography,"apps/gallery/typography.odin",594},
     {draw_composition,"apps/gallery/composition.odin",594},
 }

@@ -7,9 +7,9 @@ Section :: struct {
 
 SECTIONS :: [?]Section{
     {"Buttons", "/buttons"},
-    {"Checkboxes", "/checkboxes"},
     {"Inputs", "/inputs"},
     {"Dropdowns", "/dropdowns"},
+    {"Checkboxes", "/checkboxes"},
     {"Typography", "/typography"},
     {"Composition", "/composition"},
 }

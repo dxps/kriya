@@ -11,7 +11,12 @@ sidebar_link :: proc(c:^ui.Context,id:u64,r:ui.Rect,text:string,active:bool)->bo
     clicked:=hover && c.released && c.active==id
     color:ui.Color={0.57,0.64,0.68,1}
     if active {color={0.32,0.83,0.69,1}}
-    if hover {color={0.86,0.93,0.92,1}}
+    if hover {
+        background:=ui.Color{0.14,0.18,0.205,1}
+        if c.active==id && c.down {background={0.11,0.15,0.175,1}}
+        ui.box(c,r,background,ui.DEFAULT_CORNER_RADIUS)
+        color={0.86,0.93,0.92,1}
+    }
     if c.active==id && c.down {color={0.26,0.67,0.57,1}}
     if active {ui.box(c,{r.x+4,r.y+10,2,16},{0.32,0.83,0.69,1},1)}
     ui.label(c,r.x+18,r.y+24,text,18,color)
