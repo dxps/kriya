@@ -209,17 +209,25 @@ dropdown :: proc(c:^Context,id:u64,r:Rect,options:[]string,value:^Dropdown,radiu
     }
     if c.released && c.active==id {c.active=0}
     if value.open {
+        menu:=Rect{r.x,r.y+r.h,r.w,f32(len(options))*40+2}
+        box(c,menu,{0.22,0.30,0.33,1},corner_radius)
+        box(c,{menu.x+1,menu.y+1,menu.w-2,menu.h-2},{0.12,0.16,0.18,1},max(0,corner_radius-1))
         for option,i in options {
-            item:=Rect{r.x,r.y+r.h+f32(i)*40,r.w,40}
+            item:=Rect{menu.x+1,menu.y+1+f32(i)*40,menu.w-2,40}
             item_id:=id+u64(i)+1
             item_hover:=contains(c,item)
             if item_hover {c.pointer_cursor=true}
             if item_hover && c.pressed {c.active=item_id}
             if item_hover && c.released && c.active==item_id {value.selected=i;value.open=false}
-            item_color:=Color{0.09,0.125,0.145,1}
-            if i==value.selected {item_color={0.13,0.24,0.23,1}}
-            if item_hover {item_color={0.16,0.29,0.27,1}}
-            box(c,item,item_color)
+            item_color:=Color{0.12,0.16,0.18,1}
+            if i==value.selected {item_color={0.15,0.25,0.24,1}}
+            if item_hover {item_color={0.18,0.31,0.29,1}}
+            item_radius:f32=0
+            if i==len(options)-1 {item_radius=max(0,corner_radius-1)}
+            box(c,item,item_color,item_radius)
+            // Keep the final row square where it meets the row above while
+            // following the menu's rounded bottom edge.
+            if item_radius>0 {box(c,{item.x,item.y,item.w,item_radius},item_color)}
             label(c,item.x+14,item.y+26,option,16)
             if c.released && c.active==item_id {c.active=0}
         }
