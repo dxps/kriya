@@ -143,6 +143,22 @@ dropdown_opens_and_selects_an_option :: proc(t:^testing.T) {
 }
 
 @(test)
+dropdown_closes_when_clicking_outside :: proc(t:^testing.T) {
+    c:=Context{mx=10,my=64,pressed=true,down=true}
+    defer delete(c.commands)
+    value:=Dropdown{open=true}
+    options:=[]string{"Odin","C","Rust"}
+
+    dropdown(&c,10,{0,0,200,44},options,&value)
+    testing.expect(t,value.open)
+
+    end(&c);begin(&c)
+    c.mx=240;c.my=20;c.pressed=true;c.down=true
+    dropdown(&c,10,{0,0,200,44},options,&value)
+    testing.expect(t,!value.open)
+}
+
+@(test)
 widgets_support_default_context_and_per_instance_radii :: proc(t:^testing.T) {
     c:=Context{measure_text=test_text_width}
     defer delete(c.commands)

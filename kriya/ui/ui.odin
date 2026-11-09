@@ -190,6 +190,10 @@ dropdown :: proc(c:^Context,id:u64,r:Rect,options:[]string,value:^Dropdown,radiu
     corner_radius:=resolve_corner_radius(c,radius)
     assert(len(options)>0,"Dropdowns require at least one option")
     value.selected=clamp(value.selected,0,len(options)-1)
+    menu:=Rect{r.x,r.y+r.h,r.w,f32(len(options))*40+2}
+    if value.open && c.pressed && !contains(c,r) && !contains(c,menu) {
+        value.open=false
+    }
     hover:=contains(c,r)
     if hover {c.pointer_cursor=true}
     if hover && c.pressed {c.active=id}
@@ -209,7 +213,6 @@ dropdown :: proc(c:^Context,id:u64,r:Rect,options:[]string,value:^Dropdown,radiu
     }
     if c.released && c.active==id {c.active=0}
     if value.open {
-        menu:=Rect{r.x,r.y+r.h,r.w,f32(len(options))*40+2}
         box(c,menu,{0.22,0.30,0.33,1},corner_radius)
         box(c,{menu.x+1,menu.y+1,menu.w-2,menu.h-2},{0.12,0.16,0.18,1},max(0,corner_radius-1))
         for option,i in options {
@@ -223,11 +226,15 @@ dropdown :: proc(c:^Context,id:u64,r:Rect,options:[]string,value:^Dropdown,radiu
             if i==value.selected {item_color={0.15,0.25,0.24,1}}
             if item_hover {item_color={0.18,0.31,0.29,1}}
             item_radius:f32=0
-            if i==len(options)-1 {item_radius=max(0,corner_radius-1)}
+            if i==0 || i==len(options)-1 {item_radius=max(0,corner_radius-1)}
             box(c,item,item_color,item_radius)
-            // Keep the final row square where it meets the row above while
-            // following the menu's rounded bottom edge.
-            if item_radius>0 {box(c,{item.x,item.y,item.w,item_radius},item_color)}
+            // Preserve the panel curves while keeping adjoining row edges square.
+            if item_radius>0 && i==0 && len(options)>1 {
+                box(c,{item.x,item.y+item.h-item_radius,item.w,item_radius},item_color)
+            }
+            if item_radius>0 && i==len(options)-1 && len(options)>1 {
+                box(c,{item.x,item.y,item.w,item_radius},item_color)
+            }
             label(c,item.x+14,item.y+26,option,16)
             if c.released && c.active==item_id {c.active=0}
         }
