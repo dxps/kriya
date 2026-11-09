@@ -112,10 +112,26 @@ dropdown_opens_and_selects_an_option :: proc(t:^testing.T) {
     value:Dropdown
     options:=[]string{"Odin","C","Rust"}
     dropdown(&c,10,{0,0,200,44},options,&value)
+    closed_triangle:=false
+    for command in c.commands {
+        if command.triangle {
+            closed_triangle=true
+            testing.expect(t,command.y3>command.rect.y)
+        }
+    }
+    testing.expect(t,closed_triangle)
     end(&c);begin(&c)
     c.mx=10;c.my=10;c.released=true;c.down=false
     dropdown(&c,10,{0,0,200,44},options,&value)
     testing.expect(t,value.open)
+    open_triangle:=false
+    for command in c.commands {
+        if command.triangle {
+            open_triangle=true
+            testing.expect(t,command.y3<command.rect.y)
+        }
+    }
+    testing.expect(t,open_triangle)
     end(&c);begin(&c)
     c.mx=10;c.my=104;c.pressed=true;c.down=true
     dropdown(&c,10,{0,0,200,44},options,&value)

@@ -3,7 +3,7 @@ package ui
 Color :: [4]f32
 Font :: enum { Body, Mono }
 Rect :: struct { x,y,w,h:f32 }
-Command :: struct { rect:Rect, color:Color, text:string, size:f32, font:Font, radius:f32, clip:Rect, clipped:bool, line:bool, x2,y2,width:f32 }
+Command :: struct { rect:Rect, color:Color, text:string, size:f32, font:Font, radius:f32, clip:Rect, clipped:bool, line,triangle:bool, x2,y2,x3,y3,width:f32 }
 Context :: struct {
     commands:[dynamic]Command,
     mx,my:f32,
@@ -30,6 +30,9 @@ box :: proc(c:^Context,r:Rect,color:Color,radius:f32=0) {
 }
 line :: proc(c:^Context,x1,y1,x2,y2,width:f32,color:Color) {
     append(&c.commands,Command{rect={x=x1,y=y1+c.offset_y},x2=x2,y2=y2+c.offset_y,width=width,line=true,color=color,clip=c.clip,clipped=c.clipped})
+}
+triangle :: proc(c:^Context,x1,y1,x2,y2,x3,y3:f32,color:Color) {
+    append(&c.commands,Command{rect={x=x1,y=y1+c.offset_y},x2=x2,y2=y2+c.offset_y,x3=x3,y3=y3+c.offset_y,triangle=true,color=color,clip=c.clip,clipped=c.clipped})
 }
 label :: proc(c:^Context,x,y:f32,text:string,size:f32=18,color:Color={0.84,0.89,0.92,1},font:Font=.Body) { append(&c.commands,Command{rect={x=x,y=y+c.offset_y},text=text,size=size,font=font,color=color,clip=c.clip,clipped=c.clipped}) }
 point_in_rect :: proc(x,y:f32,r:Rect)->bool {return x>=r.x && x<r.x+r.w && y>=r.y && y<r.y+r.h}
@@ -179,7 +182,14 @@ dropdown :: proc(c:^Context,id:u64,r:Rect,options:[]string,value:^Dropdown) {
     box(c,r,border,4)
     box(c,{r.x+1,r.y+1,r.w-2,r.h-2},{0.075,0.105,0.125,1},3)
     label(c,r.x+14,r.y+29,options[value.selected],17)
-    label(c,r.x+r.w-28,r.y+28,value.open ? "^" : "v",16,{0.57,0.66,0.69,1})
+    arrow_x:=r.x+r.w-22
+    arrow_y:=r.y+r.h/2
+    arrow_color:=Color{0.57,0.66,0.69,1}
+    if value.open {
+        triangle(c,arrow_x-5,arrow_y+3,arrow_x+5,arrow_y+3,arrow_x,arrow_y-4,arrow_color)
+    } else {
+        triangle(c,arrow_x-5,arrow_y-3,arrow_x+5,arrow_y-3,arrow_x,arrow_y+4,arrow_color)
+    }
     if c.released && c.active==id {c.active=0}
     if value.open {
         for option,i in options {

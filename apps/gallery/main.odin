@@ -126,7 +126,13 @@ render :: proc() {
         sgl.c4f(c.color[0],c.color[1],c.color[2],c.color[3])
         if len(c.text)==0 {
             sgl.disable_texture()
-            if c.line {
+            if c.triangle {
+                sgl.begin_triangles()
+                sgl.v2f(c.rect.x,c.rect.y)
+                sgl.v2f(c.x2,c.y2)
+                sgl.v2f(c.x3,c.y3)
+                sgl.end()
+            } else if c.line {
                 dx:=c.x2-c.rect.x
                 dy:=c.y2-c.rect.y
                 length:=math.sqrt(dx*dx+dy*dy)
