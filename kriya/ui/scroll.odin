@@ -52,6 +52,8 @@ end_scroll :: proc(c:^Context,s:^Scroll_State,content_height:f32) {
     thumb_y:=track.y+(track.h-thumb_h)*s.offset/(content_height-viewport.h)
     hover:=point_in_rect(c.mx,c.my,track) || s.dragging
     width:f32=hover?7:5
-    box(c,{track.x+8-width/2,track.y,width,track.h},{0.26,0.34,0.37,0.16*alpha},width/2)
-    box(c,{track.x+8-width/2,thumb_y,width,thumb_h},{0.42,0.69,0.64,(hover?0.95:0.7)*alpha},width/2)
+    tr:=DEFAULT_PALETTE.scroll_track
+    th:=DEFAULT_PALETTE.scroll_thumb
+    box(c,{track.x+8-width/2,track.y,width,track.h},{tr[0],tr[1],tr[2],0.16*alpha},width/2)
+    box(c,{track.x+8-width/2,thumb_y,width,thumb_h},{th[0],th[1],th[2],(hover?0.95:0.7)*alpha},width/2)
 }

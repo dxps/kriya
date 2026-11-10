@@ -67,7 +67,7 @@ line :: proc(c:^Context,x1,y1,x2,y2,width:f32,color:Color) {
 triangle :: proc(c:^Context,x1,y1,x2,y2,x3,y3:f32,color:Color) {
     append(&c.commands,Command{clip=c.clip,clipped=c.clipped,variant=Triangle_Command{x1=x1,y1=y1+c.offset_y,x2=x2,y2=y2+c.offset_y,x3=x3,y3=y3+c.offset_y,color=color}})
 }
-label :: proc(c:^Context,x,y:f32,text:string,size:f32=18,color:Color={0.84,0.89,0.92,1},font:Font=.Body) {
+label :: proc(c:^Context,x,y:f32,text:string,size:f32=18,color:Color=DEFAULT_PALETTE.text,font:Font=.Body) {
     append(&c.commands,Command{clip=c.clip,clipped=c.clipped,variant=Text_Command{x=x,y=y+c.offset_y,text=text,size=size,font=font,color=color}})
 }
 point_in_rect :: proc(x,y:f32,r:Rect)->bool {return x>=r.x && x<r.x+r.w && y>=r.y && y<r.y+r.h}
@@ -79,11 +79,11 @@ button :: proc(c:^Context,id:u64,r:Rect,text:string,disabled:=false,radius:f32=U
     corner_radius:=resolve_corner_radius(c,radius)
     hover,clicked:bool
     if !disabled {hover,clicked=pressable(c,id,r)}
-    color:Color={0.20,0.67,0.57,1}
-    if hover {color={0.29,0.78,0.66,1}}
-    if c.active==id && c.down {color={0.14,0.48,0.42,1}}
-    if disabled {color={0.20,0.25,0.28,1}}
-    box(c,r,color,corner_radius); label(c,r.x+18,r.y+28,text,18,{0.06,0.11,0.12,1})
+    color:=DEFAULT_PALETTE.primary
+    if hover {color=DEFAULT_PALETTE.primary_hover}
+    if c.active==id && c.down {color=DEFAULT_PALETTE.primary_pressed}
+    if disabled {color=DEFAULT_PALETTE.disabled}
+    box(c,r,color,corner_radius); label(c,r.x+18,r.y+28,text,18,DEFAULT_PALETTE.text_on_primary)
     return clicked
 }
 checkbox :: proc(c:^Context,id:u64,x,y:f32,text:string,value:^bool,radius:f32=USE_CONTEXT_CORNER_RADIUS) {
@@ -96,12 +96,12 @@ checkbox :: proc(c:^Context,id:u64,x,y:f32,text:string,value:^bool,radius:f32=US
     }
     hover,clicked:=pressable(c,id,hit)
     if clicked {value^ = !value^}
-    border:Color={0.20,0.67,0.57,1}
-    if hover {border={0.29,0.78,0.66,1}}
-    if c.active==id && c.down {border={0.14,0.48,0.42,1}}
+    border:=DEFAULT_PALETTE.primary
+    if hover {border=DEFAULT_PALETTE.primary_hover}
+    if c.active==id && c.down {border=DEFAULT_PALETTE.primary_pressed}
     box(c,r,border,corner_radius)
     // One logical pixel of border, independent of the checked indicator.
-    box(c,{x+1,y+1,16,16},{0.10,0.14,0.17,1},max(0,corner_radius-1))
+    box(c,{x+1,y+1,16,16},DEFAULT_PALETTE.surface_raised,max(0,corner_radius-1))
     if value^ {box(c,{x+3,y+3,12,12},border,max(0,corner_radius-3))}
     label(c,x+28,y+14,text)
 }
@@ -136,16 +136,16 @@ input :: proc(c:^Context,id:u64,r:Rect,placeholder:string,value:^Text_Input,pass
         c.typed_len=0
         c.backspace=false
     }
-    border:Color={0.25,0.34,0.38,1}
-    if hover {border={0.36,0.48,0.52,1}}
-    if focused {border={0.32,0.83,0.69,1}}
+    border:=DEFAULT_PALETTE.border
+    if hover {border=DEFAULT_PALETTE.border_hover}
+    if focused {border=DEFAULT_PALETTE.primary_bright}
     box(c,r,border,corner_radius)
-    box(c,{r.x+1,r.y+1,r.w-2,r.h-2},{0.075,0.105,0.125,1},max(0,corner_radius-1))
+    box(c,{r.x+1,r.y+1,r.w-2,r.h-2},DEFAULT_PALETTE.surface,max(0,corner_radius-1))
     shown:=placeholder
     masked:=password && !value.revealed && value.len>0
-    color:=Color{0.47,0.56,0.61,1}
+    color:=DEFAULT_PALETTE.text_muted
     if value.len>0 {
-        color={0.84,0.89,0.92,1}
+        color=DEFAULT_PALETTE.text
         if !masked {
             shown=string(value.data[:value.len])
         }
@@ -167,15 +167,15 @@ input :: proc(c:^Context,id:u64,r:Rect,placeholder:string,value:^Text_Input,pass
             assert(c.measure_text!=nil,"Focused inputs require a text measurement callback")
             caret_x=r.x+14+c.measure_text(shown,17)
         }
-        box(c,{min(caret_x,r.x+r.w-eye_w-12),r.y+11,1,r.h-22},{0.32,0.83,0.69,1})
+        box(c,{min(caret_x,r.x+r.w-eye_w-12),r.y+11,1,r.h-22},DEFAULT_PALETTE.primary_bright)
     }
     if password {
         divider_x:=r.x+r.w-eye_w
-        box(c,{divider_x,r.y+8,1,r.h-16},{0.20,0.27,0.30,1})
+        box(c,{divider_x,r.y+8,1,r.h-16},DEFAULT_PALETTE.divider)
         eye:=Rect{divider_x+12,r.y+16,20,12}
         eye_hover,eye_clicked:=pressable(c,sub_id(id,1),{divider_x,r.y,eye_w,r.h})
         if eye_clicked {value.revealed=!value.revealed}
-        eye_color:=eye_hover ? Color{0.32,0.83,0.69,1} : Color{0.57,0.66,0.69,1}
+        eye_color:=eye_hover ? DEFAULT_PALETTE.primary_bright : DEFAULT_PALETTE.text_subtle
         // Four short segments per lid retain a gentle curve while keeping the
         // left and right corners pointed like a conventional eye glyph.
         line(c,eye.x,eye.y+6,eye.x+5,eye.y+2,1.4,eye_color)
@@ -189,7 +189,7 @@ input :: proc(c:^Context,id:u64,r:Rect,placeholder:string,value:^Text_Input,pass
         box(c,{eye.x+7,eye.y+3,6,6},eye_color,3)
         if !value.revealed {
             // Hidden is visually distinct by default: the eye is struck through.
-            line(c,eye.x-2,eye.y+eye.h+3,eye.x+eye.w+2,eye.y-3,2.5,{0.075,0.105,0.125,1})
+            line(c,eye.x-2,eye.y+eye.h+3,eye.x+eye.w+2,eye.y-3,2.5,DEFAULT_PALETTE.surface)
             line(c,eye.x-2,eye.y+eye.h+3,eye.x+eye.w+2,eye.y-3,1.25,eye_color)
         }
     }
@@ -210,29 +210,29 @@ dropdown :: proc(c:^Context,id:u64,r:Rect,options:[]string,value:^Dropdown,radiu
     }
     hover,clicked:=pressable(c,id,r)
     if clicked {value.open=!value.open}
-    border:Color={0.25,0.34,0.38,1}
-    if hover || value.open {border={0.32,0.83,0.69,1}}
+    border:=DEFAULT_PALETTE.border
+    if hover || value.open {border=DEFAULT_PALETTE.primary_bright}
     box(c,r,border,corner_radius)
-    box(c,{r.x+1,r.y+1,r.w-2,r.h-2},{0.075,0.105,0.125,1},max(0,corner_radius-1))
+    box(c,{r.x+1,r.y+1,r.w-2,r.h-2},DEFAULT_PALETTE.surface,max(0,corner_radius-1))
     label(c,r.x+14,r.y+29,options[value.selected],17)
     arrow_x:=r.x+r.w-22
     arrow_y:=r.y+r.h/2
-    arrow_color:=Color{0.57,0.66,0.69,1}
+    arrow_color:=DEFAULT_PALETTE.text_subtle
     if value.open {
         triangle(c,arrow_x-5,arrow_y+3,arrow_x+5,arrow_y+3,arrow_x,arrow_y-4,arrow_color)
     } else {
         triangle(c,arrow_x-5,arrow_y-3,arrow_x+5,arrow_y-3,arrow_x,arrow_y+4,arrow_color)
     }
     if value.open {
-        box(c,menu,{0.22,0.30,0.33,1},corner_radius)
-        box(c,{menu.x+1,menu.y+1,menu.w-2,menu.h-2},{0.12,0.16,0.18,1},max(0,corner_radius-1))
+        box(c,menu,DEFAULT_PALETTE.overlay_border,corner_radius)
+        box(c,{menu.x+1,menu.y+1,menu.w-2,menu.h-2},DEFAULT_PALETTE.overlay,max(0,corner_radius-1))
         for option,i in options {
             item:=Rect{menu.x+1,menu.y+1+f32(i)*40,menu.w-2,40}
             item_hover,item_clicked:=pressable(c,sub_id(id,u64(i+1)),item)
             if item_clicked {value.selected=i;value.open=false}
-            item_color:=Color{0.12,0.16,0.18,1}
-            if i==value.selected {item_color={0.15,0.25,0.24,1}}
-            if item_hover {item_color={0.18,0.31,0.29,1}}
+            item_color:=DEFAULT_PALETTE.overlay
+            if i==value.selected {item_color=DEFAULT_PALETTE.item_selected}
+            if item_hover {item_color=DEFAULT_PALETTE.item_hover}
             item_radius:f32=0
             if i==0 || i==len(options)-1 {item_radius=max(0,corner_radius-1)}
             box(c,item,item_color,item_radius)

@@ -171,7 +171,7 @@ render :: proc() {
             sgl.end()
         }
     }
-    sg.begin_pass({action={colors={0={load_action=.CLEAR,clear_value={0.067,0.09,0.11,1}}}},swapchain=glue.swapchain()})
+    sg.begin_pass({action={colors={0={load_action=.CLEAR,clear_value={GALLERY_BACKGROUND[0],GALLERY_BACKGROUND[1],GALLERY_BACKGROUND[2],GALLERY_BACKGROUND[3]}}}},swapchain=glue.swapchain()})
     sgl.draw();sg.end_pass();sg.commit()
 }
 frame :: proc "c" () {
@@ -184,11 +184,11 @@ frame :: proc "c" () {
     view:=views[selected]
     scroll:=&view_scroll[selected]
     ui.begin_scroll(&ctx,scroll,{230,0,max(0,w-230),max(0,h-28)},view.content_height,f32(sapp.frame_duration()))
-    ui.label(&ctx,274,52,"LIBRARY / EXPLORER",13,{0.47,0.56,0.61,1})
+    ui.label(&ctx,274,52,"LIBRARY / EXPLORER",13,ui.DEFAULT_PALETTE.text_muted)
     ui.label(&ctx,274,110,sections[selected].title,40)
     ui.label(&ctx,274,146,"Small primitives. Shared behavior. Built in Odin.",18)
-    ui.box(&ctx,{274,184,max(420,w-318),350},{0.10,0.14,0.17,1})
-    ui.label(&ctx,302,220,"INTERACTIVE PREVIEW",12,{0.47,0.56,0.61,1})
+    ui.box(&ctx,{274,184,max(420,w-318),350},ui.DEFAULT_PALETTE.surface_raised)
+    ui.label(&ctx,302,220,"INTERACTIVE PREVIEW",12,ui.DEFAULT_PALETTE.text_muted)
     view.draw(&ctx)
     draw_source_hint(&ctx,view.source)
     ui.end_scroll(&ctx,scroll,view.content_height)

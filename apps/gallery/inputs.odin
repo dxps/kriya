@@ -10,9 +10,9 @@ init_input_examples :: proc() {
 }
 
 draw_inputs :: proc(c:^ui.Context) {
-    ui.label(c,302,250,"STANDARD",11,{0.47,0.56,0.61,1})
+    ui.label(c,302,250,"STANDARD",11,ui.DEFAULT_PALETTE.text_muted)
     ui.input(c,20,{302,266,360,46},"Enter a name",&name_input)
-    ui.label(c,302,346,"PASSWORD",11,{0.47,0.56,0.61,1})
+    ui.label(c,302,346,"PASSWORD",11,ui.DEFAULT_PALETTE.text_muted)
     ui.input(c,21,{302,362,360,46},"Enter a password",&password_input,true)
     ui.label(c,302,452,"Click the eye to reveal or hide the password.",17)
 }
