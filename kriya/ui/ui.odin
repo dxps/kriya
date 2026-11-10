@@ -1,5 +1,7 @@
 package ui
 
+import "core:unicode/utf8"
+
 Color :: [4]f32
 Font :: enum {
 	Body,
@@ -271,7 +273,12 @@ input :: proc(
 	}
 	focused := c.focused == id
 	if focused {
-		if c.backspace && value.len > 0 {value.len -= 1}
+		if c.backspace && value.len > 0 {
+			// Drop one whole rune, not one byte: step back past UTF-8
+			// continuation bytes (top two bits == 10).
+			value.len -= 1
+			for value.len > 0 && (value.data[value.len] & 0xC0) == 0x80 {value.len -= 1}
+		}
 		for ch in c.typed[:c.typed_len] {
 			if value.len < len(value.data) {value.data[value.len] = ch; value.len += 1}
 		}
@@ -297,11 +304,13 @@ input :: proc(
 			shown = string(value.data[:value.len])
 		}
 	}
+	rune_count := utf8.rune_count_in_string(string(value.data[:value.len]))
 	if masked {
 		// Draw round password bullets independently of the text font so their
-		// shape remains circular at every display scale.
+		// shape remains circular at every display scale. One bullet per rune,
+		// not per UTF-8 byte.
 		bullet_x := r.x + 14
-		for _ in 0 ..< value.len {
+		for _ in 0 ..< rune_count {
 			box(c, {bullet_x, r.y + r.h / 2 - 4, 8, 8}, color, 4)
 			bullet_x += 14
 		}
@@ -309,7 +318,7 @@ input :: proc(
 		label(c, r.x + 14, r.y + 29, shown, 17, color)
 	}
 	if focused {
-		caret_x := r.x + 14 + f32(value.len) * 14
+		caret_x := r.x + 14 + f32(rune_count) * 14
 		if !masked {
 			assert(c.measure_text != nil, "Focused inputs require a text measurement callback")
 			caret_x = r.x + 14 + c.measure_text(shown, 17)

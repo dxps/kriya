@@ -6,12 +6,22 @@ import "../../routes"
 import "base:runtime"
 import "core:math"
 import "core:mem"
+import "core:unicode/utf8"
 import ui "kriya:ui"
 import sapp "sokol:app"
 import sg "sokol:gfx"
 import sgl "sokol:gl"
 import glue "sokol:glue"
 import slog "sokol:log"
+
+// Atlas covers Basic Latin + Latin-1 Supplement + Latin Extended-A + part of
+// Latin Extended-B — every European language including Romanian (ă â î ș ț).
+// Runes outside this range are silently skipped. Larger sizes may not fit the
+// full range in a 2048 atlas; unbaked glyphs have xadvance == 0 and are
+// skipped by measure and render.
+FIRST_GLYPH :: 0x20
+LAST_GLYPH :: 0x24F
+GLYPH_COUNT :: LAST_GLYPH - FIRST_GLYPH + 1
 
 font := #load("../../web/fonts/WorkSans.ttf")
 mono_font := #load("../../web/fonts/Hasklig-Regular.ttf")
@@ -20,7 +30,7 @@ Font_Atlas :: struct {
 	physical_size: i32,
 	font:          ui.Font,
 	dimension:     i32,
-	glyphs:        [95]tt.bakedchar,
+	glyphs:        [GLYPH_COUNT]tt.bakedchar,
 	image:         sg.Image,
 	view:          sg.View,
 }
@@ -87,21 +97,23 @@ font_atlas :: proc(size, dpi: f32, face: ui.Font = .Body) -> ^Font_Atlas {
 	a.physical_size = physical_size
 	a.font = face
 	a.dimension = 128
-	for a.dimension < physical_size * 12 && a.dimension < 2048 {a.dimension *= 2}
+	for a.dimension < physical_size * 25 && a.dimension < 2048 {a.dimension *= 2}
 	pixel_count := int(a.dimension * a.dimension)
 	data := face == .Mono ? mono_font : font
-	used := tt.BakeFontBitmap(
+	// stbtt_BakeFontBitmap may return a negative value at large sizes when not
+	// every glyph fits. Unbaked slots stay zero-initialized (xadvance == 0),
+	// which measure and render use as a skip sentinel.
+	_ = tt.BakeFontBitmap(
 		raw_data(data),
 		0,
 		f32(physical_size),
 		raw_data(atlas_bitmap[:]),
 		a.dimension,
 		a.dimension,
-		32,
-		95,
+		FIRST_GLYPH,
+		GLYPH_COUNT,
 		raw_data(a.glyphs[:]),
 	)
-	assert(used > 0, "Glyphs do not fit in the font atlas")
 	for alpha, i in atlas_bitmap[:pixel_count] {atlas_pixels[i] = 0x00ffffff | (u32(alpha) << 24)}
 	a.image = sg.make_image(
 		{
@@ -159,8 +171,9 @@ measure_font_text :: proc(text: string, size: f32, face: ui.Font) -> f32 {
 	advance: f32
 	right: f32
 	for ch in text {
-		if ch < 32 || ch > 126 {continue}
-		glyph := a.glyphs[ch - 32]
+		if ch < FIRST_GLYPH || ch > LAST_GLYPH {continue}
+		glyph := a.glyphs[ch - FIRST_GLYPH]
+		if glyph.xadvance == 0 {continue}
 		right = max(right, advance + glyph.xoff + f32(glyph.x1 - glyph.x0))
 		advance += glyph.xadvance
 	}
@@ -214,9 +227,19 @@ render :: proc() {
 			x := math.round(v.x * dpi)
 			y := math.round(v.y * dpi)
 			for ch in v.text {
-				if ch < 32 || ch > 126 {continue}
+				if ch < FIRST_GLYPH || ch > LAST_GLYPH {continue}
+				if a.glyphs[ch - FIRST_GLYPH].xadvance == 0 {continue}
 				q: tt.aligned_quad
-				tt.GetBakedQuad(&a.glyphs[0], a.dimension, a.dimension, i32(ch - 32), &x, &y, &q, true)
+				tt.GetBakedQuad(
+					&a.glyphs[0],
+					a.dimension,
+					a.dimension,
+					i32(ch) - FIRST_GLYPH,
+					&x,
+					&y,
+					&q,
+					true,
+				)
 				sgl.v2f_t2f(q.x0 / dpi, q.y0 / dpi, q.s0, q.t0)
 				sgl.v2f_t2f(q.x1 / dpi, q.y0 / dpi, q.s1, q.t0)
 				sgl.v2f_t2f(q.x1 / dpi, q.y1 / dpi, q.s1, q.t1)
@@ -293,8 +316,11 @@ event :: proc "c" (e: ^sapp.Event) {
 	case .MOUSE_SCROLL:
 		ctx.wheel_y -= e.scroll_y * 32
 	case .CHAR:
-		if e.char_code >= 32 && e.char_code <= 126 && ctx.typed_len < len(ctx.typed) {
-			ctx.typed[ctx.typed_len] = u8(e.char_code)
+		if e.char_code < FIRST_GLYPH || e.char_code > LAST_GLYPH {break}
+		bytes, n := utf8.encode_rune(rune(e.char_code))
+		if ctx.typed_len + n > len(ctx.typed) {break}
+		for i in 0 ..< n {
+			ctx.typed[ctx.typed_len] = bytes[i]
 			ctx.typed_len += 1
 		}
 	case .KEY_DOWN:
