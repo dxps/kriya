@@ -242,6 +242,31 @@ checkbox :: proc(
 	if value^ {box(c, {x + 3, y + 3, 12, 12}, border, max(0, corner_radius - 3))}
 	label(c, x + 28, y + 14, text)
 }
+// Pill-shaped on/off switch. Track is 44x24; the 18x18 thumb slides between a
+// 3px inset on either side. Clicking anywhere on the track or its label flips
+// the value, matching checkbox's hit model.
+toggle :: proc(c: ^Context, id: u64, x, y: f32, text: string, value: ^bool) {
+	track := Rect{x, y, 44, 24}
+	hit := track
+	if len(text) > 0 {
+		assert(c.measure_text != nil, "Toggle labels require a text measurement callback")
+		hit.w = 54 + c.measure_text(text, 18)
+	}
+	hover, clicked := pressable(c, id, hit)
+	if clicked {value^ = !value^}
+	track_color := DEFAULT_PALETTE.border
+	if value^ {
+		track_color = DEFAULT_PALETTE.primary
+		if hover {track_color = DEFAULT_PALETTE.primary_hover}
+		if c.active == id && c.down {track_color = DEFAULT_PALETTE.primary_pressed}
+	} else if hover {
+		track_color = DEFAULT_PALETTE.border_hover
+	}
+	box(c, track, track_color, 12)
+	thumb_x := value^ ? x + 23 : x + 3
+	box(c, {thumb_x, y + 3, 18, 18}, DEFAULT_PALETTE.text, 9)
+	label(c, x + 54, y + 17, text)
+}
 
 Text_Input :: struct {
 	data:     [128]u8,
