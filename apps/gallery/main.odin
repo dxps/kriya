@@ -122,7 +122,10 @@ render :: proc() {
     }
     sgl.defaults();sgl.load_pipeline(pipeline)
     sgl.matrix_mode_projection();sgl.ortho(0,sapp.widthf()/dpi,sapp.heightf()/dpi,0,-1,1)
-    for c in ctx.commands {
+    // Two passes: Base first, then Overlay. Everything an Overlay command draws
+    // paints on top of every Base command, so popup menus survive sibling draws.
+    for pass in ([2]ui.Command_Layer{.Base,.Overlay}) do for c in ctx.commands {
+        if c.layer!=pass {continue}
         if c.clipped {sgl.scissor_rectf(c.clip.x*dpi,c.clip.y*dpi,c.clip.w*dpi,c.clip.h*dpi,true)}
         else {sgl.scissor_rect(0,0,sapp.width(),sapp.height(),true)}
         switch v in c.variant {

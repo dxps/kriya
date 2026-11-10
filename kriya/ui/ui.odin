@@ -5,12 +5,16 @@ Font :: enum { Body, Mono }
 DEFAULT_CORNER_RADIUS :: 6.0
 USE_CONTEXT_CORNER_RADIUS :: -1.0
 Rect :: struct { x,y,w,h:f32 }
+// Base covers the normal widget drawing order. Overlay commands are rendered
+// after every Base command in the same frame, so popup menus and tooltips
+// paint on top of anything drawn after them.
+Command_Layer :: enum u8 { Base, Overlay }
 Box_Command :: struct { rect:Rect, color:Color, radius:f32 }
 Line_Command :: struct { x1,y1,x2,y2,width:f32, color:Color }
 Triangle_Command :: struct { x1,y1,x2,y2,x3,y3:f32, color:Color }
 Text_Command :: struct { x,y:f32, text:string, size:f32, font:Font, color:Color }
 Command_Variant :: union { Box_Command, Line_Command, Triangle_Command, Text_Command }
-Command :: struct { clip:Rect, clipped:bool, variant:Command_Variant }
+Command :: struct { clip:Rect, clipped:bool, layer:Command_Layer, variant:Command_Variant }
 Context :: struct {
     commands:[dynamic]Command,
     mx,my:f32,
@@ -30,8 +34,9 @@ Context :: struct {
     backspace:bool,
     corner_radius:f32,
     corner_radius_set:bool,
+    layer:Command_Layer,
 }
-begin :: proc(c:^Context) { clear(&c.commands);c.pointer_cursor=false;c.offset_y=0;c.clipped=false;c.input_blocked=false }
+begin :: proc(c:^Context) { clear(&c.commands);c.pointer_cursor=false;c.offset_y=0;c.clipped=false;c.input_blocked=false;c.layer=.Base }
 end :: proc(c:^Context) { c.pressed=false; c.released=false;c.moved=false;c.wheel_y=0;c.typed_len=0;c.backspace=false }
 set_corner_radius :: proc(c:^Context,radius:f32) {
     c.corner_radius=max(0,radius)
@@ -59,16 +64,16 @@ pressable :: proc(c:^Context,id:u64,hit:Rect)->(hover,clicked:bool) {
 }
 box :: proc(c:^Context,r:Rect,color:Color,radius:f32=0) {
     translated:=r;translated.y+=c.offset_y
-    append(&c.commands,Command{clip=c.clip,clipped=c.clipped,variant=Box_Command{rect=translated,color=color,radius=radius}})
+    append(&c.commands,Command{clip=c.clip,clipped=c.clipped,layer=c.layer,variant=Box_Command{rect=translated,color=color,radius=radius}})
 }
 line :: proc(c:^Context,x1,y1,x2,y2,width:f32,color:Color) {
-    append(&c.commands,Command{clip=c.clip,clipped=c.clipped,variant=Line_Command{x1=x1,y1=y1+c.offset_y,x2=x2,y2=y2+c.offset_y,width=width,color=color}})
+    append(&c.commands,Command{clip=c.clip,clipped=c.clipped,layer=c.layer,variant=Line_Command{x1=x1,y1=y1+c.offset_y,x2=x2,y2=y2+c.offset_y,width=width,color=color}})
 }
 triangle :: proc(c:^Context,x1,y1,x2,y2,x3,y3:f32,color:Color) {
-    append(&c.commands,Command{clip=c.clip,clipped=c.clipped,variant=Triangle_Command{x1=x1,y1=y1+c.offset_y,x2=x2,y2=y2+c.offset_y,x3=x3,y3=y3+c.offset_y,color=color}})
+    append(&c.commands,Command{clip=c.clip,clipped=c.clipped,layer=c.layer,variant=Triangle_Command{x1=x1,y1=y1+c.offset_y,x2=x2,y2=y2+c.offset_y,x3=x3,y3=y3+c.offset_y,color=color}})
 }
 label :: proc(c:^Context,x,y:f32,text:string,size:f32=18,color:Color=DEFAULT_PALETTE.text,font:Font=.Body) {
-    append(&c.commands,Command{clip=c.clip,clipped=c.clipped,variant=Text_Command{x=x,y=y+c.offset_y,text=text,size=size,font=font,color=color}})
+    append(&c.commands,Command{clip=c.clip,clipped=c.clipped,layer=c.layer,variant=Text_Command{x=x,y=y+c.offset_y,text=text,size=size,font=font,color=color}})
 }
 point_in_rect :: proc(x,y:f32,r:Rect)->bool {return x>=r.x && x<r.x+r.w && y>=r.y && y<r.y+r.h}
 contains :: proc(c:^Context,r:Rect)->bool {
@@ -224,6 +229,9 @@ dropdown :: proc(c:^Context,id:u64,r:Rect,options:[]string,value:^Dropdown,radiu
         triangle(c,arrow_x-5,arrow_y-3,arrow_x+5,arrow_y-3,arrow_x,arrow_y+4,arrow_color)
     }
     if value.open {
+        prev_layer:=c.layer
+        c.layer=.Overlay
+        defer c.layer=prev_layer
         box(c,menu,DEFAULT_PALETTE.overlay_border,corner_radius)
         box(c,{menu.x+1,menu.y+1,menu.w-2,menu.h-2},DEFAULT_PALETTE.overlay,max(0,corner_radius-1))
         for option,i in options {
