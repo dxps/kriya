@@ -257,14 +257,18 @@ frame :: proc "c" () {
 	ui.begin_scroll(
 		&ctx,
 		scroll,
-		{230, 0, max(0, w - 230), max(0, h - 28)},
+		{SIDEBAR_W, 0, max(0, w - SIDEBAR_W), max(0, h - 28)},
 		f32(sapp.frame_duration()),
 	)
-	ui.label(&ctx, 274, 52, "LIBRARY / EXPLORER", 13, ui.DEFAULT_PALETTE.text_muted)
-	ui.label(&ctx, 274, 110, sections[selected].title, 40)
-	ui.label(&ctx, 274, 146, "Small primitives. Shared behavior. Built in Odin.", 18)
-	ui.box(&ctx, {274, 184, max(420, w - 318), 350}, ui.DEFAULT_PALETTE.surface_raised)
-	ui.label(&ctx, 302, 220, "INTERACTIVE PREVIEW", 12, ui.DEFAULT_PALETTE.text_muted)
+	ui.label(&ctx, CONTENT_X, PAGE_EYEBROW_Y, "LIBRARY / EXPLORER", 13, ui.DEFAULT_PALETTE.text_muted)
+	ui.label(&ctx, CONTENT_X, PAGE_TITLE_Y, sections[selected].title, 40)
+	ui.label(&ctx, CONTENT_X, PAGE_SUB_Y, "Small primitives. Shared behavior. Built in Odin.", 18)
+	ui.box(
+		&ctx,
+		{PREVIEW_X, PREVIEW_Y, max(PREVIEW_MIN_W, w - PREVIEW_X - PREVIEW_MARGIN_RIGHT), PREVIEW_H},
+		ui.DEFAULT_PALETTE.surface_raised,
+	)
+	ui.label(&ctx, WIDGET_X, PREVIEW_HEADER_Y, "INTERACTIVE PREVIEW", 12, ui.DEFAULT_PALETTE.text_muted)
 	view.draw(&ctx)
 	draw_source_hint(&ctx, view.source)
 	ui.end_scroll(&ctx, scroll)

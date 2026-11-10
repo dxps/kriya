@@ -21,13 +21,13 @@ sidebar_link :: proc(c: ^ui.Context, id: u64, r: ui.Rect, text: string, active: 
 }
 
 draw_sidebar :: proc(h: f32) {
-	ui.box(&ctx, {0, 0, 230, h}, GALLERY_SIDEBAR_BG)
-	ui.label(&ctx, 28, 52, "kriya", 36, ui.DEFAULT_PALETTE.primary_bright)
-	ui.label(&ctx, 28, 82, "COMPONENT WORKSHOP", 12)
-	ui.label(&ctx, 28, 140, "FOUNDATIONS / 01", 12, ui.DEFAULT_PALETTE.text_muted)
+	ui.box(&ctx, {0, 0, SIDEBAR_W, h}, GALLERY_SIDEBAR_BG)
+	ui.label(&ctx, SIDEBAR_TEXT_X, SIDEBAR_BRAND_Y, "kriya", 36, ui.DEFAULT_PALETTE.primary_bright)
+	ui.label(&ctx, SIDEBAR_TEXT_X, SIDEBAR_KICKER_Y, "COMPONENT WORKSHOP", 12)
+	ui.label(&ctx, SIDEBAR_TEXT_X, SIDEBAR_GROUP_Y, "FOUNDATIONS / 01", 12, ui.DEFAULT_PALETTE.text_muted)
 	for section, i in routes.SECTIONS {
-		y := f32(164 + i * 44)
-		if sidebar_link(&ctx, u64(100 + i), {24, y, 182, 36}, section.title, selected == i) {
+		y := SIDEBAR_LINKS_Y + f32(i) * SIDEBAR_LINK_STRIDE
+		if sidebar_link(&ctx, u64(100 + i), {SIDEBAR_LINK_X, y, SIDEBAR_LINK_W, SIDEBAR_LINK_H}, section.title, selected == i) {
 			selected = i
 			web.kriya_navigate(section.path)
 		}

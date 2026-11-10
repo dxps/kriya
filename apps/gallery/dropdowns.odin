@@ -8,11 +8,11 @@ framework_dropdown := ui.Dropdown {
 }
 
 draw_dropdowns :: proc(c: ^ui.Context) {
-	ui.label(c, 302, 250, "LANGUAGE", 11, ui.DEFAULT_PALETTE.text_muted)
-	ui.dropdown(c, 30, {302, 266, 360, 46}, framework_options, &framework_dropdown)
+	ui.label(c, WIDGET_X, 250, "LANGUAGE", 11, ui.DEFAULT_PALETTE.text_muted)
+	ui.dropdown(c, 30, {WIDGET_X, 266, INPUT_W, CONTROL_H}, framework_options, &framework_dropdown)
 	ui.label(
 		c,
-		302,
+		WIDGET_X,
 		346,
 		fmt.tprintf("Selected value: %s", framework_options[framework_dropdown.selected]),
 		17,
