@@ -1,0 +1,16 @@
+{
+  "collections": [
+    {
+      "name": "kriya",
+      "path": "kriya"
+    },
+    {
+      "name": "sokol",
+      "path": "vendor/sokol-odin-main/sokol"
+    }
+  ],
+  "enable_semantic_tokens": true,
+  "enable_document_symbols": true,
+  "enable_hover": true,
+  "enable_snippets": true
+}
