@@ -5,7 +5,12 @@ Font :: enum { Body, Mono }
 DEFAULT_CORNER_RADIUS :: 6.0
 USE_CONTEXT_CORNER_RADIUS :: -1.0
 Rect :: struct { x,y,w,h:f32 }
-Command :: struct { rect:Rect, color:Color, text:string, size:f32, font:Font, radius:f32, clip:Rect, clipped:bool, line,triangle:bool, x2,y2,x3,y3,width:f32 }
+Box_Command :: struct { rect:Rect, color:Color, radius:f32 }
+Line_Command :: struct { x1,y1,x2,y2,width:f32, color:Color }
+Triangle_Command :: struct { x1,y1,x2,y2,x3,y3:f32, color:Color }
+Text_Command :: struct { x,y:f32, text:string, size:f32, font:Font, color:Color }
+Command_Variant :: union { Box_Command, Line_Command, Triangle_Command, Text_Command }
+Command :: struct { clip:Rect, clipped:bool, variant:Command_Variant }
 Context :: struct {
     commands:[dynamic]Command,
     mx,my:f32,
@@ -39,15 +44,17 @@ resolve_corner_radius :: proc(c:^Context,radius:f32)->f32 {
 }
 box :: proc(c:^Context,r:Rect,color:Color,radius:f32=0) {
     translated:=r;translated.y+=c.offset_y
-    append(&c.commands,Command{rect=translated,color=color,radius=radius,clip=c.clip,clipped=c.clipped})
+    append(&c.commands,Command{clip=c.clip,clipped=c.clipped,variant=Box_Command{rect=translated,color=color,radius=radius}})
 }
 line :: proc(c:^Context,x1,y1,x2,y2,width:f32,color:Color) {
-    append(&c.commands,Command{rect={x=x1,y=y1+c.offset_y},x2=x2,y2=y2+c.offset_y,width=width,line=true,color=color,clip=c.clip,clipped=c.clipped})
+    append(&c.commands,Command{clip=c.clip,clipped=c.clipped,variant=Line_Command{x1=x1,y1=y1+c.offset_y,x2=x2,y2=y2+c.offset_y,width=width,color=color}})
 }
 triangle :: proc(c:^Context,x1,y1,x2,y2,x3,y3:f32,color:Color) {
-    append(&c.commands,Command{rect={x=x1,y=y1+c.offset_y},x2=x2,y2=y2+c.offset_y,x3=x3,y3=y3+c.offset_y,triangle=true,color=color,clip=c.clip,clipped=c.clipped})
+    append(&c.commands,Command{clip=c.clip,clipped=c.clipped,variant=Triangle_Command{x1=x1,y1=y1+c.offset_y,x2=x2,y2=y2+c.offset_y,x3=x3,y3=y3+c.offset_y,color=color}})
 }
-label :: proc(c:^Context,x,y:f32,text:string,size:f32=18,color:Color={0.84,0.89,0.92,1},font:Font=.Body) { append(&c.commands,Command{rect={x=x,y=y+c.offset_y},text=text,size=size,font=font,color=color,clip=c.clip,clipped=c.clipped}) }
+label :: proc(c:^Context,x,y:f32,text:string,size:f32=18,color:Color={0.84,0.89,0.92,1},font:Font=.Body) {
+    append(&c.commands,Command{clip=c.clip,clipped=c.clipped,variant=Text_Command{x=x,y=y+c.offset_y,text=text,size=size,font=font,color=color}})
+}
 point_in_rect :: proc(x,y:f32,r:Rect)->bool {return x>=r.x && x<r.x+r.w && y>=r.y && y<r.y+r.h}
 contains :: proc(c:^Context,r:Rect)->bool {
     translated:=r;translated.y+=c.offset_y

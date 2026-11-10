@@ -117,53 +117,59 @@ render :: proc() {
     dpi:=sapp.dpi_scale()
     // Upload fonts before recording draw commands. Each font is rasterized at
     // its actual framebuffer size, avoiding reduction of a shared 40px bitmap.
-    for c in ctx.commands {if len(c.text)>0 {_=font_atlas(c.size,dpi,c.font)}}
+    for c in ctx.commands {
+        if t,ok:=c.variant.(ui.Text_Command);ok {_=font_atlas(t.size,dpi,t.font)}
+    }
     sgl.defaults();sgl.load_pipeline(pipeline)
     sgl.matrix_mode_projection();sgl.ortho(0,sapp.widthf()/dpi,sapp.heightf()/dpi,0,-1,1)
     for c in ctx.commands {
         if c.clipped {sgl.scissor_rectf(c.clip.x*dpi,c.clip.y*dpi,c.clip.w*dpi,c.clip.h*dpi,true)}
         else {sgl.scissor_rect(0,0,sapp.width(),sapp.height(),true)}
-        sgl.c4f(c.color[0],c.color[1],c.color[2],c.color[3])
-        if len(c.text)==0 {
+        switch v in c.variant {
+        case ui.Box_Command:
+            sgl.c4f(v.color[0],v.color[1],v.color[2],v.color[3])
             sgl.disable_texture()
-            if c.triangle {
-                sgl.begin_triangles()
-                sgl.v2f(c.rect.x,c.rect.y)
-                sgl.v2f(c.x2,c.y2)
-                sgl.v2f(c.x3,c.y3)
-                sgl.end()
-            } else if c.line {
-                dx:=c.x2-c.rect.x
-                dy:=c.y2-c.rect.y
-                length:=math.sqrt(dx*dx+dy*dy)
-                nx:=-dy/length*c.width/2
-                ny:=dx/length*c.width/2
-                sgl.begin_quads()
-                sgl.v2f(c.rect.x+nx,c.rect.y+ny)
-                sgl.v2f(c.x2+nx,c.y2+ny)
-                sgl.v2f(c.x2-nx,c.y2-ny)
-                sgl.v2f(c.rect.x-nx,c.rect.y-ny)
-                sgl.end()
-            } else if c.radius>0 {rounded_box(c.rect,c.radius)}
-            else {sgl.begin_quads();quad(c.rect);sgl.end()}
-            continue
+            if v.radius>0 {rounded_box(v.rect,v.radius)}
+            else {sgl.begin_quads();quad(v.rect);sgl.end()}
+        case ui.Triangle_Command:
+            sgl.c4f(v.color[0],v.color[1],v.color[2],v.color[3])
+            sgl.disable_texture()
+            sgl.begin_triangles()
+            sgl.v2f(v.x1,v.y1);sgl.v2f(v.x2,v.y2);sgl.v2f(v.x3,v.y3)
+            sgl.end()
+        case ui.Line_Command:
+            sgl.c4f(v.color[0],v.color[1],v.color[2],v.color[3])
+            sgl.disable_texture()
+            dx:=v.x2-v.x1
+            dy:=v.y2-v.y1
+            length:=math.sqrt(dx*dx+dy*dy)
+            nx:=-dy/length*v.width/2
+            ny:=dx/length*v.width/2
+            sgl.begin_quads()
+            sgl.v2f(v.x1+nx,v.y1+ny)
+            sgl.v2f(v.x2+nx,v.y2+ny)
+            sgl.v2f(v.x2-nx,v.y2-ny)
+            sgl.v2f(v.x1-nx,v.y1-ny)
+            sgl.end()
+        case ui.Text_Command:
+            sgl.c4f(v.color[0],v.color[1],v.color[2],v.color[3])
+            a:=font_atlas(v.size,dpi,v.font)
+            sgl.enable_texture();sgl.texture(a.view,sampler);sgl.begin_quads()
+            // Snap the baseline and glyph quads in physical pixels. Advances retain
+            // their fractional precision; only the final glyph origin is rounded.
+            x:=math.round(v.x*dpi)
+            y:=math.round(v.y*dpi)
+            for ch in v.text {
+                if ch<32 || ch>126 {continue}
+                q:tt.aligned_quad
+                tt.GetBakedQuad(&a.glyphs[0],a.dimension,a.dimension,i32(ch-32),&x,&y,&q,true)
+                sgl.v2f_t2f(q.x0/dpi,q.y0/dpi,q.s0,q.t0)
+                sgl.v2f_t2f(q.x1/dpi,q.y0/dpi,q.s1,q.t0)
+                sgl.v2f_t2f(q.x1/dpi,q.y1/dpi,q.s1,q.t1)
+                sgl.v2f_t2f(q.x0/dpi,q.y1/dpi,q.s0,q.t1)
+            }
+            sgl.end()
         }
-        a:=font_atlas(c.size,dpi,c.font)
-        sgl.enable_texture();sgl.texture(a.view,sampler);sgl.begin_quads()
-        // Snap the baseline and glyph quads in physical pixels. Advances retain
-        // their fractional precision; only the final glyph origin is rounded.
-        x:=math.round(c.rect.x*dpi)
-        y:=math.round(c.rect.y*dpi)
-        for ch in c.text {
-            if ch<32 || ch>126 {continue}
-            q:tt.aligned_quad
-            tt.GetBakedQuad(&a.glyphs[0],a.dimension,a.dimension,i32(ch-32),&x,&y,&q,true)
-            sgl.v2f_t2f(q.x0/dpi,q.y0/dpi,q.s0,q.t0)
-            sgl.v2f_t2f(q.x1/dpi,q.y0/dpi,q.s1,q.t0)
-            sgl.v2f_t2f(q.x1/dpi,q.y1/dpi,q.s1,q.t1)
-            sgl.v2f_t2f(q.x0/dpi,q.y1/dpi,q.s0,q.t1)
-        }
-        sgl.end()
     }
     sg.begin_pass({action={colors={0={load_action=.CLEAR,clear_value={0.067,0.09,0.11,1}}}},swapchain=glue.swapchain()})
     sgl.draw();sg.end_pass();sg.commit()

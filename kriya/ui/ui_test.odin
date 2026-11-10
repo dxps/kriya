@@ -77,7 +77,8 @@ input_focus_types_backspaces_and_masks_password :: proc(t:^testing.T) {
     // Two circular bullet commands are emitted instead of font-dependent '*'.
     bullet_count:=0
     for command in c.commands {
-        if command.radius==4 && command.rect.w==8 && command.rect.h==8 {bullet_count+=1}
+        b,ok:=command.variant.(Box_Command)
+        if ok && b.radius==4 && b.rect.w==8 && b.rect.h==8 {bullet_count+=1}
     }
     testing.expect(t,bullet_count==2)
     end(&c);begin(&c)
@@ -93,7 +94,7 @@ password_eye_toggles_reveal_without_losing_focus :: proc(t:^testing.T) {
     value:Text_Input
     input(&c,7,{0,0,240,44},"Password",&value,true)
     hidden_lines:=0
-    for command in c.commands {if command.line {hidden_lines+=1}}
+    for command in c.commands {if _,ok:=command.variant.(Line_Command);ok {hidden_lines+=1}}
     testing.expect(t,hidden_lines==10)
     end(&c);begin(&c)
     c.mx=220;c.my=20;c.released=true;c.down=false
@@ -101,7 +102,7 @@ password_eye_toggles_reveal_without_losing_focus :: proc(t:^testing.T) {
     testing.expect(t,value.revealed)
     testing.expect(t,c.focused==7)
     revealed_lines:=0
-    for command in c.commands {if command.line {revealed_lines+=1}}
+    for command in c.commands {if _,ok:=command.variant.(Line_Command);ok {revealed_lines+=1}}
     testing.expect(t,revealed_lines==8)
 }
 
@@ -114,9 +115,9 @@ dropdown_opens_and_selects_an_option :: proc(t:^testing.T) {
     dropdown(&c,10,{0,0,200,44},options,&value)
     closed_triangle:=false
     for command in c.commands {
-        if command.triangle {
+        if tri,ok:=command.variant.(Triangle_Command);ok {
             closed_triangle=true
-            testing.expect(t,command.y3>command.rect.y)
+            testing.expect(t,tri.y3>tri.y1)
         }
     }
     testing.expect(t,closed_triangle)
@@ -126,9 +127,9 @@ dropdown_opens_and_selects_an_option :: proc(t:^testing.T) {
     testing.expect(t,value.open)
     open_triangle:=false
     for command in c.commands {
-        if command.triangle {
+        if tri,ok:=command.variant.(Triangle_Command);ok {
             open_triangle=true
-            testing.expect(t,command.y3<command.rect.y)
+            testing.expect(t,tri.y3<tri.y1)
         }
     }
     testing.expect(t,open_triangle)
@@ -164,26 +165,26 @@ widgets_support_default_context_and_per_instance_radii :: proc(t:^testing.T) {
     defer delete(c.commands)
 
     button(&c,1,{0,0,100,40},"Save")
-    testing.expect(t,c.commands[0].radius==6)
+    testing.expect(t,c.commands[0].variant.(Box_Command).radius==6)
     clear(&c.commands)
 
     set_corner_radius(&c,10)
     checked:=true
     checkbox(&c,2,0,0,"Enabled",&checked)
-    testing.expect(t,c.commands[0].radius==10)
+    testing.expect(t,c.commands[0].variant.(Box_Command).radius==10)
     clear(&c.commands)
 
     input_value:Text_Input
     input(&c,3,{0,0,200,44},"Name",&input_value)
-    testing.expect(t,c.commands[0].radius==10)
+    testing.expect(t,c.commands[0].variant.(Box_Command).radius==10)
     clear(&c.commands)
 
     dropdown_value:Dropdown
     dropdown(&c,4,{0,0,200,44},[]string{"Odin"},&dropdown_value,2)
-    testing.expect(t,c.commands[0].radius==2)
+    testing.expect(t,c.commands[0].variant.(Box_Command).radius==2)
 
     clear(&c.commands)
     set_corner_radius(&c,0)
     button(&c,5,{0,0,100,40},"Square")
-    testing.expect(t,c.commands[0].radius==0)
+    testing.expect(t,c.commands[0].variant.(Box_Command).radius==0)
 }

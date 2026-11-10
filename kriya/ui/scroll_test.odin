@@ -25,7 +25,7 @@ scroll_clips_rendering_and_widget_hit_testing :: proc(t:^testing.T) {
     testing.expect(t,contains(&c,{10,110,40,30}))
     testing.expect(t,!contains(&c,{10,10,40,30}))
     box(&c,{10,110,40,30},{1,1,1,1})
-    testing.expect(t,c.commands[0].rect.y==10)
+    testing.expect(t,c.commands[0].variant.(Box_Command).rect.y==10)
     testing.expect(t,c.commands[0].clipped)
     c.my=110
     testing.expect(t,!contains(&c,{10,200,40,30}))
@@ -45,13 +45,15 @@ scrollbar_fades_and_mouse_movement_reveals_it :: proc(t:^testing.T) {
     begin_scroll(&c,&s,{0,0,100,100},300,0.016)
     end_scroll(&c,&s,300)
     testing.expect(t,len(c.commands)==2)
-    testing.expect(t,c.commands[1].radius>0)
-    testing.expect(t,c.commands[1].color[3]>0)
+    thumb:=c.commands[1].variant.(Box_Command)
+    testing.expect(t,thumb.radius>0)
+    testing.expect(t,thumb.color[3]>0)
     clear(&c.commands)
     c.moved=false
     begin_scroll(&c,&s,{0,0,100,100},300,0.5)
     end_scroll(&c,&s,300)
-    testing.expect(t,c.commands[1].color[3]>0 && c.commands[1].color[3]<0.7)
+    thumb_fading:=c.commands[1].variant.(Box_Command)
+    testing.expect(t,thumb_fading.color[3]>0 && thumb_fading.color[3]<0.7)
 }
 
 @(test)
