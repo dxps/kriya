@@ -2,7 +2,7 @@ package main
 
 import tt "../../backends/font"
 import web "../../backends/web"
-import "../../gallery/routes"
+import "../../routes"
 import "base:runtime"
 import "core:math"
 import "core:mem"

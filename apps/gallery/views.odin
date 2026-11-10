@@ -1,5 +1,5 @@
 package main
-import "../../gallery/routes"
+import "../../routes"
 import ui "kriya:ui"
 
 View :: struct {

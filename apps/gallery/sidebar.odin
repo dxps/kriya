@@ -1,7 +1,7 @@
 package main
 
 import web "../../backends/web"
-import "../../gallery/routes"
+import "../../routes"
 import ui "kriya:ui"
 
 sidebar_link :: proc(c: ^ui.Context, id: u64, r: ui.Rect, text: string, active: bool) -> bool {

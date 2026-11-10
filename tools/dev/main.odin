@@ -1,6 +1,6 @@
 package main
 
-import "../../gallery/routes"
+import "../../routes"
 import "core:fmt"
 import "core:net"
 import "core:os"
