@@ -5,10 +5,7 @@ import web "../../backends/web"
 import "../../gallery/routes"
 
 sidebar_link :: proc(c:^ui.Context,id:u64,r:ui.Rect,text:string,active:bool)->bool {
-    hover:=ui.contains(c,r)
-    if hover {c.pointer_cursor=true}
-    if hover && c.pressed {c.active=id}
-    clicked:=hover && c.released && c.active==id
+    hover,clicked:=ui.pressable(c,id,r)
     color:ui.Color={0.57,0.64,0.68,1}
     if active {color={0.32,0.83,0.69,1}}
     if hover {
@@ -20,7 +17,6 @@ sidebar_link :: proc(c:^ui.Context,id:u64,r:ui.Rect,text:string,active:bool)->bo
     if c.active==id && c.down {color={0.26,0.67,0.57,1}}
     if active {ui.box(c,{r.x+4,r.y+10,2,16},{0.32,0.83,0.69,1},1)}
     ui.label(c,r.x+18,r.y+24,text,18,color)
-    if c.released && c.active==id {c.active=0}
     return clicked
 }
 

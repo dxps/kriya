@@ -42,6 +42,21 @@ resolve_corner_radius :: proc(c:^Context,radius:f32)->f32 {
     if c.corner_radius_set {return c.corner_radius}
     return DEFAULT_CORNER_RADIUS
 }
+// Derives a unique auxiliary id for a secondary hit region inside a widget
+// (dropdown items, password-reveal eye). The golden-ratio stride spreads
+// derived ids across the 64-bit space so neighboring user ids don't collide.
+sub_id :: proc(id,n:u64)->u64 {return id ~ ((n+1)*0x9e3779b97f4a7c15)}
+// Standard hover/press/active/release plumbing shared by every clickable
+// widget. Returns both hover (for color selection) and clicked (for the
+// widget's action).
+pressable :: proc(c:^Context,id:u64,hit:Rect)->(hover,clicked:bool) {
+    hover=contains(c,hit)
+    if hover {c.pointer_cursor=true}
+    if hover && c.pressed {c.active=id}
+    clicked=hover && c.released && c.active==id
+    if c.released && c.active==id {c.active=0}
+    return
+}
 box :: proc(c:^Context,r:Rect,color:Color,radius:f32=0) {
     translated:=r;translated.y+=c.offset_y
     append(&c.commands,Command{clip=c.clip,clipped=c.clipped,variant=Box_Command{rect=translated,color=color,radius=radius}})
@@ -62,16 +77,13 @@ contains :: proc(c:^Context,r:Rect)->bool {
 }
 button :: proc(c:^Context,id:u64,r:Rect,text:string,disabled:=false,radius:f32=USE_CONTEXT_CORNER_RADIUS)->bool {
     corner_radius:=resolve_corner_radius(c,radius)
-    hover:=contains(c,r) && !disabled
-    if hover {c.pointer_cursor=true}
-    if hover && c.pressed { c.active=id }
-    clicked:=hover && c.released && c.active==id
+    hover,clicked:bool
+    if !disabled {hover,clicked=pressable(c,id,r)}
     color:Color={0.20,0.67,0.57,1}
-    if hover { color={0.29,0.78,0.66,1} }
-    if c.active==id && c.down { color={0.14,0.48,0.42,1} }
-    if disabled { color={0.20,0.25,0.28,1} }
+    if hover {color={0.29,0.78,0.66,1}}
+    if c.active==id && c.down {color={0.14,0.48,0.42,1}}
+    if disabled {color={0.20,0.25,0.28,1}}
     box(c,r,color,corner_radius); label(c,r.x+18,r.y+28,text,18,{0.06,0.11,0.12,1})
-    if c.released && c.active==id { c.active=0 }
     return clicked
 }
 checkbox :: proc(c:^Context,id:u64,x,y:f32,text:string,value:^bool,radius:f32=USE_CONTEXT_CORNER_RADIUS) {
@@ -82,10 +94,8 @@ checkbox :: proc(c:^Context,id:u64,x,y:f32,text:string,value:^bool,radius:f32=US
         assert(c.measure_text!=nil,"Checkbox labels require a text measurement callback")
         hit.w=28+c.measure_text(text,18)
     }
-    hover:=contains(c,hit)
-    if hover {c.pointer_cursor=true}
-    if hover && c.pressed {c.active=id}
-    if hover && c.released && c.active==id {value^ = !value^}
+    hover,clicked:=pressable(c,id,hit)
+    if clicked {value^ = !value^}
     border:Color={0.20,0.67,0.57,1}
     if hover {border={0.29,0.78,0.66,1}}
     if c.active==id && c.down {border={0.14,0.48,0.42,1}}
@@ -93,7 +103,6 @@ checkbox :: proc(c:^Context,id:u64,x,y:f32,text:string,value:^bool,radius:f32=US
     // One logical pixel of border, independent of the checked indicator.
     box(c,{x+1,y+1,16,16},{0.10,0.14,0.17,1},max(0,corner_radius-1))
     if value^ {box(c,{x+3,y+3,12,12},border,max(0,corner_radius-3))}
-    if c.released && c.active==id {c.active=0}
     label(c,x+28,y+14,text)
 }
 
@@ -164,9 +173,8 @@ input :: proc(c:^Context,id:u64,r:Rect,placeholder:string,value:^Text_Input,pass
         divider_x:=r.x+r.w-eye_w
         box(c,{divider_x,r.y+8,1,r.h-16},{0.20,0.27,0.30,1})
         eye:=Rect{divider_x+12,r.y+16,20,12}
-        eye_hover:=contains(c,{divider_x,r.y,eye_w,r.h})
-        if eye_hover && c.pressed {c.active=id|0x8000000000000000}
-        if eye_hover && c.released && c.active==(id|0x8000000000000000) {value.revealed=!value.revealed}
+        eye_hover,eye_clicked:=pressable(c,sub_id(id,1),{divider_x,r.y,eye_w,r.h})
+        if eye_clicked {value.revealed=!value.revealed}
         eye_color:=eye_hover ? Color{0.32,0.83,0.69,1} : Color{0.57,0.66,0.69,1}
         // Four short segments per lid retain a gentle curve while keeping the
         // left and right corners pointed like a conventional eye glyph.
@@ -184,7 +192,6 @@ input :: proc(c:^Context,id:u64,r:Rect,placeholder:string,value:^Text_Input,pass
             line(c,eye.x-2,eye.y+eye.h+3,eye.x+eye.w+2,eye.y-3,2.5,{0.075,0.105,0.125,1})
             line(c,eye.x-2,eye.y+eye.h+3,eye.x+eye.w+2,eye.y-3,1.25,eye_color)
         }
-        if c.released && c.active==(id|0x8000000000000000) {c.active=0}
     }
 }
 
@@ -201,10 +208,8 @@ dropdown :: proc(c:^Context,id:u64,r:Rect,options:[]string,value:^Dropdown,radiu
     if value.open && c.pressed && !contains(c,r) && !contains(c,menu) {
         value.open=false
     }
-    hover:=contains(c,r)
-    if hover {c.pointer_cursor=true}
-    if hover && c.pressed {c.active=id}
-    if hover && c.released && c.active==id {value.open=!value.open}
+    hover,clicked:=pressable(c,id,r)
+    if clicked {value.open=!value.open}
     border:Color={0.25,0.34,0.38,1}
     if hover || value.open {border={0.32,0.83,0.69,1}}
     box(c,r,border,corner_radius)
@@ -218,17 +223,13 @@ dropdown :: proc(c:^Context,id:u64,r:Rect,options:[]string,value:^Dropdown,radiu
     } else {
         triangle(c,arrow_x-5,arrow_y-3,arrow_x+5,arrow_y-3,arrow_x,arrow_y+4,arrow_color)
     }
-    if c.released && c.active==id {c.active=0}
     if value.open {
         box(c,menu,{0.22,0.30,0.33,1},corner_radius)
         box(c,{menu.x+1,menu.y+1,menu.w-2,menu.h-2},{0.12,0.16,0.18,1},max(0,corner_radius-1))
         for option,i in options {
             item:=Rect{menu.x+1,menu.y+1+f32(i)*40,menu.w-2,40}
-            item_id:=id+u64(i)+1
-            item_hover:=contains(c,item)
-            if item_hover {c.pointer_cursor=true}
-            if item_hover && c.pressed {c.active=item_id}
-            if item_hover && c.released && c.active==item_id {value.selected=i;value.open=false}
+            item_hover,item_clicked:=pressable(c,sub_id(id,u64(i+1)),item)
+            if item_clicked {value.selected=i;value.open=false}
             item_color:=Color{0.12,0.16,0.18,1}
             if i==value.selected {item_color={0.15,0.25,0.24,1}}
             if item_hover {item_color={0.18,0.31,0.29,1}}
@@ -243,7 +244,6 @@ dropdown :: proc(c:^Context,id:u64,r:Rect,options:[]string,value:^Dropdown,radiu
                 box(c,{item.x,item.y,item.w,item_radius},item_color)
             }
             label(c,item.x+14,item.y+26,option,16)
-            if c.released && c.active==item_id {c.active=0}
         }
     }
 }
