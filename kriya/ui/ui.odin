@@ -3,7 +3,6 @@ package ui
 Color :: [4]f32
 Font :: enum { Body, Mono }
 DEFAULT_CORNER_RADIUS :: 6.0
-USE_CONTEXT_CORNER_RADIUS :: -1.0
 Rect :: struct { x,y,w,h:f32 }
 // Base covers the normal widget drawing order. Overlay commands are rendered
 // after every Base command in the same frame, so popup menus and tooltips
@@ -32,19 +31,15 @@ Context :: struct {
     typed:[32]u8,
     typed_len:int,
     backspace:bool,
-    corner_radius:f32,
-    corner_radius_set:bool,
+    corner_radius:Maybe(f32),
     layer:Command_Layer,
 }
 begin :: proc(c:^Context) { clear(&c.commands);c.pointer_cursor=false;c.offset_y=0;c.clipped=false;c.input_blocked=false;c.layer=.Base }
 end :: proc(c:^Context) { c.pressed=false; c.released=false;c.moved=false;c.wheel_y=0;c.typed_len=0;c.backspace=false }
-set_corner_radius :: proc(c:^Context,radius:f32) {
-    c.corner_radius=max(0,radius)
-    c.corner_radius_set=true
-}
-resolve_corner_radius :: proc(c:^Context,radius:f32)->f32 {
-    if radius>=0 {return radius}
-    if c.corner_radius_set {return c.corner_radius}
+set_corner_radius :: proc(c:^Context,radius:f32) {c.corner_radius=max(0,radius)}
+resolve_corner_radius :: proc(c:^Context,radius:Maybe(f32))->f32 {
+    if r,ok:=radius.?;ok {return r}
+    if r,ok:=c.corner_radius.?;ok {return r}
     return DEFAULT_CORNER_RADIUS
 }
 // Derives a unique auxiliary id for a secondary hit region inside a widget
@@ -80,7 +75,7 @@ contains :: proc(c:^Context,r:Rect)->bool {
     translated:=r;translated.y+=c.offset_y
     return !c.input_blocked && (!c.clipped || point_in_rect(c.mx,c.my,c.clip)) && point_in_rect(c.mx,c.my,translated)
 }
-button :: proc(c:^Context,id:u64,r:Rect,text:string,disabled:=false,radius:f32=USE_CONTEXT_CORNER_RADIUS)->bool {
+button :: proc(c:^Context,id:u64,r:Rect,text:string,disabled:=false,radius:Maybe(f32)=nil)->bool {
     corner_radius:=resolve_corner_radius(c,radius)
     hover,clicked:bool
     if !disabled {hover,clicked=pressable(c,id,r)}
@@ -91,7 +86,7 @@ button :: proc(c:^Context,id:u64,r:Rect,text:string,disabled:=false,radius:f32=U
     box(c,r,color,corner_radius); label(c,r.x+18,r.y+28,text,18,DEFAULT_PALETTE.text_on_primary)
     return clicked
 }
-checkbox :: proc(c:^Context,id:u64,x,y:f32,text:string,value:^bool,radius:f32=USE_CONTEXT_CORNER_RADIUS) {
+checkbox :: proc(c:^Context,id:u64,x,y:f32,text:string,value:^bool,radius:Maybe(f32)=nil) {
     corner_radius:=resolve_corner_radius(c,radius)
     r:=Rect{x,y,18,18}
     hit:=r
@@ -122,7 +117,7 @@ set_text :: proc(value:^Text_Input,text:string) {
     copy(value.data[:value.len],transmute([]u8)text[:value.len])
 }
 
-input :: proc(c:^Context,id:u64,r:Rect,placeholder:string,value:^Text_Input,password:=false,radius:f32=USE_CONTEXT_CORNER_RADIUS) {
+input :: proc(c:^Context,id:u64,r:Rect,placeholder:string,value:^Text_Input,password:=false,radius:Maybe(f32)=nil) {
     corner_radius:=resolve_corner_radius(c,radius)
     hover:=contains(c,r)
     eye_w:f32=password ? 44 : 0
@@ -205,7 +200,7 @@ Dropdown :: struct {
     open:bool,
 }
 
-dropdown :: proc(c:^Context,id:u64,r:Rect,options:[]string,value:^Dropdown,radius:f32=USE_CONTEXT_CORNER_RADIUS) {
+dropdown :: proc(c:^Context,id:u64,r:Rect,options:[]string,value:^Dropdown,radius:Maybe(f32)=nil) {
     corner_radius:=resolve_corner_radius(c,radius)
     assert(len(options)>0,"Dropdowns require at least one option")
     value.selected=clamp(value.selected,0,len(options)-1)
