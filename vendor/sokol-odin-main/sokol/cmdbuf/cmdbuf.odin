@@ -266,105 +266,89 @@ USE_GL :: #config(SOKOL_USE_GL, false)
 USE_DLL :: #config(SOKOL_DLL, false)
 
 when ODIN_OS == .Windows {
-    when USE_DLL {
-        when USE_GL {
-            when DEBUG { foreign import sokol_cmdbuf_clib { "../sokol_dll_windows_x64_gl_debug.lib" } }
-            else       { foreign import sokol_cmdbuf_clib { "../sokol_dll_windows_x64_gl_release.lib" } }
-        } else {
-            when DEBUG { foreign import sokol_cmdbuf_clib { "../sokol_dll_windows_x64_d3d11_debug.lib" } }
-            else       { foreign import sokol_cmdbuf_clib { "../sokol_dll_windows_x64_d3d11_release.lib" } }
-        }
-    } else {
-        when USE_GL {
-            when DEBUG { foreign import sokol_cmdbuf_clib { "sokol_cmdbuf_windows_x64_gl_debug.lib" } }
-            else       { foreign import sokol_cmdbuf_clib { "sokol_cmdbuf_windows_x64_gl_release.lib" } }
-        } else {
-            when DEBUG { foreign import sokol_cmdbuf_clib { "sokol_cmdbuf_windows_x64_d3d11_debug.lib" } }
-            else       { foreign import sokol_cmdbuf_clib { "sokol_cmdbuf_windows_x64_d3d11_release.lib" } }
-        }
-    }
+	when USE_DLL {
+		when USE_GL {
+			when DEBUG {foreign import sokol_cmdbuf_clib "../sokol_dll_windows_x64_gl_debug.lib"} else {foreign import sokol_cmdbuf_clib "../sokol_dll_windows_x64_gl_release.lib"}
+		} else {
+			when DEBUG {foreign import sokol_cmdbuf_clib "../sokol_dll_windows_x64_d3d11_debug.lib"} else {foreign import sokol_cmdbuf_clib "../sokol_dll_windows_x64_d3d11_release.lib"}
+		}
+	} else {
+		when USE_GL {
+			when DEBUG {foreign import sokol_cmdbuf_clib "sokol_cmdbuf_windows_x64_gl_debug.lib"} else {foreign import sokol_cmdbuf_clib "sokol_cmdbuf_windows_x64_gl_release.lib"}
+		} else {
+			when DEBUG {foreign import sokol_cmdbuf_clib "sokol_cmdbuf_windows_x64_d3d11_debug.lib"} else {foreign import sokol_cmdbuf_clib "sokol_cmdbuf_windows_x64_d3d11_release.lib"}
+		}
+	}
 } else when ODIN_OS == .Darwin {
-    when USE_DLL {
-             when  USE_GL && ODIN_ARCH == .arm64 &&  DEBUG { foreign import sokol_cmdbuf_clib { "../dylib/sokol_dylib_macos_arm64_gl_debug.dylib" } }
-        else when  USE_GL && ODIN_ARCH == .arm64 && !DEBUG { foreign import sokol_cmdbuf_clib { "../dylib/sokol_dylib_macos_arm64_gl_release.dylib" } }
-        else when  USE_GL && ODIN_ARCH == .amd64 &&  DEBUG { foreign import sokol_cmdbuf_clib { "../dylib/sokol_dylib_macos_x64_gl_debug.dylib" } }
-        else when  USE_GL && ODIN_ARCH == .amd64 && !DEBUG { foreign import sokol_cmdbuf_clib { "../dylib/sokol_dylib_macos_x64_gl_release.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .arm64 &&  DEBUG { foreign import sokol_cmdbuf_clib { "../dylib/sokol_dylib_macos_arm64_metal_debug.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .arm64 && !DEBUG { foreign import sokol_cmdbuf_clib { "../dylib/sokol_dylib_macos_arm64_metal_release.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .amd64 &&  DEBUG { foreign import sokol_cmdbuf_clib { "../dylib/sokol_dylib_macos_x64_metal_debug.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .amd64 && !DEBUG { foreign import sokol_cmdbuf_clib { "../dylib/sokol_dylib_macos_x64_metal_release.dylib" } }
-    } else {
-        when USE_GL {
-            when ODIN_ARCH == .arm64 {
-                when DEBUG { foreign import sokol_cmdbuf_clib { "sokol_cmdbuf_macos_arm64_gl_debug.a" } }
-                else       { foreign import sokol_cmdbuf_clib { "sokol_cmdbuf_macos_arm64_gl_release.a" } }
-            } else {
-                when DEBUG { foreign import sokol_cmdbuf_clib { "sokol_cmdbuf_macos_x64_gl_debug.a" } }
-                else       { foreign import sokol_cmdbuf_clib { "sokol_cmdbuf_macos_x64_gl_release.a" } }
-            }
-        } else {
-            when ODIN_ARCH == .arm64 {
-                when DEBUG { foreign import sokol_cmdbuf_clib { "sokol_cmdbuf_macos_arm64_metal_debug.a" } }
-                else       { foreign import sokol_cmdbuf_clib { "sokol_cmdbuf_macos_arm64_metal_release.a" } }
-            } else {
-                when DEBUG { foreign import sokol_cmdbuf_clib { "sokol_cmdbuf_macos_x64_metal_debug.a" } }
-                else       { foreign import sokol_cmdbuf_clib { "sokol_cmdbuf_macos_x64_metal_release.a" } }
-            }
-        }
-    }
+	when USE_DLL {
+		when USE_GL && ODIN_ARCH ==
+			.arm64 && DEBUG {foreign import sokol_cmdbuf_clib "../dylib/sokol_dylib_macos_arm64_gl_debug.dylib"} else when USE_GL && ODIN_ARCH == .arm64 && !DEBUG {foreign import sokol_cmdbuf_clib "../dylib/sokol_dylib_macos_arm64_gl_release.dylib"} else when USE_GL && ODIN_ARCH == .amd64 && DEBUG {foreign import sokol_cmdbuf_clib "../dylib/sokol_dylib_macos_x64_gl_debug.dylib"} else when USE_GL && ODIN_ARCH == .amd64 && !DEBUG {foreign import sokol_cmdbuf_clib "../dylib/sokol_dylib_macos_x64_gl_release.dylib"} else when !USE_GL && ODIN_ARCH == .arm64 && DEBUG {foreign import sokol_cmdbuf_clib "../dylib/sokol_dylib_macos_arm64_metal_debug.dylib"} else when !USE_GL && ODIN_ARCH == .arm64 && !DEBUG {foreign import sokol_cmdbuf_clib "../dylib/sokol_dylib_macos_arm64_metal_release.dylib"} else when !USE_GL && ODIN_ARCH == .amd64 && DEBUG {foreign import sokol_cmdbuf_clib "../dylib/sokol_dylib_macos_x64_metal_debug.dylib"} else when !USE_GL && ODIN_ARCH == .amd64 && !DEBUG {foreign import sokol_cmdbuf_clib "../dylib/sokol_dylib_macos_x64_metal_release.dylib"}
+	} else {
+		when USE_GL {
+			when ODIN_ARCH == .arm64 {
+				when DEBUG {foreign import sokol_cmdbuf_clib "sokol_cmdbuf_macos_arm64_gl_debug.a"} else {foreign import sokol_cmdbuf_clib "sokol_cmdbuf_macos_arm64_gl_release.a"}
+			} else {
+				when DEBUG {foreign import sokol_cmdbuf_clib "sokol_cmdbuf_macos_x64_gl_debug.a"} else {foreign import sokol_cmdbuf_clib "sokol_cmdbuf_macos_x64_gl_release.a"}
+			}
+		} else {
+			when ODIN_ARCH == .arm64 {
+				when DEBUG {foreign import sokol_cmdbuf_clib "sokol_cmdbuf_macos_arm64_metal_debug.a"} else {foreign import sokol_cmdbuf_clib "sokol_cmdbuf_macos_arm64_metal_release.a"}
+			} else {
+				when DEBUG {foreign import sokol_cmdbuf_clib "sokol_cmdbuf_macos_x64_metal_debug.a"} else {foreign import sokol_cmdbuf_clib "sokol_cmdbuf_macos_x64_metal_release.a"}
+			}
+		}
+	}
 } else when ODIN_OS == .Linux {
-    when USE_DLL {
-        when DEBUG { foreign import sokol_cmdbuf_clib { "sokol_cmdbuf_linux_x64_gl_debug.so" } }
-        else       { foreign import sokol_cmdbuf_clib { "sokol_cmdbuf_linux_x64_gl_release.so" } }
-    } else {
-        when DEBUG { foreign import sokol_cmdbuf_clib { "sokol_cmdbuf_linux_x64_gl_debug.a" } }
-        else       { foreign import sokol_cmdbuf_clib { "sokol_cmdbuf_linux_x64_gl_release.a" } }
-    }
+	when USE_DLL {
+		when DEBUG {foreign import sokol_cmdbuf_clib "sokol_cmdbuf_linux_x64_gl_debug.so"} else {foreign import sokol_cmdbuf_clib "sokol_cmdbuf_linux_x64_gl_release.so"}
+	} else {
+		when DEBUG {foreign import sokol_cmdbuf_clib "sokol_cmdbuf_linux_x64_gl_debug.a"} else {foreign import sokol_cmdbuf_clib "sokol_cmdbuf_linux_x64_gl_release.a"}
+	}
 } else when ODIN_ARCH == .wasm32 || ODIN_ARCH == .wasm64p32 {
-    // Feed sokol_cmdbuf_wasm_gl_debug.a or sokol_cmdbuf_wasm_gl_release.a into emscripten compiler.
-    foreign import sokol_cmdbuf_clib { "env.o" }
+	// Feed sokol_cmdbuf_wasm_gl_debug.a or sokol_cmdbuf_wasm_gl_release.a into emscripten compiler.
+	foreign import sokol_cmdbuf_clib "env.o"
 } else {
-    #panic("This OS is currently not supported")
+	#panic("This OS is currently not supported")
 }
 
-@(default_calling_convention="c", link_prefix="scb_")
+@(default_calling_convention = "c", link_prefix = "scb_")
 foreign sokol_cmdbuf_clib {
-    // setup sokol-cmdbuf
-    setup :: proc(#by_ptr desc: Desc)  ---
-    // shutdown sokol-cmdbuf
-    shutdown :: proc()  ---
-    // create a cmdbuf object
-    make_cmdbuf :: proc(#by_ptr desc: Cmdbuf_Desc) -> Cmdbuf ---
-    // destroy cmdbuf object
-    destroy_cmdbuf :: proc(cb: Cmdbuf)  ---
-    // submit command buffer to sokol-gfx and rewind the command buffer (call inside a sokol-gfx pass)
-    submit :: proc(cb: Cmdbuf)  ---
-    // reset a recorded command buffer, discarding its content
-    reset :: proc(cb: Cmdbuf)  ---
-    // record apply-viewport command (integer variant)
-    apply_viewport :: proc(cb: Cmdbuf, #any_int x: c.int, #any_int y: c.int, #any_int width: c.int, #any_int height: c.int, origin_top_left: bool)  ---
-    // record apply-viewport command (float variant)
-    apply_viewportf :: proc(cb: Cmdbuf, x: f32, y: f32, width: f32, height: f32, origin_top_left: bool)  ---
-    // record apply-scissor-rect command (integer variant)
-    apply_scissor_rect :: proc(cb: Cmdbuf, #any_int x: c.int, #any_int y: c.int, #any_int width: c.int, #any_int height: c.int, origin_top_left: bool)  ---
-    // record apply-scissor-rect command (float variant)
-    apply_scissor_rectf :: proc(cb: Cmdbuf, x: f32, y: f32, width: f32, height: f32, origin_top_left: bool)  ---
-    // record apply pipeline command
-    apply_pipeline :: proc(cb: Cmdbuf, pip: sg.Pipeline)  ---
-    // record apply bindings command
-    apply_bindings :: proc(cb: Cmdbuf, #by_ptr bindings: sg.Bindings)  ---
-    // record apply uniforms command
-    apply_uniforms :: proc(cb: Cmdbuf, #any_int ub_slot: c.int, #by_ptr data: sg.Range)  ---
-    // record draw command
-    draw :: proc(cb: Cmdbuf, #any_int base_element: c.int, #any_int num_elements: c.int, #any_int num_instances: c.int)  ---
-    // record draw-ex command
-    draw_ex :: proc(cb: Cmdbuf, #any_int base_element: c.int, #any_int num_elements: c.int, #any_int num_instances: c.int, #any_int base_vertex: c.int, #any_int base_instance: c.int)  ---
-    // record dispatch command
-    dispatch :: proc(cb: Cmdbuf, #any_int num_groups_x: c.int, #any_int num_groups_y: c.int, #any_int num_groups_z: c.int)  ---
-    // query command buffer resource state (valid, failed, invalid)
-    query_cmdbuf_state :: proc(cb: Cmdbuf) -> Resource_State ---
-    // query current command buffer properties
-    query_cmdbuf_info :: proc(cb: Cmdbuf) -> Cmdbuf_Info ---
+	// setup sokol-cmdbuf
+	setup :: proc(#by_ptr desc: Desc) ---
+	// shutdown sokol-cmdbuf
+	shutdown :: proc() ---
+	// create a cmdbuf object
+	make_cmdbuf :: proc(#by_ptr desc: Cmdbuf_Desc) -> Cmdbuf ---
+	// destroy cmdbuf object
+	destroy_cmdbuf :: proc(cb: Cmdbuf) ---
+	// submit command buffer to sokol-gfx and rewind the command buffer (call inside a sokol-gfx pass)
+	submit :: proc(cb: Cmdbuf) ---
+	// reset a recorded command buffer, discarding its content
+	reset :: proc(cb: Cmdbuf) ---
+	// record apply-viewport command (integer variant)
+	apply_viewport :: proc(cb: Cmdbuf, #any_int x: c.int, #any_int y: c.int, #any_int width: c.int, #any_int height: c.int, origin_top_left: bool) ---
+	// record apply-viewport command (float variant)
+	apply_viewportf :: proc(cb: Cmdbuf, x: f32, y: f32, width: f32, height: f32, origin_top_left: bool) ---
+	// record apply-scissor-rect command (integer variant)
+	apply_scissor_rect :: proc(cb: Cmdbuf, #any_int x: c.int, #any_int y: c.int, #any_int width: c.int, #any_int height: c.int, origin_top_left: bool) ---
+	// record apply-scissor-rect command (float variant)
+	apply_scissor_rectf :: proc(cb: Cmdbuf, x: f32, y: f32, width: f32, height: f32, origin_top_left: bool) ---
+	// record apply pipeline command
+	apply_pipeline :: proc(cb: Cmdbuf, pip: sg.Pipeline) ---
+	// record apply bindings command
+	apply_bindings :: proc(cb: Cmdbuf, #by_ptr bindings: sg.Bindings) ---
+	// record apply uniforms command
+	apply_uniforms :: proc(cb: Cmdbuf, #any_int ub_slot: c.int, #by_ptr data: sg.Range) ---
+	// record draw command
+	draw :: proc(cb: Cmdbuf, #any_int base_element: c.int, #any_int num_elements: c.int, #any_int num_instances: c.int) ---
+	// record draw-ex command
+	draw_ex :: proc(cb: Cmdbuf, #any_int base_element: c.int, #any_int num_elements: c.int, #any_int num_instances: c.int, #any_int base_vertex: c.int, #any_int base_instance: c.int) ---
+	// record dispatch command
+	dispatch :: proc(cb: Cmdbuf, #any_int num_groups_x: c.int, #any_int num_groups_y: c.int, #any_int num_groups_z: c.int) ---
+	// query command buffer resource state (valid, failed, invalid)
+	query_cmdbuf_state :: proc(cb: Cmdbuf) -> Resource_State ---
+	// query current command buffer properties
+	query_cmdbuf_info :: proc(cb: Cmdbuf) -> Cmdbuf_Info ---
 }
 
 // public constants
@@ -376,7 +360,7 @@ INVALID_ID :: 0
     A command buffer handle created with scb_make_cmdbuf().
 */
 Cmdbuf :: struct {
-    id : u32,
+	id: u32,
 }
 
 /*
@@ -387,11 +371,11 @@ Cmdbuf :: struct {
     SCB_RESOURCESTATE_FAILED and SCB_RESOURCESTATE_INVALID.
 */
 Resource_State :: enum i32 {
-    INITIAL,
-    ALLOC,
-    VALID,
-    FAILED,
-    INVALID,
+	INITIAL,
+	ALLOC,
+	VALID,
+	FAILED,
+	INVALID,
 }
 
 /*
@@ -407,8 +391,8 @@ Resource_State :: enum i32 {
     submitted commands with `sg_push/pop_debug_group()`.
 */
 Cmdbuf_Desc :: struct {
-    size : c.size_t,
-    label : cstring,
+	size:  c.size_t,
+	label: cstring,
 }
 
 /*
@@ -417,19 +401,19 @@ Cmdbuf_Desc :: struct {
     Result of scb_query_cmdbuf_info.
 */
 Cmdbuf_Info :: struct {
-    size : c.size_t,
-    remaining : c.size_t,
-    overflown : bool,
+	size:      c.size_t,
+	remaining: c.size_t,
+	overflown: bool,
 }
 
 Log_Item :: enum i32 {
-    OK,
-    MALLOC_FAILED,
-    CMDBUF_POOL_EXHAUSTED,
-    CMDBUF_OVERFLOW,
-    CMDBUF_NOT_VALID,
-    SUBMIT_CMDBUF_OVERFLOWN,
-    SUBMIT_INVALID_COMMAND,
+	OK,
+	MALLOC_FAILED,
+	CMDBUF_POOL_EXHAUSTED,
+	CMDBUF_OVERFLOW,
+	CMDBUF_NOT_VALID,
+	SUBMIT_CMDBUF_OVERFLOWN,
+	SUBMIT_INVALID_COMMAND,
 }
 
 /*
@@ -439,8 +423,16 @@ Log_Item :: enum i32 {
     callback to sokol_cmdbuf.h
 */
 Logger :: struct {
-    func : proc "c" (a0: cstring, a1: u32, a2: u32, a3: cstring, a4: u32, a5: cstring, a6: rawptr),
-    user_data : rawptr,
+	func:      proc "c" (
+		a0: cstring,
+		a1: u32,
+		a2: u32,
+		a3: cstring,
+		a4: u32,
+		a5: cstring,
+		a6: rawptr,
+	),
+	user_data: rawptr,
 }
 
 /*
@@ -452,9 +444,9 @@ Logger :: struct {
     override one function but not the other).
 */
 Allocator :: struct {
-    alloc_fn : proc "c" (a0: c.size_t, a1: rawptr) -> rawptr,
-    free_fn : proc "c" (a0: rawptr, a1: rawptr),
-    user_data : rawptr,
+	alloc_fn:  proc "c" (a0: c.size_t, a1: rawptr) -> rawptr,
+	free_fn:   proc "c" (a0: rawptr, a1: rawptr),
+	user_data: rawptr,
 }
 
 /*
@@ -463,8 +455,7 @@ Allocator :: struct {
     Initialization options passed into scb_setup.
 */
 Desc :: struct {
-    cmdbuf_pool_size : c.int,
-    allocator : Allocator,
-    logger : Logger,
+	cmdbuf_pool_size: c.int,
+	allocator:        Allocator,
+	logger:           Logger,
 }
-

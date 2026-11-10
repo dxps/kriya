@@ -1,12 +1,12 @@
 package main
 import ui "kriya:ui"
 
-GALLERY_BACKGROUND        :: ui.Color{0.067, 0.09,  0.11,  1}
-GALLERY_SIDEBAR_BG        :: ui.Color{0.085, 0.115, 0.135, 1}
-GALLERY_LINK_TEXT         :: ui.Color{0.57,  0.64,  0.68,  1}
-GALLERY_LINK_TEXT_HOVER   :: ui.Color{0.86,  0.93,  0.92,  1}
-GALLERY_LINK_PRESSED_TEXT :: ui.Color{0.26,  0.67,  0.57,  1}
-GALLERY_LINK_HOVER_BG     :: ui.Color{0.14,  0.18,  0.205, 1}
-GALLERY_LINK_PRESSED_BG   :: ui.Color{0.11,  0.15,  0.175, 1}
-GALLERY_SOURCE_HINT_TEXT  :: ui.Color{0.47,  0.55,  0.59,  1}
-GALLERY_SOURCE_HINT_PATH  :: ui.Color{0.64,  0.78,  0.74,  1}
+GALLERY_BACKGROUND :: ui.Color{0.067, 0.09, 0.11, 1}
+GALLERY_SIDEBAR_BG :: ui.Color{0.085, 0.115, 0.135, 1}
+GALLERY_LINK_TEXT :: ui.Color{0.57, 0.64, 0.68, 1}
+GALLERY_LINK_TEXT_HOVER :: ui.Color{0.86, 0.93, 0.92, 1}
+GALLERY_LINK_PRESSED_TEXT :: ui.Color{0.26, 0.67, 0.57, 1}
+GALLERY_LINK_HOVER_BG :: ui.Color{0.14, 0.18, 0.205, 1}
+GALLERY_LINK_PRESSED_BG :: ui.Color{0.11, 0.15, 0.175, 1}
+GALLERY_SOURCE_HINT_TEXT :: ui.Color{0.47, 0.55, 0.59, 1}
+GALLERY_SOURCE_HINT_PATH :: ui.Color{0.64, 0.78, 0.74, 1}

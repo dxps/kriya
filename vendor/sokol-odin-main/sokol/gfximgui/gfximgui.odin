@@ -190,100 +190,84 @@ USE_GL :: #config(SOKOL_USE_GL, false)
 USE_DLL :: #config(SOKOL_DLL, false)
 
 when ODIN_OS == .Windows {
-    when USE_DLL {
-        when USE_GL {
-            when DEBUG { foreign import sokol_gfximgui_clib { "../sokol_dll_windows_x64_gl_debug.lib" } }
-            else       { foreign import sokol_gfximgui_clib { "../sokol_dll_windows_x64_gl_release.lib" } }
-        } else {
-            when DEBUG { foreign import sokol_gfximgui_clib { "../sokol_dll_windows_x64_d3d11_debug.lib" } }
-            else       { foreign import sokol_gfximgui_clib { "../sokol_dll_windows_x64_d3d11_release.lib" } }
-        }
-    } else {
-        when USE_GL {
-            when DEBUG { foreign import sokol_gfximgui_clib { "sokol_gfximgui_windows_x64_gl_debug.lib" } }
-            else       { foreign import sokol_gfximgui_clib { "sokol_gfximgui_windows_x64_gl_release.lib" } }
-        } else {
-            when DEBUG { foreign import sokol_gfximgui_clib { "sokol_gfximgui_windows_x64_d3d11_debug.lib" } }
-            else       { foreign import sokol_gfximgui_clib { "sokol_gfximgui_windows_x64_d3d11_release.lib" } }
-        }
-    }
+	when USE_DLL {
+		when USE_GL {
+			when DEBUG {foreign import sokol_gfximgui_clib "../sokol_dll_windows_x64_gl_debug.lib"} else {foreign import sokol_gfximgui_clib "../sokol_dll_windows_x64_gl_release.lib"}
+		} else {
+			when DEBUG {foreign import sokol_gfximgui_clib "../sokol_dll_windows_x64_d3d11_debug.lib"} else {foreign import sokol_gfximgui_clib "../sokol_dll_windows_x64_d3d11_release.lib"}
+		}
+	} else {
+		when USE_GL {
+			when DEBUG {foreign import sokol_gfximgui_clib "sokol_gfximgui_windows_x64_gl_debug.lib"} else {foreign import sokol_gfximgui_clib "sokol_gfximgui_windows_x64_gl_release.lib"}
+		} else {
+			when DEBUG {foreign import sokol_gfximgui_clib "sokol_gfximgui_windows_x64_d3d11_debug.lib"} else {foreign import sokol_gfximgui_clib "sokol_gfximgui_windows_x64_d3d11_release.lib"}
+		}
+	}
 } else when ODIN_OS == .Darwin {
-    when USE_DLL {
-             when  USE_GL && ODIN_ARCH == .arm64 &&  DEBUG { foreign import sokol_gfximgui_clib { "../dylib/sokol_dylib_macos_arm64_gl_debug.dylib" } }
-        else when  USE_GL && ODIN_ARCH == .arm64 && !DEBUG { foreign import sokol_gfximgui_clib { "../dylib/sokol_dylib_macos_arm64_gl_release.dylib" } }
-        else when  USE_GL && ODIN_ARCH == .amd64 &&  DEBUG { foreign import sokol_gfximgui_clib { "../dylib/sokol_dylib_macos_x64_gl_debug.dylib" } }
-        else when  USE_GL && ODIN_ARCH == .amd64 && !DEBUG { foreign import sokol_gfximgui_clib { "../dylib/sokol_dylib_macos_x64_gl_release.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .arm64 &&  DEBUG { foreign import sokol_gfximgui_clib { "../dylib/sokol_dylib_macos_arm64_metal_debug.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .arm64 && !DEBUG { foreign import sokol_gfximgui_clib { "../dylib/sokol_dylib_macos_arm64_metal_release.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .amd64 &&  DEBUG { foreign import sokol_gfximgui_clib { "../dylib/sokol_dylib_macos_x64_metal_debug.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .amd64 && !DEBUG { foreign import sokol_gfximgui_clib { "../dylib/sokol_dylib_macos_x64_metal_release.dylib" } }
-    } else {
-        when USE_GL {
-            when ODIN_ARCH == .arm64 {
-                when DEBUG { foreign import sokol_gfximgui_clib { "sokol_gfximgui_macos_arm64_gl_debug.a" } }
-                else       { foreign import sokol_gfximgui_clib { "sokol_gfximgui_macos_arm64_gl_release.a" } }
-            } else {
-                when DEBUG { foreign import sokol_gfximgui_clib { "sokol_gfximgui_macos_x64_gl_debug.a" } }
-                else       { foreign import sokol_gfximgui_clib { "sokol_gfximgui_macos_x64_gl_release.a" } }
-            }
-        } else {
-            when ODIN_ARCH == .arm64 {
-                when DEBUG { foreign import sokol_gfximgui_clib { "sokol_gfximgui_macos_arm64_metal_debug.a" } }
-                else       { foreign import sokol_gfximgui_clib { "sokol_gfximgui_macos_arm64_metal_release.a" } }
-            } else {
-                when DEBUG { foreign import sokol_gfximgui_clib { "sokol_gfximgui_macos_x64_metal_debug.a" } }
-                else       { foreign import sokol_gfximgui_clib { "sokol_gfximgui_macos_x64_metal_release.a" } }
-            }
-        }
-    }
+	when USE_DLL {
+		when USE_GL && ODIN_ARCH ==
+			.arm64 && DEBUG {foreign import sokol_gfximgui_clib "../dylib/sokol_dylib_macos_arm64_gl_debug.dylib"} else when USE_GL && ODIN_ARCH == .arm64 && !DEBUG {foreign import sokol_gfximgui_clib "../dylib/sokol_dylib_macos_arm64_gl_release.dylib"} else when USE_GL && ODIN_ARCH == .amd64 && DEBUG {foreign import sokol_gfximgui_clib "../dylib/sokol_dylib_macos_x64_gl_debug.dylib"} else when USE_GL && ODIN_ARCH == .amd64 && !DEBUG {foreign import sokol_gfximgui_clib "../dylib/sokol_dylib_macos_x64_gl_release.dylib"} else when !USE_GL && ODIN_ARCH == .arm64 && DEBUG {foreign import sokol_gfximgui_clib "../dylib/sokol_dylib_macos_arm64_metal_debug.dylib"} else when !USE_GL && ODIN_ARCH == .arm64 && !DEBUG {foreign import sokol_gfximgui_clib "../dylib/sokol_dylib_macos_arm64_metal_release.dylib"} else when !USE_GL && ODIN_ARCH == .amd64 && DEBUG {foreign import sokol_gfximgui_clib "../dylib/sokol_dylib_macos_x64_metal_debug.dylib"} else when !USE_GL && ODIN_ARCH == .amd64 && !DEBUG {foreign import sokol_gfximgui_clib "../dylib/sokol_dylib_macos_x64_metal_release.dylib"}
+	} else {
+		when USE_GL {
+			when ODIN_ARCH == .arm64 {
+				when DEBUG {foreign import sokol_gfximgui_clib "sokol_gfximgui_macos_arm64_gl_debug.a"} else {foreign import sokol_gfximgui_clib "sokol_gfximgui_macos_arm64_gl_release.a"}
+			} else {
+				when DEBUG {foreign import sokol_gfximgui_clib "sokol_gfximgui_macos_x64_gl_debug.a"} else {foreign import sokol_gfximgui_clib "sokol_gfximgui_macos_x64_gl_release.a"}
+			}
+		} else {
+			when ODIN_ARCH == .arm64 {
+				when DEBUG {foreign import sokol_gfximgui_clib "sokol_gfximgui_macos_arm64_metal_debug.a"} else {foreign import sokol_gfximgui_clib "sokol_gfximgui_macos_arm64_metal_release.a"}
+			} else {
+				when DEBUG {foreign import sokol_gfximgui_clib "sokol_gfximgui_macos_x64_metal_debug.a"} else {foreign import sokol_gfximgui_clib "sokol_gfximgui_macos_x64_metal_release.a"}
+			}
+		}
+	}
 } else when ODIN_OS == .Linux {
-    when USE_DLL {
-        when DEBUG { foreign import sokol_gfximgui_clib { "sokol_gfximgui_linux_x64_gl_debug.so" } }
-        else       { foreign import sokol_gfximgui_clib { "sokol_gfximgui_linux_x64_gl_release.so" } }
-    } else {
-        when DEBUG { foreign import sokol_gfximgui_clib { "sokol_gfximgui_linux_x64_gl_debug.a" } }
-        else       { foreign import sokol_gfximgui_clib { "sokol_gfximgui_linux_x64_gl_release.a" } }
-    }
+	when USE_DLL {
+		when DEBUG {foreign import sokol_gfximgui_clib "sokol_gfximgui_linux_x64_gl_debug.so"} else {foreign import sokol_gfximgui_clib "sokol_gfximgui_linux_x64_gl_release.so"}
+	} else {
+		when DEBUG {foreign import sokol_gfximgui_clib "sokol_gfximgui_linux_x64_gl_debug.a"} else {foreign import sokol_gfximgui_clib "sokol_gfximgui_linux_x64_gl_release.a"}
+	}
 } else when ODIN_ARCH == .wasm32 || ODIN_ARCH == .wasm64p32 {
-    // Feed sokol_gfximgui_wasm_gl_debug.a or sokol_gfximgui_wasm_gl_release.a into emscripten compiler.
-    foreign import sokol_gfximgui_clib { "env.o" }
+	// Feed sokol_gfximgui_wasm_gl_debug.a or sokol_gfximgui_wasm_gl_release.a into emscripten compiler.
+	foreign import sokol_gfximgui_clib "env.o"
 } else {
-    #panic("This OS is currently not supported")
+	#panic("This OS is currently not supported")
 }
 
-@(default_calling_convention="c", link_prefix="sgimgui_")
+@(default_calling_convention = "c", link_prefix = "sgimgui_")
 foreign sokol_gfximgui_clib {
-    setup :: proc(#by_ptr desc: Desc)  ---
-    shutdown :: proc()  ---
-    draw :: proc()  ---
-    draw_menu :: proc(title: cstring)  ---
-    draw_buffer_window_content :: proc()  ---
-    draw_image_window_content :: proc()  ---
-    draw_sampler_window_content :: proc()  ---
-    draw_shader_window_content :: proc()  ---
-    draw_pipeline_window_content :: proc()  ---
-    draw_view_window_content :: proc()  ---
-    draw_capture_window_content :: proc()  ---
-    draw_capabilities_window_content :: proc()  ---
-    draw_frame_stats_window_content :: proc()  ---
-    draw_buffer_window :: proc(title: cstring)  ---
-    draw_image_window :: proc(title: cstring)  ---
-    draw_sampler_window :: proc(title: cstring)  ---
-    draw_shader_window :: proc(title: cstring)  ---
-    draw_pipeline_window :: proc(title: cstring)  ---
-    draw_view_window :: proc(title: cstring)  ---
-    draw_capture_window :: proc(title: cstring)  ---
-    draw_capabilities_window :: proc(title: cstring)  ---
-    draw_frame_stats_window :: proc(title: cstring)  ---
-    draw_buffer_menu_item :: proc(label: cstring)  ---
-    draw_image_menu_item :: proc(label: cstring)  ---
-    draw_sampler_menu_item :: proc(label: cstring)  ---
-    draw_shader_menu_item :: proc(label: cstring)  ---
-    draw_pipeline_menu_item :: proc(label: cstring)  ---
-    draw_view_menu_item :: proc(label: cstring)  ---
-    draw_capture_menu_item :: proc(label: cstring)  ---
-    draw_capabilities_menu_item :: proc(label: cstring)  ---
-    draw_frame_stats_menu_item :: proc(label: cstring)  ---
+	setup :: proc(#by_ptr desc: Desc) ---
+	shutdown :: proc() ---
+	draw :: proc() ---
+	draw_menu :: proc(title: cstring) ---
+	draw_buffer_window_content :: proc() ---
+	draw_image_window_content :: proc() ---
+	draw_sampler_window_content :: proc() ---
+	draw_shader_window_content :: proc() ---
+	draw_pipeline_window_content :: proc() ---
+	draw_view_window_content :: proc() ---
+	draw_capture_window_content :: proc() ---
+	draw_capabilities_window_content :: proc() ---
+	draw_frame_stats_window_content :: proc() ---
+	draw_buffer_window :: proc(title: cstring) ---
+	draw_image_window :: proc(title: cstring) ---
+	draw_sampler_window :: proc(title: cstring) ---
+	draw_shader_window :: proc(title: cstring) ---
+	draw_pipeline_window :: proc(title: cstring) ---
+	draw_view_window :: proc(title: cstring) ---
+	draw_capture_window :: proc(title: cstring) ---
+	draw_capabilities_window :: proc(title: cstring) ---
+	draw_frame_stats_window :: proc(title: cstring) ---
+	draw_buffer_menu_item :: proc(label: cstring) ---
+	draw_image_menu_item :: proc(label: cstring) ---
+	draw_sampler_menu_item :: proc(label: cstring) ---
+	draw_shader_menu_item :: proc(label: cstring) ---
+	draw_pipeline_menu_item :: proc(label: cstring) ---
+	draw_view_menu_item :: proc(label: cstring) ---
+	draw_capture_menu_item :: proc(label: cstring) ---
+	draw_capabilities_menu_item :: proc(label: cstring) ---
+	draw_frame_stats_menu_item :: proc(label: cstring) ---
 }
 
 /*
@@ -295,9 +279,9 @@ foreign sokol_gfximgui_clib {
     override one function but not the other).
 */
 Allocator :: struct {
-    alloc_fn : proc "c" (a0: c.size_t, a1: rawptr) -> rawptr,
-    free_fn : proc "c" (a0: rawptr, a1: rawptr),
-    user_data : rawptr,
+	alloc_fn:  proc "c" (a0: c.size_t, a1: rawptr) -> rawptr,
+	free_fn:   proc "c" (a0: rawptr, a1: rawptr),
+	user_data: rawptr,
 }
 
 /*
@@ -306,6 +290,5 @@ Allocator :: struct {
     Initialization options for sgimgui_init().
 */
 Desc :: struct {
-    allocator : Allocator,
+	allocator: Allocator,
 }
-

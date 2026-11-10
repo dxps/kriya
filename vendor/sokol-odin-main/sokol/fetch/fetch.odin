@@ -935,114 +935,98 @@ USE_GL :: #config(SOKOL_USE_GL, false)
 USE_DLL :: #config(SOKOL_DLL, false)
 
 when ODIN_OS == .Windows {
-    when USE_DLL {
-        when USE_GL {
-            when DEBUG { foreign import sokol_fetch_clib { "../sokol_dll_windows_x64_gl_debug.lib" } }
-            else       { foreign import sokol_fetch_clib { "../sokol_dll_windows_x64_gl_release.lib" } }
-        } else {
-            when DEBUG { foreign import sokol_fetch_clib { "../sokol_dll_windows_x64_d3d11_debug.lib" } }
-            else       { foreign import sokol_fetch_clib { "../sokol_dll_windows_x64_d3d11_release.lib" } }
-        }
-    } else {
-        when USE_GL {
-            when DEBUG { foreign import sokol_fetch_clib { "sokol_fetch_windows_x64_gl_debug.lib" } }
-            else       { foreign import sokol_fetch_clib { "sokol_fetch_windows_x64_gl_release.lib" } }
-        } else {
-            when DEBUG { foreign import sokol_fetch_clib { "sokol_fetch_windows_x64_d3d11_debug.lib" } }
-            else       { foreign import sokol_fetch_clib { "sokol_fetch_windows_x64_d3d11_release.lib" } }
-        }
-    }
+	when USE_DLL {
+		when USE_GL {
+			when DEBUG {foreign import sokol_fetch_clib "../sokol_dll_windows_x64_gl_debug.lib"} else {foreign import sokol_fetch_clib "../sokol_dll_windows_x64_gl_release.lib"}
+		} else {
+			when DEBUG {foreign import sokol_fetch_clib "../sokol_dll_windows_x64_d3d11_debug.lib"} else {foreign import sokol_fetch_clib "../sokol_dll_windows_x64_d3d11_release.lib"}
+		}
+	} else {
+		when USE_GL {
+			when DEBUG {foreign import sokol_fetch_clib "sokol_fetch_windows_x64_gl_debug.lib"} else {foreign import sokol_fetch_clib "sokol_fetch_windows_x64_gl_release.lib"}
+		} else {
+			when DEBUG {foreign import sokol_fetch_clib "sokol_fetch_windows_x64_d3d11_debug.lib"} else {foreign import sokol_fetch_clib "sokol_fetch_windows_x64_d3d11_release.lib"}
+		}
+	}
 } else when ODIN_OS == .Darwin {
-    when USE_DLL {
-             when  USE_GL && ODIN_ARCH == .arm64 &&  DEBUG { foreign import sokol_fetch_clib { "../dylib/sokol_dylib_macos_arm64_gl_debug.dylib" } }
-        else when  USE_GL && ODIN_ARCH == .arm64 && !DEBUG { foreign import sokol_fetch_clib { "../dylib/sokol_dylib_macos_arm64_gl_release.dylib" } }
-        else when  USE_GL && ODIN_ARCH == .amd64 &&  DEBUG { foreign import sokol_fetch_clib { "../dylib/sokol_dylib_macos_x64_gl_debug.dylib" } }
-        else when  USE_GL && ODIN_ARCH == .amd64 && !DEBUG { foreign import sokol_fetch_clib { "../dylib/sokol_dylib_macos_x64_gl_release.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .arm64 &&  DEBUG { foreign import sokol_fetch_clib { "../dylib/sokol_dylib_macos_arm64_metal_debug.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .arm64 && !DEBUG { foreign import sokol_fetch_clib { "../dylib/sokol_dylib_macos_arm64_metal_release.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .amd64 &&  DEBUG { foreign import sokol_fetch_clib { "../dylib/sokol_dylib_macos_x64_metal_debug.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .amd64 && !DEBUG { foreign import sokol_fetch_clib { "../dylib/sokol_dylib_macos_x64_metal_release.dylib" } }
-    } else {
-        when USE_GL {
-            when ODIN_ARCH == .arm64 {
-                when DEBUG { foreign import sokol_fetch_clib { "sokol_fetch_macos_arm64_gl_debug.a" } }
-                else       { foreign import sokol_fetch_clib { "sokol_fetch_macos_arm64_gl_release.a" } }
-            } else {
-                when DEBUG { foreign import sokol_fetch_clib { "sokol_fetch_macos_x64_gl_debug.a" } }
-                else       { foreign import sokol_fetch_clib { "sokol_fetch_macos_x64_gl_release.a" } }
-            }
-        } else {
-            when ODIN_ARCH == .arm64 {
-                when DEBUG { foreign import sokol_fetch_clib { "sokol_fetch_macos_arm64_metal_debug.a" } }
-                else       { foreign import sokol_fetch_clib { "sokol_fetch_macos_arm64_metal_release.a" } }
-            } else {
-                when DEBUG { foreign import sokol_fetch_clib { "sokol_fetch_macos_x64_metal_debug.a" } }
-                else       { foreign import sokol_fetch_clib { "sokol_fetch_macos_x64_metal_release.a" } }
-            }
-        }
-    }
+	when USE_DLL {
+		when USE_GL && ODIN_ARCH ==
+			.arm64 && DEBUG {foreign import sokol_fetch_clib "../dylib/sokol_dylib_macos_arm64_gl_debug.dylib"} else when USE_GL && ODIN_ARCH == .arm64 && !DEBUG {foreign import sokol_fetch_clib "../dylib/sokol_dylib_macos_arm64_gl_release.dylib"} else when USE_GL && ODIN_ARCH == .amd64 && DEBUG {foreign import sokol_fetch_clib "../dylib/sokol_dylib_macos_x64_gl_debug.dylib"} else when USE_GL && ODIN_ARCH == .amd64 && !DEBUG {foreign import sokol_fetch_clib "../dylib/sokol_dylib_macos_x64_gl_release.dylib"} else when !USE_GL && ODIN_ARCH == .arm64 && DEBUG {foreign import sokol_fetch_clib "../dylib/sokol_dylib_macos_arm64_metal_debug.dylib"} else when !USE_GL && ODIN_ARCH == .arm64 && !DEBUG {foreign import sokol_fetch_clib "../dylib/sokol_dylib_macos_arm64_metal_release.dylib"} else when !USE_GL && ODIN_ARCH == .amd64 && DEBUG {foreign import sokol_fetch_clib "../dylib/sokol_dylib_macos_x64_metal_debug.dylib"} else when !USE_GL && ODIN_ARCH == .amd64 && !DEBUG {foreign import sokol_fetch_clib "../dylib/sokol_dylib_macos_x64_metal_release.dylib"}
+	} else {
+		when USE_GL {
+			when ODIN_ARCH == .arm64 {
+				when DEBUG {foreign import sokol_fetch_clib "sokol_fetch_macos_arm64_gl_debug.a"} else {foreign import sokol_fetch_clib "sokol_fetch_macos_arm64_gl_release.a"}
+			} else {
+				when DEBUG {foreign import sokol_fetch_clib "sokol_fetch_macos_x64_gl_debug.a"} else {foreign import sokol_fetch_clib "sokol_fetch_macos_x64_gl_release.a"}
+			}
+		} else {
+			when ODIN_ARCH == .arm64 {
+				when DEBUG {foreign import sokol_fetch_clib "sokol_fetch_macos_arm64_metal_debug.a"} else {foreign import sokol_fetch_clib "sokol_fetch_macos_arm64_metal_release.a"}
+			} else {
+				when DEBUG {foreign import sokol_fetch_clib "sokol_fetch_macos_x64_metal_debug.a"} else {foreign import sokol_fetch_clib "sokol_fetch_macos_x64_metal_release.a"}
+			}
+		}
+	}
 } else when ODIN_OS == .Linux {
-    when USE_DLL {
-        when DEBUG { foreign import sokol_fetch_clib { "sokol_fetch_linux_x64_gl_debug.so" } }
-        else       { foreign import sokol_fetch_clib { "sokol_fetch_linux_x64_gl_release.so" } }
-    } else {
-        when DEBUG { foreign import sokol_fetch_clib { "sokol_fetch_linux_x64_gl_debug.a" } }
-        else       { foreign import sokol_fetch_clib { "sokol_fetch_linux_x64_gl_release.a" } }
-    }
+	when USE_DLL {
+		when DEBUG {foreign import sokol_fetch_clib "sokol_fetch_linux_x64_gl_debug.so"} else {foreign import sokol_fetch_clib "sokol_fetch_linux_x64_gl_release.so"}
+	} else {
+		when DEBUG {foreign import sokol_fetch_clib "sokol_fetch_linux_x64_gl_debug.a"} else {foreign import sokol_fetch_clib "sokol_fetch_linux_x64_gl_release.a"}
+	}
 } else when ODIN_ARCH == .wasm32 || ODIN_ARCH == .wasm64p32 {
-    // Feed sokol_fetch_wasm_gl_debug.a or sokol_fetch_wasm_gl_release.a into emscripten compiler.
-    foreign import sokol_fetch_clib { "env.o" }
+	// Feed sokol_fetch_wasm_gl_debug.a or sokol_fetch_wasm_gl_release.a into emscripten compiler.
+	foreign import sokol_fetch_clib "env.o"
 } else {
-    #panic("This OS is currently not supported")
+	#panic("This OS is currently not supported")
 }
 
-@(default_calling_convention="c", link_prefix="sfetch_")
+@(default_calling_convention = "c", link_prefix = "sfetch_")
 foreign sokol_fetch_clib {
-    // setup sokol-fetch (can be called on multiple threads)
-    setup :: proc(#by_ptr desc: Desc)  ---
-    // discard a sokol-fetch context
-    shutdown :: proc()  ---
-    // return true if sokol-fetch has been setup
-    valid :: proc() -> bool ---
-    // get the desc struct that was passed to sfetch_setup()
-    desc :: proc() -> Desc ---
-    // return the max userdata size in number of bytes (SFETCH_MAX_USERDATA_UINT64 * sizeof(uint64_t))
-    max_userdata_bytes :: proc() -> c.int ---
-    // return the value of the SFETCH_MAX_PATH implementation config value
-    max_path :: proc() -> c.int ---
-    // send a fetch-request, get handle to request back
-    send :: proc(#by_ptr request: Request) -> Handle ---
-    // return true if a handle is valid *and* the request is alive
-    handle_valid :: proc(h: Handle) -> bool ---
-    // do per-frame work, moves requests into and out of IO threads, and invokes response-callbacks
-    dowork :: proc()  ---
-    // bind a data buffer to a request (request must not currently have a buffer bound, must be called from response callback
-    bind_buffer :: proc(h: Handle, buffer: Range)  ---
-    // clear the 'buffer binding' of a request, returns previous buffer pointer (can be 0), must be called from response callback
-    unbind_buffer :: proc(h: Handle) -> rawptr ---
-    // cancel a request that's in flight (will call response callback with .cancelled + .finished)
-    cancel :: proc(h: Handle)  ---
-    // pause a request (will call response callback each frame with .paused)
-    pause :: proc(h: Handle)  ---
-    // continue a paused request
-    continue_fetching :: proc(h: Handle)  ---
+	// setup sokol-fetch (can be called on multiple threads)
+	setup :: proc(#by_ptr desc: Desc) ---
+	// discard a sokol-fetch context
+	shutdown :: proc() ---
+	// return true if sokol-fetch has been setup
+	valid :: proc() -> bool ---
+	// get the desc struct that was passed to sfetch_setup()
+	desc :: proc() -> Desc ---
+	// return the max userdata size in number of bytes (SFETCH_MAX_USERDATA_UINT64 * sizeof(uint64_t))
+	max_userdata_bytes :: proc() -> c.int ---
+	// return the value of the SFETCH_MAX_PATH implementation config value
+	max_path :: proc() -> c.int ---
+	// send a fetch-request, get handle to request back
+	send :: proc(#by_ptr request: Request) -> Handle ---
+	// return true if a handle is valid *and* the request is alive
+	handle_valid :: proc(h: Handle) -> bool ---
+	// do per-frame work, moves requests into and out of IO threads, and invokes response-callbacks
+	dowork :: proc() ---
+	// bind a data buffer to a request (request must not currently have a buffer bound, must be called from response callback
+	bind_buffer :: proc(h: Handle, buffer: Range) ---
+	// clear the 'buffer binding' of a request, returns previous buffer pointer (can be 0), must be called from response callback
+	unbind_buffer :: proc(h: Handle) -> rawptr ---
+	// cancel a request that's in flight (will call response callback with .cancelled + .finished)
+	cancel :: proc(h: Handle) ---
+	// pause a request (will call response callback each frame with .paused)
+	pause :: proc(h: Handle) ---
+	// continue a paused request
+	continue_fetching :: proc(h: Handle) ---
 }
 
 Log_Item :: enum i32 {
-    OK,
-    MALLOC_FAILED,
-    FILE_PATH_UTF8_DECODING_FAILED,
-    SEND_QUEUE_FULL,
-    REQUEST_CHANNEL_INDEX_TOO_BIG,
-    REQUEST_PATH_IS_NULL,
-    REQUEST_PATH_TOO_LONG,
-    REQUEST_CALLBACK_MISSING,
-    REQUEST_CHUNK_SIZE_GREATER_BUFFER_SIZE,
-    REQUEST_USERDATA_PTR_IS_SET_BUT_USERDATA_SIZE_IS_NULL,
-    REQUEST_USERDATA_PTR_IS_NULL_BUT_USERDATA_SIZE_IS_NOT,
-    REQUEST_USERDATA_SIZE_TOO_BIG,
-    CLAMPING_NUM_CHANNELS_TO_MAX_CHANNELS,
-    REQUEST_POOL_EXHAUSTED,
+	OK,
+	MALLOC_FAILED,
+	FILE_PATH_UTF8_DECODING_FAILED,
+	SEND_QUEUE_FULL,
+	REQUEST_CHANNEL_INDEX_TOO_BIG,
+	REQUEST_PATH_IS_NULL,
+	REQUEST_PATH_TOO_LONG,
+	REQUEST_CALLBACK_MISSING,
+	REQUEST_CHUNK_SIZE_GREATER_BUFFER_SIZE,
+	REQUEST_USERDATA_PTR_IS_SET_BUT_USERDATA_SIZE_IS_NULL,
+	REQUEST_USERDATA_PTR_IS_NULL_BUT_USERDATA_SIZE_IS_NOT,
+	REQUEST_USERDATA_SIZE_TOO_BIG,
+	CLAMPING_NUM_CHANNELS_TO_MAX_CHANNELS,
+	REQUEST_POOL_EXHAUSTED,
 }
 
 /*
@@ -1052,8 +1036,16 @@ Log_Item :: enum i32 {
     callback to sokol-fetch.
 */
 Logger :: struct {
-    func : proc "c" (a0: cstring, a1: u32, a2: u32, a3: cstring, a4: u32, a5: cstring, a6: rawptr),
-    user_data : rawptr,
+	func:      proc "c" (
+		a0: cstring,
+		a1: u32,
+		a2: u32,
+		a3: cstring,
+		a4: u32,
+		a5: cstring,
+		a6: rawptr,
+	),
+	user_data: rawptr,
 }
 
 /*
@@ -1064,8 +1056,8 @@ Logger :: struct {
     SFETCH_RANGE() helper macro to build an sfetch_range_t struct.
 */
 Range :: struct {
-    ptr : rawptr,
-    size : c.size_t,
+	ptr:  rawptr,
+	size: c.size_t,
 }
 
 /*
@@ -1077,63 +1069,62 @@ Range :: struct {
     override one function but not the other).
 */
 Allocator :: struct {
-    alloc_fn : proc "c" (a0: c.size_t, a1: rawptr) -> rawptr,
-    free_fn : proc "c" (a0: rawptr, a1: rawptr),
-    user_data : rawptr,
+	alloc_fn:  proc "c" (a0: c.size_t, a1: rawptr) -> rawptr,
+	free_fn:   proc "c" (a0: rawptr, a1: rawptr),
+	user_data: rawptr,
 }
 
 // configuration values for sfetch_setup()
 Desc :: struct {
-    max_requests : u32,
-    num_channels : u32,
-    num_lanes : u32,
-    allocator : Allocator,
-    logger : Logger,
+	max_requests: u32,
+	num_channels: u32,
+	num_lanes:    u32,
+	allocator:    Allocator,
+	logger:       Logger,
 }
 
 // a request handle to identify an active fetch request, returned by sfetch_send()
 Handle :: struct {
-    id : u32,
+	id: u32,
 }
 
 // error codes
 Error :: enum i32 {
-    NO_ERROR,
-    FILE_NOT_FOUND,
-    NO_BUFFER,
-    BUFFER_TOO_SMALL,
-    UNEXPECTED_EOF,
-    INVALID_HTTP_STATUS,
-    CANCELLED,
-    JS_OTHER,
+	NO_ERROR,
+	FILE_NOT_FOUND,
+	NO_BUFFER,
+	BUFFER_TOO_SMALL,
+	UNEXPECTED_EOF,
+	INVALID_HTTP_STATUS,
+	CANCELLED,
+	JS_OTHER,
 }
 
 // the response struct passed to the response callback
 Response :: struct {
-    handle : Handle,
-    dispatched : bool,
-    fetched : bool,
-    paused : bool,
-    finished : bool,
-    failed : bool,
-    cancelled : bool,
-    error_code : Error,
-    channel : u32,
-    lane : u32,
-    path : cstring,
-    user_data : rawptr,
-    data_offset : u32,
-    data : Range,
-    buffer : Range,
+	handle:      Handle,
+	dispatched:  bool,
+	fetched:     bool,
+	paused:      bool,
+	finished:    bool,
+	failed:      bool,
+	cancelled:   bool,
+	error_code:  Error,
+	channel:     u32,
+	lane:        u32,
+	path:        cstring,
+	user_data:   rawptr,
+	data_offset: u32,
+	data:        Range,
+	buffer:      Range,
 }
 
 // request parameters passed to sfetch_send()
 Request :: struct {
-    channel : u32,
-    path : cstring,
-    callback : proc "c" (a0: ^Response),
-    chunk_size : u32,
-    buffer : Range,
-    user_data : Range,
+	channel:    u32,
+	path:       cstring,
+	callback:   proc "c" (a0: ^Response),
+	chunk_size: u32,
+	buffer:     Range,
+	user_data:  Range,
 }
-

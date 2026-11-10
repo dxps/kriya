@@ -306,91 +306,75 @@ USE_GL :: #config(SOKOL_USE_GL, false)
 USE_DLL :: #config(SOKOL_DLL, false)
 
 when ODIN_OS == .Windows {
-    when USE_DLL {
-        when USE_GL {
-            when DEBUG { foreign import sokol_framebuffer_clib { "../sokol_dll_windows_x64_gl_debug.lib" } }
-            else       { foreign import sokol_framebuffer_clib { "../sokol_dll_windows_x64_gl_release.lib" } }
-        } else {
-            when DEBUG { foreign import sokol_framebuffer_clib { "../sokol_dll_windows_x64_d3d11_debug.lib" } }
-            else       { foreign import sokol_framebuffer_clib { "../sokol_dll_windows_x64_d3d11_release.lib" } }
-        }
-    } else {
-        when USE_GL {
-            when DEBUG { foreign import sokol_framebuffer_clib { "sokol_framebuffer_windows_x64_gl_debug.lib" } }
-            else       { foreign import sokol_framebuffer_clib { "sokol_framebuffer_windows_x64_gl_release.lib" } }
-        } else {
-            when DEBUG { foreign import sokol_framebuffer_clib { "sokol_framebuffer_windows_x64_d3d11_debug.lib" } }
-            else       { foreign import sokol_framebuffer_clib { "sokol_framebuffer_windows_x64_d3d11_release.lib" } }
-        }
-    }
+	when USE_DLL {
+		when USE_GL {
+			when DEBUG {foreign import sokol_framebuffer_clib "../sokol_dll_windows_x64_gl_debug.lib"} else {foreign import sokol_framebuffer_clib "../sokol_dll_windows_x64_gl_release.lib"}
+		} else {
+			when DEBUG {foreign import sokol_framebuffer_clib "../sokol_dll_windows_x64_d3d11_debug.lib"} else {foreign import sokol_framebuffer_clib "../sokol_dll_windows_x64_d3d11_release.lib"}
+		}
+	} else {
+		when USE_GL {
+			when DEBUG {foreign import sokol_framebuffer_clib "sokol_framebuffer_windows_x64_gl_debug.lib"} else {foreign import sokol_framebuffer_clib "sokol_framebuffer_windows_x64_gl_release.lib"}
+		} else {
+			when DEBUG {foreign import sokol_framebuffer_clib "sokol_framebuffer_windows_x64_d3d11_debug.lib"} else {foreign import sokol_framebuffer_clib "sokol_framebuffer_windows_x64_d3d11_release.lib"}
+		}
+	}
 } else when ODIN_OS == .Darwin {
-    when USE_DLL {
-             when  USE_GL && ODIN_ARCH == .arm64 &&  DEBUG { foreign import sokol_framebuffer_clib { "../dylib/sokol_dylib_macos_arm64_gl_debug.dylib" } }
-        else when  USE_GL && ODIN_ARCH == .arm64 && !DEBUG { foreign import sokol_framebuffer_clib { "../dylib/sokol_dylib_macos_arm64_gl_release.dylib" } }
-        else when  USE_GL && ODIN_ARCH == .amd64 &&  DEBUG { foreign import sokol_framebuffer_clib { "../dylib/sokol_dylib_macos_x64_gl_debug.dylib" } }
-        else when  USE_GL && ODIN_ARCH == .amd64 && !DEBUG { foreign import sokol_framebuffer_clib { "../dylib/sokol_dylib_macos_x64_gl_release.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .arm64 &&  DEBUG { foreign import sokol_framebuffer_clib { "../dylib/sokol_dylib_macos_arm64_metal_debug.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .arm64 && !DEBUG { foreign import sokol_framebuffer_clib { "../dylib/sokol_dylib_macos_arm64_metal_release.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .amd64 &&  DEBUG { foreign import sokol_framebuffer_clib { "../dylib/sokol_dylib_macos_x64_metal_debug.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .amd64 && !DEBUG { foreign import sokol_framebuffer_clib { "../dylib/sokol_dylib_macos_x64_metal_release.dylib" } }
-    } else {
-        when USE_GL {
-            when ODIN_ARCH == .arm64 {
-                when DEBUG { foreign import sokol_framebuffer_clib { "sokol_framebuffer_macos_arm64_gl_debug.a" } }
-                else       { foreign import sokol_framebuffer_clib { "sokol_framebuffer_macos_arm64_gl_release.a" } }
-            } else {
-                when DEBUG { foreign import sokol_framebuffer_clib { "sokol_framebuffer_macos_x64_gl_debug.a" } }
-                else       { foreign import sokol_framebuffer_clib { "sokol_framebuffer_macos_x64_gl_release.a" } }
-            }
-        } else {
-            when ODIN_ARCH == .arm64 {
-                when DEBUG { foreign import sokol_framebuffer_clib { "sokol_framebuffer_macos_arm64_metal_debug.a" } }
-                else       { foreign import sokol_framebuffer_clib { "sokol_framebuffer_macos_arm64_metal_release.a" } }
-            } else {
-                when DEBUG { foreign import sokol_framebuffer_clib { "sokol_framebuffer_macos_x64_metal_debug.a" } }
-                else       { foreign import sokol_framebuffer_clib { "sokol_framebuffer_macos_x64_metal_release.a" } }
-            }
-        }
-    }
+	when USE_DLL {
+		when USE_GL && ODIN_ARCH ==
+			.arm64 && DEBUG {foreign import sokol_framebuffer_clib "../dylib/sokol_dylib_macos_arm64_gl_debug.dylib"} else when USE_GL && ODIN_ARCH == .arm64 && !DEBUG {foreign import sokol_framebuffer_clib "../dylib/sokol_dylib_macos_arm64_gl_release.dylib"} else when USE_GL && ODIN_ARCH == .amd64 && DEBUG {foreign import sokol_framebuffer_clib "../dylib/sokol_dylib_macos_x64_gl_debug.dylib"} else when USE_GL && ODIN_ARCH == .amd64 && !DEBUG {foreign import sokol_framebuffer_clib "../dylib/sokol_dylib_macos_x64_gl_release.dylib"} else when !USE_GL && ODIN_ARCH == .arm64 && DEBUG {foreign import sokol_framebuffer_clib "../dylib/sokol_dylib_macos_arm64_metal_debug.dylib"} else when !USE_GL && ODIN_ARCH == .arm64 && !DEBUG {foreign import sokol_framebuffer_clib "../dylib/sokol_dylib_macos_arm64_metal_release.dylib"} else when !USE_GL && ODIN_ARCH == .amd64 && DEBUG {foreign import sokol_framebuffer_clib "../dylib/sokol_dylib_macos_x64_metal_debug.dylib"} else when !USE_GL && ODIN_ARCH == .amd64 && !DEBUG {foreign import sokol_framebuffer_clib "../dylib/sokol_dylib_macos_x64_metal_release.dylib"}
+	} else {
+		when USE_GL {
+			when ODIN_ARCH == .arm64 {
+				when DEBUG {foreign import sokol_framebuffer_clib "sokol_framebuffer_macos_arm64_gl_debug.a"} else {foreign import sokol_framebuffer_clib "sokol_framebuffer_macos_arm64_gl_release.a"}
+			} else {
+				when DEBUG {foreign import sokol_framebuffer_clib "sokol_framebuffer_macos_x64_gl_debug.a"} else {foreign import sokol_framebuffer_clib "sokol_framebuffer_macos_x64_gl_release.a"}
+			}
+		} else {
+			when ODIN_ARCH == .arm64 {
+				when DEBUG {foreign import sokol_framebuffer_clib "sokol_framebuffer_macos_arm64_metal_debug.a"} else {foreign import sokol_framebuffer_clib "sokol_framebuffer_macos_arm64_metal_release.a"}
+			} else {
+				when DEBUG {foreign import sokol_framebuffer_clib "sokol_framebuffer_macos_x64_metal_debug.a"} else {foreign import sokol_framebuffer_clib "sokol_framebuffer_macos_x64_metal_release.a"}
+			}
+		}
+	}
 } else when ODIN_OS == .Linux {
-    when USE_DLL {
-        when DEBUG { foreign import sokol_framebuffer_clib { "sokol_framebuffer_linux_x64_gl_debug.so" } }
-        else       { foreign import sokol_framebuffer_clib { "sokol_framebuffer_linux_x64_gl_release.so" } }
-    } else {
-        when DEBUG { foreign import sokol_framebuffer_clib { "sokol_framebuffer_linux_x64_gl_debug.a" } }
-        else       { foreign import sokol_framebuffer_clib { "sokol_framebuffer_linux_x64_gl_release.a" } }
-    }
+	when USE_DLL {
+		when DEBUG {foreign import sokol_framebuffer_clib "sokol_framebuffer_linux_x64_gl_debug.so"} else {foreign import sokol_framebuffer_clib "sokol_framebuffer_linux_x64_gl_release.so"}
+	} else {
+		when DEBUG {foreign import sokol_framebuffer_clib "sokol_framebuffer_linux_x64_gl_debug.a"} else {foreign import sokol_framebuffer_clib "sokol_framebuffer_linux_x64_gl_release.a"}
+	}
 } else when ODIN_ARCH == .wasm32 || ODIN_ARCH == .wasm64p32 {
-    // Feed sokol_framebuffer_wasm_gl_debug.a or sokol_framebuffer_wasm_gl_release.a into emscripten compiler.
-    foreign import sokol_framebuffer_clib { "env.o" }
+	// Feed sokol_framebuffer_wasm_gl_debug.a or sokol_framebuffer_wasm_gl_release.a into emscripten compiler.
+	foreign import sokol_framebuffer_clib "env.o"
 } else {
-    #panic("This OS is currently not supported")
+	#panic("This OS is currently not supported")
 }
 
-@(default_calling_convention="c", link_prefix="sfb_")
+@(default_calling_convention = "c", link_prefix = "sfb_")
 foreign sokol_framebuffer_clib {
-    // setup sokol-framebuffer
-    setup :: proc(#by_ptr desc: Desc)  ---
-    // shutdown sokol-framebuffer
-    shutdown :: proc()  ---
-    // create a framebuffer object
-    make_framebuffer :: proc(#by_ptr desc: Framebuffer_Desc) -> Framebuffer ---
-    // destroy framebuffer object
-    destroy_framebuffer :: proc(fb: Framebuffer)  ---
-    // resize internal images (no-op if resize isn't needed), return true when images had to be re-created
-    resize :: proc(fb: Framebuffer, #by_ptr desc: Resize_Desc) -> bool ---
-    // update framebuffer and/or color palette content (must be called outside any sokol-gfx pass)
-    update :: proc(fb: Framebuffer, #by_ptr desc: Update_Desc)  ---
-    // draw framebuffer content with default shader (must be called inside a sokol-gfx render pass)
-    render :: proc(fb: Framebuffer)  ---
-    // draw framebuffer content with injected shader (must be called inside a sokol-gfx render pass)
-    render_ex :: proc(fb: Framebuffer, #by_ptr desc: Render_Desc)  ---
-    // query framebuffer resource state (valid or failed)
-    query_framebuffer_state :: proc(fb: Framebuffer) -> Resource_State ---
-    // query current framebuffer properties
-    query_framebuffer_info :: proc(fb: Framebuffer) -> Framebuffer_Info ---
-    // query the framebuffer desc, with default values patched in
-    query_framebuffer_desc :: proc(fb: Framebuffer) -> Framebuffer_Desc ---
+	// setup sokol-framebuffer
+	setup :: proc(#by_ptr desc: Desc) ---
+	// shutdown sokol-framebuffer
+	shutdown :: proc() ---
+	// create a framebuffer object
+	make_framebuffer :: proc(#by_ptr desc: Framebuffer_Desc) -> Framebuffer ---
+	// destroy framebuffer object
+	destroy_framebuffer :: proc(fb: Framebuffer) ---
+	// resize internal images (no-op if resize isn't needed), return true when images had to be re-created
+	resize :: proc(fb: Framebuffer, #by_ptr desc: Resize_Desc) -> bool ---
+	// update framebuffer and/or color palette content (must be called outside any sokol-gfx pass)
+	update :: proc(fb: Framebuffer, #by_ptr desc: Update_Desc) ---
+	// draw framebuffer content with default shader (must be called inside a sokol-gfx render pass)
+	render :: proc(fb: Framebuffer) ---
+	// draw framebuffer content with injected shader (must be called inside a sokol-gfx render pass)
+	render_ex :: proc(fb: Framebuffer, #by_ptr desc: Render_Desc) ---
+	// query framebuffer resource state (valid or failed)
+	query_framebuffer_state :: proc(fb: Framebuffer) -> Resource_State ---
+	// query current framebuffer properties
+	query_framebuffer_info :: proc(fb: Framebuffer) -> Framebuffer_Info ---
+	// query the framebuffer desc, with default values patched in
+	query_framebuffer_desc :: proc(fb: Framebuffer) -> Framebuffer_Desc ---
 }
 
 // Public constants.
@@ -403,7 +387,7 @@ INVALID_ID :: 0
     with sfb_destroy_framebuffer()
 */
 Framebuffer :: struct {
-    id : u32,
+	id: u32,
 }
 
 /*
@@ -414,11 +398,11 @@ Framebuffer :: struct {
     and SFB_RESOURCESTATE_FAILED.
 */
 Resource_State :: enum i32 {
-    INITIAL,
-    ALLOC,
-    VALID,
-    FAILED,
-    INVALID,
+	INITIAL,
+	ALLOC,
+	VALID,
+	FAILED,
+	INVALID,
 }
 
 /*
@@ -429,9 +413,9 @@ Resource_State :: enum i32 {
     index into a 256 entry color palette.
 */
 Format :: enum i32 {
-    DEFAULT = 0,
-    RGBA8,
-    PALETTE8,
+	DEFAULT = 0,
+	RGBA8,
+	PALETTE8,
 }
 
 /*
@@ -441,10 +425,10 @@ Format :: enum i32 {
     and sfb_resize_desc.
 */
 Rect :: struct {
-    x : c.int,
-    y : c.int,
-    width : c.int,
-    height : c.int,
+	x:      c.int,
+	y:      c.int,
+	width:  c.int,
+	height: c.int,
 }
 
 /*
@@ -456,9 +440,9 @@ Rect :: struct {
     to a default swapchain all the values can remain at default (zero).
 */
 Render_Pass_Desc :: struct {
-    color_format : sg.Pixel_Format,
-    depth_format : sg.Pixel_Format,
-    sample_count : c.int,
+	color_format: sg.Pixel_Format,
+	depth_format: sg.Pixel_Format,
+	sample_count: c.int,
 }
 
 /*
@@ -468,13 +452,13 @@ Render_Pass_Desc :: struct {
     sfb_make_framebuffer().
 */
 Framebuffer_Desc :: struct {
-    width : c.int,
-    height : c.int,
-    prescale : c.int,
-    format : Format,
-    cliprect : Rect,
-    rotate90 : bool,
-    render_pass : Render_Pass_Desc,
+	width:       c.int,
+	height:      c.int,
+	prescale:    c.int,
+	format:      Format,
+	cliprect:    Rect,
+	rotate90:    bool,
+	render_pass: Render_Pass_Desc,
 }
 
 /*
@@ -492,10 +476,10 @@ Framebuffer_Desc :: struct {
     because only image objects needs to be re-created, but no pipeline objects.
 */
 Resize_Desc :: struct {
-    width : c.int,
-    height : c.int,
-    prescale : c.int,
-    cliprect : Rect,
+	width:    c.int,
+	height:   c.int,
+	prescale: c.int,
+	cliprect: Rect,
 }
 
 /*
@@ -506,8 +490,8 @@ Resize_Desc :: struct {
     actually changes, at most once per frame, and outside any sokol-gfx pass.
 */
 Update_Desc :: struct {
-    pixels : sg.Range,
-    palette : sg.Range,
+	pixels:  sg.Range,
+	palette: sg.Range,
 }
 
 /*
@@ -519,11 +503,11 @@ Update_Desc :: struct {
     TODO: add more details once sokol_crt.h is ready.
 */
 Render_Desc :: struct {
-    use_nearest_filter : bool,
-    pip : sg.Pipeline,
-    views : [32]sg.View,
-    samplers : [12]sg.Sampler,
-    uniforms : [8]sg.Range,
+	use_nearest_filter: bool,
+	pip:                sg.Pipeline,
+	views:              [32]sg.View,
+	samplers:           [12]sg.Sampler,
+	uniforms:           [8]sg.Range,
 }
 
 /*
@@ -533,11 +517,11 @@ Render_Desc :: struct {
     an internal image/view pair.
 */
 Texture_Info :: struct {
-    width : c.int,
-    height : c.int,
-    pixel_format : sg.Pixel_Format,
-    image : sg.Image,
-    tex_view : sg.View,
+	width:        c.int,
+	height:       c.int,
+	pixel_format: sg.Pixel_Format,
+	image:        sg.Image,
+	tex_view:     sg.View,
 }
 
 /*
@@ -550,11 +534,11 @@ Texture_Info :: struct {
     requires multiple render passes).
 */
 Framebuffer_Info :: struct {
-    update : Texture_Info,
-    offscreen : Texture_Info,
-    palette : Texture_Info,
-    nearest_sampler : sg.Sampler,
-    linear_sampler : sg.Sampler,
+	update:          Texture_Info,
+	offscreen:       Texture_Info,
+	palette:         Texture_Info,
+	nearest_sampler: sg.Sampler,
+	linear_sampler:  sg.Sampler,
 }
 
 /*
@@ -566,9 +550,9 @@ Framebuffer_Info :: struct {
     override one function but not the other).
 */
 Allocator :: struct {
-    alloc_fn : proc "c" (a0: c.size_t, a1: rawptr) -> rawptr,
-    free_fn : proc "c" (a0: rawptr, a1: rawptr),
-    user_data : rawptr,
+	alloc_fn:  proc "c" (a0: c.size_t, a1: rawptr) -> rawptr,
+	free_fn:   proc "c" (a0: rawptr, a1: rawptr),
+	user_data: rawptr,
 }
 
 /*
@@ -578,8 +562,16 @@ Allocator :: struct {
     callback to sokol_framebuffer.h.
 */
 Logger :: struct {
-    func : proc "c" (a0: cstring, a1: u32, a2: u32, a3: cstring, a4: u32, a5: cstring, a6: rawptr),
-    user_data : rawptr,
+	func:      proc "c" (
+		a0: cstring,
+		a1: u32,
+		a2: u32,
+		a3: cstring,
+		a4: u32,
+		a5: cstring,
+		a6: rawptr,
+	),
+	user_data: rawptr,
 }
 
 /*
@@ -587,8 +579,7 @@ Logger :: struct {
     provide a logging function, otherwise you won't see any error logging.
 */
 Desc :: struct {
-    framebuffer_pool_size : c.int,
-    allocator : Allocator,
-    logger : Logger,
+	framebuffer_pool_size: c.int,
+	allocator:             Allocator,
+	logger:                Logger,
 }
-

@@ -1374,181 +1374,165 @@ USE_GL :: #config(SOKOL_USE_GL, false)
 USE_DLL :: #config(SOKOL_DLL, false)
 
 when ODIN_OS == .Windows {
-    when USE_DLL {
-        when USE_GL {
-            when DEBUG { foreign import sokol_app_clib { "../sokol_dll_windows_x64_gl_debug.lib" } }
-            else       { foreign import sokol_app_clib { "../sokol_dll_windows_x64_gl_release.lib" } }
-        } else {
-            when DEBUG { foreign import sokol_app_clib { "../sokol_dll_windows_x64_d3d11_debug.lib" } }
-            else       { foreign import sokol_app_clib { "../sokol_dll_windows_x64_d3d11_release.lib" } }
-        }
-    } else {
-        when USE_GL {
-            when DEBUG { foreign import sokol_app_clib { "sokol_app_windows_x64_gl_debug.lib" } }
-            else       { foreign import sokol_app_clib { "sokol_app_windows_x64_gl_release.lib" } }
-        } else {
-            when DEBUG { foreign import sokol_app_clib { "sokol_app_windows_x64_d3d11_debug.lib" } }
-            else       { foreign import sokol_app_clib { "sokol_app_windows_x64_d3d11_release.lib" } }
-        }
-    }
+	when USE_DLL {
+		when USE_GL {
+			when DEBUG {foreign import sokol_app_clib "../sokol_dll_windows_x64_gl_debug.lib"} else {foreign import sokol_app_clib "../sokol_dll_windows_x64_gl_release.lib"}
+		} else {
+			when DEBUG {foreign import sokol_app_clib "../sokol_dll_windows_x64_d3d11_debug.lib"} else {foreign import sokol_app_clib "../sokol_dll_windows_x64_d3d11_release.lib"}
+		}
+	} else {
+		when USE_GL {
+			when DEBUG {foreign import sokol_app_clib "sokol_app_windows_x64_gl_debug.lib"} else {foreign import sokol_app_clib "sokol_app_windows_x64_gl_release.lib"}
+		} else {
+			when DEBUG {foreign import sokol_app_clib "sokol_app_windows_x64_d3d11_debug.lib"} else {foreign import sokol_app_clib "sokol_app_windows_x64_d3d11_release.lib"}
+		}
+	}
 } else when ODIN_OS == .Darwin {
-    when USE_DLL {
-             when  USE_GL && ODIN_ARCH == .arm64 &&  DEBUG { foreign import sokol_app_clib { "../dylib/sokol_dylib_macos_arm64_gl_debug.dylib" } }
-        else when  USE_GL && ODIN_ARCH == .arm64 && !DEBUG { foreign import sokol_app_clib { "../dylib/sokol_dylib_macos_arm64_gl_release.dylib" } }
-        else when  USE_GL && ODIN_ARCH == .amd64 &&  DEBUG { foreign import sokol_app_clib { "../dylib/sokol_dylib_macos_x64_gl_debug.dylib" } }
-        else when  USE_GL && ODIN_ARCH == .amd64 && !DEBUG { foreign import sokol_app_clib { "../dylib/sokol_dylib_macos_x64_gl_release.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .arm64 &&  DEBUG { foreign import sokol_app_clib { "../dylib/sokol_dylib_macos_arm64_metal_debug.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .arm64 && !DEBUG { foreign import sokol_app_clib { "../dylib/sokol_dylib_macos_arm64_metal_release.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .amd64 &&  DEBUG { foreign import sokol_app_clib { "../dylib/sokol_dylib_macos_x64_metal_debug.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .amd64 && !DEBUG { foreign import sokol_app_clib { "../dylib/sokol_dylib_macos_x64_metal_release.dylib" } }
-    } else {
-        when USE_GL {
-            when ODIN_ARCH == .arm64 {
-                when DEBUG { foreign import sokol_app_clib { "sokol_app_macos_arm64_gl_debug.a", "system:Cocoa.framework","system:QuartzCore.framework","system:OpenGL.framework" } }
-                else       { foreign import sokol_app_clib { "sokol_app_macos_arm64_gl_release.a", "system:Cocoa.framework","system:QuartzCore.framework","system:OpenGL.framework" } }
-            } else {
-                when DEBUG { foreign import sokol_app_clib { "sokol_app_macos_x64_gl_debug.a", "system:Cocoa.framework","system:QuartzCore.framework","system:OpenGL.framework" } }
-                else       { foreign import sokol_app_clib { "sokol_app_macos_x64_gl_release.a", "system:Cocoa.framework","system:QuartzCore.framework","system:OpenGL.framework" } }
-            }
-        } else {
-            when ODIN_ARCH == .arm64 {
-                when DEBUG { foreign import sokol_app_clib { "sokol_app_macos_arm64_metal_debug.a", "system:Cocoa.framework","system:QuartzCore.framework","system:Metal.framework" } }
-                else       { foreign import sokol_app_clib { "sokol_app_macos_arm64_metal_release.a", "system:Cocoa.framework","system:QuartzCore.framework","system:Metal.framework" } }
-            } else {
-                when DEBUG { foreign import sokol_app_clib { "sokol_app_macos_x64_metal_debug.a", "system:Cocoa.framework","system:QuartzCore.framework","system:Metal.framework" } }
-                else       { foreign import sokol_app_clib { "sokol_app_macos_x64_metal_release.a", "system:Cocoa.framework","system:QuartzCore.framework","system:Metal.framework" } }
-            }
-        }
-    }
+	when USE_DLL {
+		when USE_GL && ODIN_ARCH ==
+			.arm64 && DEBUG {foreign import sokol_app_clib "../dylib/sokol_dylib_macos_arm64_gl_debug.dylib"} else when USE_GL && ODIN_ARCH == .arm64 && !DEBUG {foreign import sokol_app_clib "../dylib/sokol_dylib_macos_arm64_gl_release.dylib"} else when USE_GL && ODIN_ARCH == .amd64 && DEBUG {foreign import sokol_app_clib "../dylib/sokol_dylib_macos_x64_gl_debug.dylib"} else when USE_GL && ODIN_ARCH == .amd64 && !DEBUG {foreign import sokol_app_clib "../dylib/sokol_dylib_macos_x64_gl_release.dylib"} else when !USE_GL && ODIN_ARCH == .arm64 && DEBUG {foreign import sokol_app_clib "../dylib/sokol_dylib_macos_arm64_metal_debug.dylib"} else when !USE_GL && ODIN_ARCH == .arm64 && !DEBUG {foreign import sokol_app_clib "../dylib/sokol_dylib_macos_arm64_metal_release.dylib"} else when !USE_GL && ODIN_ARCH == .amd64 && DEBUG {foreign import sokol_app_clib "../dylib/sokol_dylib_macos_x64_metal_debug.dylib"} else when !USE_GL && ODIN_ARCH == .amd64 && !DEBUG {foreign import sokol_app_clib "../dylib/sokol_dylib_macos_x64_metal_release.dylib"}
+	} else {
+		when USE_GL {
+			when ODIN_ARCH == .arm64 {
+				when DEBUG {foreign import sokol_app_clib {"sokol_app_macos_arm64_gl_debug.a", "system:Cocoa.framework", "system:QuartzCore.framework", "system:OpenGL.framework"}} else {foreign import sokol_app_clib {"sokol_app_macos_arm64_gl_release.a", "system:Cocoa.framework", "system:QuartzCore.framework", "system:OpenGL.framework"}}
+			} else {
+				when DEBUG {foreign import sokol_app_clib {"sokol_app_macos_x64_gl_debug.a", "system:Cocoa.framework", "system:QuartzCore.framework", "system:OpenGL.framework"}} else {foreign import sokol_app_clib {"sokol_app_macos_x64_gl_release.a", "system:Cocoa.framework", "system:QuartzCore.framework", "system:OpenGL.framework"}}
+			}
+		} else {
+			when ODIN_ARCH == .arm64 {
+				when DEBUG {foreign import sokol_app_clib {"sokol_app_macos_arm64_metal_debug.a", "system:Cocoa.framework", "system:QuartzCore.framework", "system:Metal.framework"}} else {foreign import sokol_app_clib {"sokol_app_macos_arm64_metal_release.a", "system:Cocoa.framework", "system:QuartzCore.framework", "system:Metal.framework"}}
+			} else {
+				when DEBUG {foreign import sokol_app_clib {"sokol_app_macos_x64_metal_debug.a", "system:Cocoa.framework", "system:QuartzCore.framework", "system:Metal.framework"}} else {foreign import sokol_app_clib {"sokol_app_macos_x64_metal_release.a", "system:Cocoa.framework", "system:QuartzCore.framework", "system:Metal.framework"}}
+			}
+		}
+	}
 } else when ODIN_OS == .Linux {
-    when USE_DLL {
-        when DEBUG { foreign import sokol_app_clib { "sokol_app_linux_x64_gl_debug.so", "system:X11", "system:Xi", "system:Xcursor", "system:GL", "system:dl", "system:pthread" } }
-        else       { foreign import sokol_app_clib { "sokol_app_linux_x64_gl_release.so", "system:X11", "system:Xi", "system:Xcursor", "system:GL", "system:dl", "system:pthread" } }
-    } else {
-        when DEBUG { foreign import sokol_app_clib { "sokol_app_linux_x64_gl_debug.a", "system:X11", "system:Xi", "system:Xcursor", "system:GL", "system:dl", "system:pthread" } }
-        else       { foreign import sokol_app_clib { "sokol_app_linux_x64_gl_release.a", "system:X11", "system:Xi", "system:Xcursor", "system:GL", "system:dl", "system:pthread" } }
-    }
+	when USE_DLL {
+		when DEBUG {foreign import sokol_app_clib {"sokol_app_linux_x64_gl_debug.so", "system:X11", "system:Xi", "system:Xcursor", "system:GL", "system:dl", "system:pthread"}} else {foreign import sokol_app_clib {"sokol_app_linux_x64_gl_release.so", "system:X11", "system:Xi", "system:Xcursor", "system:GL", "system:dl", "system:pthread"}}
+	} else {
+		when DEBUG {foreign import sokol_app_clib {"sokol_app_linux_x64_gl_debug.a", "system:X11", "system:Xi", "system:Xcursor", "system:GL", "system:dl", "system:pthread"}} else {foreign import sokol_app_clib {"sokol_app_linux_x64_gl_release.a", "system:X11", "system:Xi", "system:Xcursor", "system:GL", "system:dl", "system:pthread"}}
+	}
 } else when ODIN_ARCH == .wasm32 || ODIN_ARCH == .wasm64p32 {
-    // Feed sokol_app_wasm_gl_debug.a or sokol_app_wasm_gl_release.a into emscripten compiler.
-    foreign import sokol_app_clib { "env.o" }
+	// Feed sokol_app_wasm_gl_debug.a or sokol_app_wasm_gl_release.a into emscripten compiler.
+	foreign import sokol_app_clib "env.o"
 } else {
-    #panic("This OS is currently not supported")
+	#panic("This OS is currently not supported")
 }
 
-@(default_calling_convention="c", link_prefix="sapp_")
+@(default_calling_convention = "c", link_prefix = "sapp_")
 foreign sokol_app_clib {
-    // get runtime environment information
-    get_environment :: proc() -> Environment ---
-    // acquire swapchain info for the next swapchain render pass, call exactly once per frame
-    acquire_swapchain :: proc() -> Swapchain ---
-    // returns true after sokol-app has been initialized
-    isvalid :: proc() -> bool ---
-    // returns the current framebuffer width in pixels
-    width :: proc() -> c.int ---
-    // same as sapp_width(), but returns float
-    widthf :: proc() -> f32 ---
-    // returns the current framebuffer height in pixels
-    height :: proc() -> c.int ---
-    // same as sapp_height(), but returns float
-    heightf :: proc() -> f32 ---
-    // get default framebuffer color pixel format
-    color_format :: proc() -> Pixel_Format ---
-    // get default framebuffer depth pixel format
-    depth_format :: proc() -> Pixel_Format ---
-    // get default framebuffer sample count
-    sample_count :: proc() -> c.int ---
-    // returns true when high_dpi was requested and actually running in a high-dpi scenario
-    high_dpi :: proc() -> bool ---
-    // returns the dpi scaling factor (window pixels to framebuffer pixels)
-    dpi_scale :: proc() -> f32 ---
-    // show or hide the mobile device onscreen keyboard
-    show_keyboard :: proc(show: bool)  ---
-    // return true if the mobile device onscreen keyboard is currently shown
-    keyboard_shown :: proc() -> bool ---
-    // query fullscreen mode
-    is_fullscreen :: proc() -> bool ---
-    // toggle fullscreen mode
-    toggle_fullscreen :: proc()  ---
-    // show or hide the mouse cursor
-    show_mouse :: proc(show: bool)  ---
-    // show or hide the mouse cursor
-    mouse_shown :: proc() -> bool ---
-    // enable/disable mouse-pointer-lock mode
-    lock_mouse :: proc(lock: bool)  ---
-    // return true if in mouse-pointer-lock mode (this may toggle a few frames later)
-    mouse_locked :: proc() -> bool ---
-    // set mouse cursor type
-    set_mouse_cursor :: proc(cursor: Mouse_Cursor)  ---
-    // get current mouse cursor type
-    get_mouse_cursor :: proc() -> Mouse_Cursor ---
-    // associate a custom mouse cursor image to a sapp_mouse_cursor enum entry
-    bind_mouse_cursor_image :: proc(cursor: Mouse_Cursor, #by_ptr desc: Image_Desc) -> Mouse_Cursor ---
-    // restore the sapp_mouse_cursor enum entry to it's default system appearance
-    unbind_mouse_cursor_image :: proc(cursor: Mouse_Cursor)  ---
-    // return the userdata pointer optionally provided in sapp_desc
-    userdata :: proc() -> rawptr ---
-    // return a copy of the sapp_desc structure
-    query_desc :: proc() -> Desc ---
-    // initiate a "soft quit" (sends SAPP_EVENTTYPE_QUIT_REQUESTED)
-    request_quit :: proc()  ---
-    // cancel a pending quit (when SAPP_EVENTTYPE_QUIT_REQUESTED has been received)
-    cancel_quit :: proc()  ---
-    // initiate a "hard quit" (quit application without sending SAPP_EVENTTYPE_QUIT_REQUESTED)
-    quit :: proc()  ---
-    // call from inside event callback to consume the current event (don't forward to platform)
-    consume_event :: proc()  ---
-    // get the current frame counter (for comparison with sapp_event.frame_count)
-    frame_count :: proc() -> u64 ---
-    // get an averaged/smoothed frame duration in seconds
-    frame_duration :: proc() -> f64 ---
-    // get 'raw' unfiltered frame duration in seconds
-    frame_duration_unfiltered :: proc() -> f64 ---
-    // write string into clipboard
-    set_clipboard_string :: proc(str: cstring)  ---
-    // read string from clipboard (usually during SAPP_EVENTTYPE_CLIPBOARD_PASTED)
-    get_clipboard_string :: proc() -> cstring ---
-    // set the window title (only on desktop platforms)
-    set_window_title :: proc(str: cstring)  ---
-    // set the window icon (only on Windows and Linux)
-    set_icon :: proc(#by_ptr icon_desc: Icon_Desc)  ---
-    // gets the total number of dropped files (after an SAPP_EVENTTYPE_FILES_DROPPED event)
-    get_num_dropped_files :: proc() -> c.int ---
-    // gets the dropped file paths
-    get_dropped_file_path :: proc(#any_int index: c.int) -> cstring ---
-    // special run-function for SOKOL_NO_ENTRY (in standard mode this is an empty stub)
-    run :: proc(#by_ptr desc: Desc)  ---
-    // EGL: get EGLDisplay object
-    egl_get_display :: proc() -> rawptr ---
-    // EGL: get EGLContext object
-    egl_get_context :: proc() -> rawptr ---
-    // HTML5: enable or disable the hardwired "Leave Site?" dialog box
-    html5_ask_leave_site :: proc(ask: bool)  ---
-    // HTML5: get byte size of a dropped file
-    html5_get_dropped_file_size :: proc(#any_int index: c.int) -> u32 ---
-    // HTML5: asynchronously load the content of a dropped file
-    html5_fetch_dropped_file :: proc(#by_ptr request: Html5_Fetch_Request)  ---
-    // macOS: get bridged pointer to macOS NSWindow
-    macos_get_window :: proc() -> rawptr ---
-    // iOS: get bridged pointer to iOS UIWindow
-    ios_get_window :: proc() -> rawptr ---
-    // D3D11: get pointer to IDXGISwapChain object
-    d3d11_get_swap_chain :: proc() -> rawptr ---
-    // Win32: get the HWND window handle
-    win32_get_hwnd :: proc() -> rawptr ---
-    // GL: get major version
-    gl_get_major_version :: proc() -> c.int ---
-    // GL: get minor version
-    gl_get_minor_version :: proc() -> c.int ---
-    // GL: return true if the context is GLES
-    gl_is_gles :: proc() -> bool ---
-    // X11: get Window
-    x11_get_window :: proc() -> rawptr ---
-    // X11: get Display
-    x11_get_display :: proc() -> rawptr ---
-    // Android: get native activity handle
-    android_get_native_activity :: proc() -> rawptr ---
-    // Android: get native window handle
-    android_get_native_window :: proc() -> rawptr ---
+	// get runtime environment information
+	get_environment :: proc() -> Environment ---
+	// acquire swapchain info for the next swapchain render pass, call exactly once per frame
+	acquire_swapchain :: proc() -> Swapchain ---
+	// returns true after sokol-app has been initialized
+	isvalid :: proc() -> bool ---
+	// returns the current framebuffer width in pixels
+	width :: proc() -> c.int ---
+	// same as sapp_width(), but returns float
+	widthf :: proc() -> f32 ---
+	// returns the current framebuffer height in pixels
+	height :: proc() -> c.int ---
+	// same as sapp_height(), but returns float
+	heightf :: proc() -> f32 ---
+	// get default framebuffer color pixel format
+	color_format :: proc() -> Pixel_Format ---
+	// get default framebuffer depth pixel format
+	depth_format :: proc() -> Pixel_Format ---
+	// get default framebuffer sample count
+	sample_count :: proc() -> c.int ---
+	// returns true when high_dpi was requested and actually running in a high-dpi scenario
+	high_dpi :: proc() -> bool ---
+	// returns the dpi scaling factor (window pixels to framebuffer pixels)
+	dpi_scale :: proc() -> f32 ---
+	// show or hide the mobile device onscreen keyboard
+	show_keyboard :: proc(show: bool) ---
+	// return true if the mobile device onscreen keyboard is currently shown
+	keyboard_shown :: proc() -> bool ---
+	// query fullscreen mode
+	is_fullscreen :: proc() -> bool ---
+	// toggle fullscreen mode
+	toggle_fullscreen :: proc() ---
+	// show or hide the mouse cursor
+	show_mouse :: proc(show: bool) ---
+	// show or hide the mouse cursor
+	mouse_shown :: proc() -> bool ---
+	// enable/disable mouse-pointer-lock mode
+	lock_mouse :: proc(lock: bool) ---
+	// return true if in mouse-pointer-lock mode (this may toggle a few frames later)
+	mouse_locked :: proc() -> bool ---
+	// set mouse cursor type
+	set_mouse_cursor :: proc(cursor: Mouse_Cursor) ---
+	// get current mouse cursor type
+	get_mouse_cursor :: proc() -> Mouse_Cursor ---
+	// associate a custom mouse cursor image to a sapp_mouse_cursor enum entry
+	bind_mouse_cursor_image :: proc(cursor: Mouse_Cursor, #by_ptr desc: Image_Desc) -> Mouse_Cursor ---
+	// restore the sapp_mouse_cursor enum entry to it's default system appearance
+	unbind_mouse_cursor_image :: proc(cursor: Mouse_Cursor) ---
+	// return the userdata pointer optionally provided in sapp_desc
+	userdata :: proc() -> rawptr ---
+	// return a copy of the sapp_desc structure
+	query_desc :: proc() -> Desc ---
+	// initiate a "soft quit" (sends SAPP_EVENTTYPE_QUIT_REQUESTED)
+	request_quit :: proc() ---
+	// cancel a pending quit (when SAPP_EVENTTYPE_QUIT_REQUESTED has been received)
+	cancel_quit :: proc() ---
+	// initiate a "hard quit" (quit application without sending SAPP_EVENTTYPE_QUIT_REQUESTED)
+	quit :: proc() ---
+	// call from inside event callback to consume the current event (don't forward to platform)
+	consume_event :: proc() ---
+	// get the current frame counter (for comparison with sapp_event.frame_count)
+	frame_count :: proc() -> u64 ---
+	// get an averaged/smoothed frame duration in seconds
+	frame_duration :: proc() -> f64 ---
+	// get 'raw' unfiltered frame duration in seconds
+	frame_duration_unfiltered :: proc() -> f64 ---
+	// write string into clipboard
+	set_clipboard_string :: proc(str: cstring) ---
+	// read string from clipboard (usually during SAPP_EVENTTYPE_CLIPBOARD_PASTED)
+	get_clipboard_string :: proc() -> cstring ---
+	// set the window title (only on desktop platforms)
+	set_window_title :: proc(str: cstring) ---
+	// set the window icon (only on Windows and Linux)
+	set_icon :: proc(#by_ptr icon_desc: Icon_Desc) ---
+	// gets the total number of dropped files (after an SAPP_EVENTTYPE_FILES_DROPPED event)
+	get_num_dropped_files :: proc() -> c.int ---
+	// gets the dropped file paths
+	get_dropped_file_path :: proc(#any_int index: c.int) -> cstring ---
+	// special run-function for SOKOL_NO_ENTRY (in standard mode this is an empty stub)
+	run :: proc(#by_ptr desc: Desc) ---
+	// EGL: get EGLDisplay object
+	egl_get_display :: proc() -> rawptr ---
+	// EGL: get EGLContext object
+	egl_get_context :: proc() -> rawptr ---
+	// HTML5: enable or disable the hardwired "Leave Site?" dialog box
+	html5_ask_leave_site :: proc(ask: bool) ---
+	// HTML5: get byte size of a dropped file
+	html5_get_dropped_file_size :: proc(#any_int index: c.int) -> u32 ---
+	// HTML5: asynchronously load the content of a dropped file
+	html5_fetch_dropped_file :: proc(#by_ptr request: Html5_Fetch_Request) ---
+	// macOS: get bridged pointer to macOS NSWindow
+	macos_get_window :: proc() -> rawptr ---
+	// iOS: get bridged pointer to iOS UIWindow
+	ios_get_window :: proc() -> rawptr ---
+	// D3D11: get pointer to IDXGISwapChain object
+	d3d11_get_swap_chain :: proc() -> rawptr ---
+	// Win32: get the HWND window handle
+	win32_get_hwnd :: proc() -> rawptr ---
+	// GL: get major version
+	gl_get_major_version :: proc() -> c.int ---
+	// GL: get minor version
+	gl_get_minor_version :: proc() -> c.int ---
+	// GL: return true if the context is GLES
+	gl_is_gles :: proc() -> bool ---
+	// X11: get Window
+	x11_get_window :: proc() -> rawptr ---
+	// X11: get Display
+	x11_get_display :: proc() -> rawptr ---
+	// Android: get native activity handle
+	android_get_native_activity :: proc() -> rawptr ---
+	// Android: get native window handle
+	android_get_native_window :: proc() -> rawptr ---
 }
 
 // misc constants
@@ -1566,31 +1550,31 @@ MAX_ICONIMAGES :: 8
     or other user-invoked actions.
 */
 Event_Type :: enum i32 {
-    INVALID,
-    KEY_DOWN,
-    KEY_UP,
-    CHAR,
-    MOUSE_DOWN,
-    MOUSE_UP,
-    MOUSE_SCROLL,
-    MOUSE_MOVE,
-    MOUSE_ENTER,
-    MOUSE_LEAVE,
-    TOUCHES_BEGAN,
-    TOUCHES_MOVED,
-    TOUCHES_ENDED,
-    TOUCHES_CANCELLED,
-    RESIZED,
-    ICONIFIED,
-    RESTORED,
-    FOCUSED,
-    UNFOCUSED,
-    SUSPENDED,
-    RESUMED,
-    QUIT_REQUESTED,
-    CLIPBOARD_PASTED,
-    FILES_DROPPED,
-    ANDROID_BACK,
+	INVALID,
+	KEY_DOWN,
+	KEY_UP,
+	CHAR,
+	MOUSE_DOWN,
+	MOUSE_UP,
+	MOUSE_SCROLL,
+	MOUSE_MOVE,
+	MOUSE_ENTER,
+	MOUSE_LEAVE,
+	TOUCHES_BEGAN,
+	TOUCHES_MOVED,
+	TOUCHES_ENDED,
+	TOUCHES_CANCELLED,
+	RESIZED,
+	ICONIFIED,
+	RESTORED,
+	FOCUSED,
+	UNFOCUSED,
+	SUSPENDED,
+	RESUMED,
+	QUIT_REQUESTED,
+	CLIPBOARD_PASTED,
+	FILES_DROPPED,
+	ANDROID_BACK,
 }
 
 /*
@@ -1602,127 +1586,127 @@ Event_Type :: enum i32 {
     Note that the keycode values are identical with GLFW.
 */
 Keycode :: enum i32 {
-    INVALID = 0,
-    SPACE = 32,
-    APOSTROPHE = 39,
-    COMMA = 44,
-    MINUS = 45,
-    PERIOD = 46,
-    SLASH = 47,
-    _0 = 48,
-    _1 = 49,
-    _2 = 50,
-    _3 = 51,
-    _4 = 52,
-    _5 = 53,
-    _6 = 54,
-    _7 = 55,
-    _8 = 56,
-    _9 = 57,
-    SEMICOLON = 59,
-    EQUAL = 61,
-    A = 65,
-    B = 66,
-    C = 67,
-    D = 68,
-    E = 69,
-    F = 70,
-    G = 71,
-    H = 72,
-    I = 73,
-    J = 74,
-    K = 75,
-    L = 76,
-    M = 77,
-    N = 78,
-    O = 79,
-    P = 80,
-    Q = 81,
-    R = 82,
-    S = 83,
-    T = 84,
-    U = 85,
-    V = 86,
-    W = 87,
-    X = 88,
-    Y = 89,
-    Z = 90,
-    LEFT_BRACKET = 91,
-    BACKSLASH = 92,
-    RIGHT_BRACKET = 93,
-    GRAVE_ACCENT = 96,
-    WORLD_1 = 161,
-    WORLD_2 = 162,
-    ESCAPE = 256,
-    ENTER = 257,
-    TAB = 258,
-    BACKSPACE = 259,
-    INSERT = 260,
-    DELETE = 261,
-    RIGHT = 262,
-    LEFT = 263,
-    DOWN = 264,
-    UP = 265,
-    PAGE_UP = 266,
-    PAGE_DOWN = 267,
-    HOME = 268,
-    END = 269,
-    CAPS_LOCK = 280,
-    SCROLL_LOCK = 281,
-    NUM_LOCK = 282,
-    PRINT_SCREEN = 283,
-    PAUSE = 284,
-    F1 = 290,
-    F2 = 291,
-    F3 = 292,
-    F4 = 293,
-    F5 = 294,
-    F6 = 295,
-    F7 = 296,
-    F8 = 297,
-    F9 = 298,
-    F10 = 299,
-    F11 = 300,
-    F12 = 301,
-    F13 = 302,
-    F14 = 303,
-    F15 = 304,
-    F16 = 305,
-    F17 = 306,
-    F18 = 307,
-    F19 = 308,
-    F20 = 309,
-    F21 = 310,
-    F22 = 311,
-    F23 = 312,
-    F24 = 313,
-    F25 = 314,
-    KP_0 = 320,
-    KP_1 = 321,
-    KP_2 = 322,
-    KP_3 = 323,
-    KP_4 = 324,
-    KP_5 = 325,
-    KP_6 = 326,
-    KP_7 = 327,
-    KP_8 = 328,
-    KP_9 = 329,
-    KP_DECIMAL = 330,
-    KP_DIVIDE = 331,
-    KP_MULTIPLY = 332,
-    KP_SUBTRACT = 333,
-    KP_ADD = 334,
-    KP_ENTER = 335,
-    KP_EQUAL = 336,
-    LEFT_SHIFT = 340,
-    LEFT_CONTROL = 341,
-    LEFT_ALT = 342,
-    LEFT_SUPER = 343,
-    RIGHT_SHIFT = 344,
-    RIGHT_CONTROL = 345,
-    RIGHT_ALT = 346,
-    RIGHT_SUPER = 347,
-    MENU = 348,
+	INVALID       = 0,
+	SPACE         = 32,
+	APOSTROPHE    = 39,
+	COMMA         = 44,
+	MINUS         = 45,
+	PERIOD        = 46,
+	SLASH         = 47,
+	_0            = 48,
+	_1            = 49,
+	_2            = 50,
+	_3            = 51,
+	_4            = 52,
+	_5            = 53,
+	_6            = 54,
+	_7            = 55,
+	_8            = 56,
+	_9            = 57,
+	SEMICOLON     = 59,
+	EQUAL         = 61,
+	A             = 65,
+	B             = 66,
+	C             = 67,
+	D             = 68,
+	E             = 69,
+	F             = 70,
+	G             = 71,
+	H             = 72,
+	I             = 73,
+	J             = 74,
+	K             = 75,
+	L             = 76,
+	M             = 77,
+	N             = 78,
+	O             = 79,
+	P             = 80,
+	Q             = 81,
+	R             = 82,
+	S             = 83,
+	T             = 84,
+	U             = 85,
+	V             = 86,
+	W             = 87,
+	X             = 88,
+	Y             = 89,
+	Z             = 90,
+	LEFT_BRACKET  = 91,
+	BACKSLASH     = 92,
+	RIGHT_BRACKET = 93,
+	GRAVE_ACCENT  = 96,
+	WORLD_1       = 161,
+	WORLD_2       = 162,
+	ESCAPE        = 256,
+	ENTER         = 257,
+	TAB           = 258,
+	BACKSPACE     = 259,
+	INSERT        = 260,
+	DELETE        = 261,
+	RIGHT         = 262,
+	LEFT          = 263,
+	DOWN          = 264,
+	UP            = 265,
+	PAGE_UP       = 266,
+	PAGE_DOWN     = 267,
+	HOME          = 268,
+	END           = 269,
+	CAPS_LOCK     = 280,
+	SCROLL_LOCK   = 281,
+	NUM_LOCK      = 282,
+	PRINT_SCREEN  = 283,
+	PAUSE         = 284,
+	F1            = 290,
+	F2            = 291,
+	F3            = 292,
+	F4            = 293,
+	F5            = 294,
+	F6            = 295,
+	F7            = 296,
+	F8            = 297,
+	F9            = 298,
+	F10           = 299,
+	F11           = 300,
+	F12           = 301,
+	F13           = 302,
+	F14           = 303,
+	F15           = 304,
+	F16           = 305,
+	F17           = 306,
+	F18           = 307,
+	F19           = 308,
+	F20           = 309,
+	F21           = 310,
+	F22           = 311,
+	F23           = 312,
+	F24           = 313,
+	F25           = 314,
+	KP_0          = 320,
+	KP_1          = 321,
+	KP_2          = 322,
+	KP_3          = 323,
+	KP_4          = 324,
+	KP_5          = 325,
+	KP_6          = 326,
+	KP_7          = 327,
+	KP_8          = 328,
+	KP_9          = 329,
+	KP_DECIMAL    = 330,
+	KP_DIVIDE     = 331,
+	KP_MULTIPLY   = 332,
+	KP_SUBTRACT   = 333,
+	KP_ADD        = 334,
+	KP_ENTER      = 335,
+	KP_EQUAL      = 336,
+	LEFT_SHIFT    = 340,
+	LEFT_CONTROL  = 341,
+	LEFT_ALT      = 342,
+	LEFT_SUPER    = 343,
+	RIGHT_SHIFT   = 344,
+	RIGHT_CONTROL = 345,
+	RIGHT_ALT     = 346,
+	RIGHT_SUPER   = 347,
+	MENU          = 348,
 }
 
 /*
@@ -1736,10 +1720,10 @@ Keycode :: enum i32 {
     See https://developer.android.com/reference/android/view/MotionEvent#TOOL_TYPE_UNKNOWN
 */
 Android_Tooltype :: enum i32 {
-    UNKNOWN = 0,
-    FINGER = 1,
-    STYLUS = 2,
-    MOUSE = 3,
+	UNKNOWN = 0,
+	FINGER  = 1,
+	STYLUS  = 2,
+	MOUSE   = 3,
 }
 
 /*
@@ -1752,11 +1736,11 @@ Android_Tooltype :: enum i32 {
     and the number of touches is stored in sapp_event.num_touches.
 */
 Touchpoint :: struct {
-    identifier : c.uintptr_t,
-    pos_x : f32,
-    pos_y : f32,
-    android_tooltype : Android_Tooltype,
-    changed : bool,
+	identifier:       c.uintptr_t,
+	pos_x:            f32,
+	pos_y:            f32,
+	android_tooltype: Android_Tooltype,
+	changed:          bool,
 }
 
 /*
@@ -1766,10 +1750,10 @@ Touchpoint :: struct {
     and MOUSE_UP, stored in the struct field sapp_event.mouse_button.
 */
 Mousebutton :: enum i32 {
-    LEFT = 0,
-    RIGHT = 1,
-    MIDDLE = 2,
-    INVALID = 256,
+	LEFT    = 0,
+	RIGHT   = 1,
+	MIDDLE  = 2,
+	INVALID = 256,
 }
 
 /*
@@ -1794,25 +1778,25 @@ MODIFIER_MMB :: 1024
     fields.
 */
 Event :: struct {
-    frame_count : u64,
-    type : Event_Type,
-    key_code : Keycode,
-    char_code : u32,
-    key_repeat : bool,
-    modifiers : u32,
-    mouse_button : Mousebutton,
-    mouse_x : f32,
-    mouse_y : f32,
-    mouse_dx : f32,
-    mouse_dy : f32,
-    scroll_x : f32,
-    scroll_y : f32,
-    num_touches : c.int,
-    touches : [8]Touchpoint,
-    window_width : c.int,
-    window_height : c.int,
-    framebuffer_width : c.int,
-    framebuffer_height : c.int,
+	frame_count:        u64,
+	type:               Event_Type,
+	key_code:           Keycode,
+	char_code:          u32,
+	key_repeat:         bool,
+	modifiers:          u32,
+	mouse_button:       Mousebutton,
+	mouse_x:            f32,
+	mouse_y:            f32,
+	mouse_dx:           f32,
+	mouse_dy:           f32,
+	scroll_x:           f32,
+	scroll_y:           f32,
+	num_touches:        c.int,
+	touches:            [8]Touchpoint,
+	window_width:       c.int,
+	window_height:      c.int,
+	framebuffer_width:  c.int,
+	framebuffer_height: c.int,
 }
 
 /*
@@ -1822,8 +1806,8 @@ Event :: struct {
     into sokol_app.h.
 */
 Range :: struct {
-    ptr : rawptr,
-    size : c.size_t,
+	ptr:  rawptr,
+	size: c.size_t,
 }
 
 /*
@@ -1837,11 +1821,11 @@ Range :: struct {
     of the image should be aligned with the mouse position.
 */
 Image_Desc :: struct {
-    width : c.int,
-    height : c.int,
-    cursor_hotspot_x : c.int,
-    cursor_hotspot_y : c.int,
-    pixels : Range,
+	width:            c.int,
+	height:           c.int,
+	cursor_hotspot_x: c.int,
+	cursor_hotspot_y: c.int,
+	pixels:           Range,
 }
 
 /*
@@ -1863,8 +1847,8 @@ Image_Desc :: struct {
     will be ignored and the sokol_app.h default icon will be set.
 */
 Icon_Desc :: struct {
-    sokol_default : bool,
-    images : [8]Image_Desc,
+	sokol_default: bool,
+	images:        [8]Image_Desc,
 }
 
 /*
@@ -1876,145 +1860,145 @@ Icon_Desc :: struct {
     override one function but not the other).
 */
 Allocator :: struct {
-    alloc_fn : proc "c" (a0: c.size_t, a1: rawptr) -> rawptr,
-    free_fn : proc "c" (a0: rawptr, a1: rawptr),
-    user_data : rawptr,
+	alloc_fn:  proc "c" (a0: c.size_t, a1: rawptr) -> rawptr,
+	free_fn:   proc "c" (a0: rawptr, a1: rawptr),
+	user_data: rawptr,
 }
 
 Log_Item :: enum i32 {
-    OK,
-    MALLOC_FAILED,
-    SWAPCHAIN_DEPTHFORMAT_INVALID,
-    MACOS_INVALID_NSOPENGL_PROFILE,
-    METAL_CREATE_SWAPCHAIN_DEPTH_TEXTURE_FAILED,
-    METAL_CREATE_SWAPCHAIN_MSAA_TEXTURE_FAILED,
-    WIN32_LOAD_OPENGL32_DLL_FAILED,
-    WIN32_CREATE_HELPER_WINDOW_FAILED,
-    WIN32_HELPER_WINDOW_GETDC_FAILED,
-    WIN32_DUMMY_CONTEXT_SET_PIXELFORMAT_FAILED,
-    WIN32_CREATE_DUMMY_CONTEXT_FAILED,
-    WIN32_DUMMY_CONTEXT_MAKE_CURRENT_FAILED,
-    WIN32_GET_PIXELFORMAT_ATTRIB_FAILED,
-    WIN32_WGL_FIND_PIXELFORMAT_FAILED,
-    WIN32_WGL_DESCRIBE_PIXELFORMAT_FAILED,
-    WIN32_WGL_SET_PIXELFORMAT_FAILED,
-    WIN32_WGL_ARB_CREATE_CONTEXT_REQUIRED,
-    WIN32_WGL_ARB_CREATE_CONTEXT_PROFILE_REQUIRED,
-    WIN32_WGL_OPENGL_VERSION_NOT_SUPPORTED,
-    WIN32_WGL_OPENGL_PROFILE_NOT_SUPPORTED,
-    WIN32_WGL_INCOMPATIBLE_DEVICE_CONTEXT,
-    WIN32_WGL_CREATE_CONTEXT_ATTRIBS_FAILED_OTHER,
-    WIN32_D3D11_CREATE_DEVICE_WITH_DEBUG_FAILED,
-    WIN32_D3D11_CREATE_DEVICE_FAILED,
-    WIN32_D3D11_GET_IDXGIFACTORY_FAILED,
-    WIN32_D3D11_GET_IDXGIADAPTER_FAILED,
-    WIN32_D3D11_QUERY_INTERFACE_IDXGIDEVICE1_FAILED,
-    WIN32_D3D11_CREATE_SWAPCHAIN_FAILED,
-    WIN32_REGISTER_RAW_INPUT_DEVICES_FAILED_MOUSE_LOCK,
-    WIN32_REGISTER_RAW_INPUT_DEVICES_FAILED_MOUSE_UNLOCK,
-    WIN32_GET_RAW_INPUT_DATA_FAILED,
-    WIN32_DESTROYICON_FOR_CURSOR_FAILED,
-    LINUX_GLX_LOAD_LIBGL_FAILED,
-    LINUX_GLX_LOAD_ENTRY_POINTS_FAILED,
-    LINUX_GLX_EXTENSION_NOT_FOUND,
-    LINUX_GLX_QUERY_VERSION_FAILED,
-    LINUX_GLX_VERSION_TOO_LOW,
-    LINUX_GLX_NO_GLXFBCONFIGS,
-    LINUX_GLX_NO_SUITABLE_GLXFBCONFIG,
-    LINUX_GLX_GET_VISUAL_FROM_FBCONFIG_FAILED,
-    LINUX_GLX_REQUIRED_EXTENSIONS_MISSING,
-    LINUX_GLX_CREATE_CONTEXT_FAILED,
-    LINUX_GLX_CREATE_WINDOW_FAILED,
-    LINUX_X11_CREATE_WINDOW_FAILED,
-    LINUX_EGL_BIND_OPENGL_API_FAILED,
-    LINUX_EGL_BIND_OPENGL_ES_API_FAILED,
-    LINUX_EGL_GET_DISPLAY_FAILED,
-    LINUX_EGL_INITIALIZE_FAILED,
-    LINUX_EGL_NO_CONFIGS,
-    LINUX_EGL_NO_NATIVE_VISUAL,
-    LINUX_EGL_GET_VISUAL_INFO_FAILED,
-    LINUX_EGL_CREATE_WINDOW_SURFACE_FAILED,
-    LINUX_EGL_CREATE_CONTEXT_FAILED,
-    LINUX_EGL_MAKE_CURRENT_FAILED,
-    LINUX_X11_OPEN_DISPLAY_FAILED,
-    LINUX_X11_QUERY_SYSTEM_DPI_FAILED,
-    LINUX_X11_DROPPED_FILE_URI_WRONG_SCHEME,
-    LINUX_X11_FAILED_TO_BECOME_OWNER_OF_CLIPBOARD,
-    ANDROID_UNSUPPORTED_INPUT_EVENT_INPUT_CB,
-    ANDROID_UNSUPPORTED_INPUT_EVENT_MAIN_CB,
-    ANDROID_READ_MSG_FAILED,
-    ANDROID_WRITE_MSG_FAILED,
-    ANDROID_MSG_CREATE,
-    ANDROID_MSG_RESUME,
-    ANDROID_MSG_PAUSE,
-    ANDROID_MSG_FOCUS,
-    ANDROID_MSG_NO_FOCUS,
-    ANDROID_MSG_SET_NATIVE_WINDOW,
-    ANDROID_MSG_SET_INPUT_QUEUE,
-    ANDROID_MSG_DESTROY,
-    ANDROID_UNKNOWN_MSG,
-    ANDROID_LOOP_THREAD_STARTED,
-    ANDROID_LOOP_THREAD_DONE,
-    ANDROID_NATIVE_ACTIVITY_ONSTART,
-    ANDROID_NATIVE_ACTIVITY_ONRESUME,
-    ANDROID_NATIVE_ACTIVITY_ONSAVEINSTANCESTATE,
-    ANDROID_NATIVE_ACTIVITY_ONWINDOWFOCUSCHANGED,
-    ANDROID_NATIVE_ACTIVITY_ONPAUSE,
-    ANDROID_NATIVE_ACTIVITY_ONSTOP,
-    ANDROID_NATIVE_ACTIVITY_ONNATIVEWINDOWCREATED,
-    ANDROID_NATIVE_ACTIVITY_ONNATIVEWINDOWDESTROYED,
-    ANDROID_NATIVE_ACTIVITY_ONINPUTQUEUECREATED,
-    ANDROID_NATIVE_ACTIVITY_ONINPUTQUEUEDESTROYED,
-    ANDROID_NATIVE_ACTIVITY_ONCONFIGURATIONCHANGED,
-    ANDROID_NATIVE_ACTIVITY_ONLOWMEMORY,
-    ANDROID_NATIVE_ACTIVITY_ONDESTROY,
-    ANDROID_NATIVE_ACTIVITY_DONE,
-    ANDROID_NATIVE_ACTIVITY_ONCREATE,
-    ANDROID_CREATE_THREAD_PIPE_FAILED,
-    ANDROID_NATIVE_ACTIVITY_CREATE_SUCCESS,
-    ANDROID_CHOREOGRAPHER_ENABLED,
-    ANDROID_CHOREOGRAPHER_UNAVAILABLE,
-    WGPU_DEVICE_LOST,
-    WGPU_DEVICE_LOG,
-    WGPU_DEVICE_UNCAPTURED_ERROR,
-    WGPU_SWAPCHAIN_CREATE_SURFACE_FAILED,
-    WGPU_SWAPCHAIN_SURFACE_GET_CAPABILITIES_FAILED,
-    WGPU_SWAPCHAIN_CREATE_DEPTH_STENCIL_TEXTURE_FAILED,
-    WGPU_SWAPCHAIN_CREATE_DEPTH_STENCIL_VIEW_FAILED,
-    WGPU_SWAPCHAIN_CREATE_MSAA_TEXTURE_FAILED,
-    WGPU_SWAPCHAIN_CREATE_MSAA_VIEW_FAILED,
-    WGPU_SWAPCHAIN_GETCURRENTTEXTURE_FAILED,
-    WGPU_REQUEST_DEVICE_STATUS_ERROR,
-    WGPU_REQUEST_DEVICE_STATUS_UNKNOWN,
-    WGPU_REQUEST_ADAPTER_STATUS_UNAVAILABLE,
-    WGPU_REQUEST_ADAPTER_STATUS_ERROR,
-    WGPU_REQUEST_ADAPTER_STATUS_UNKNOWN,
-    WGPU_CREATE_INSTANCE_FAILED,
-    VULKAN_DEBUG_GENERAL,
-    VULKAN_DEBUG_VALIDATION,
-    VULKAN_DEBUG_PERFORMANCE,
-    VULKAN_REQUIRED_INSTANCE_EXTENSION_FUNCTION_MISSING,
-    VULKAN_ALLOC_DEVICE_MEMORY_NO_SUITABLE_MEMORY_TYPE,
-    VULKAN_ALLOCATE_MEMORY_FAILED,
-    VULKAN_CREATE_INSTANCE_FAILED,
-    VULKAN_ENUMERATE_PHYSICAL_DEVICES_FAILED,
-    VULKAN_NO_PHYSICAL_DEVICES_FOUND,
-    VULKAN_NO_SUITABLE_PHYSICAL_DEVICE_FOUND,
-    VULKAN_CREATE_DEVICE_FAILED_EXTENSION_NOT_PRESENT,
-    VULKAN_CREATE_DEVICE_FAILED_FEATURE_NOT_PRESENT,
-    VULKAN_CREATE_DEVICE_FAILED_INITIALIZATION_FAILED,
-    VULKAN_CREATE_DEVICE_FAILED_OTHER,
-    VULKAN_CREATE_SURFACE_FAILED,
-    VULKAN_CREATE_SWAPCHAIN_FAILED,
-    VULKAN_SWAPCHAIN_CREATE_IMAGE_VIEW_FAILED,
-    VULKAN_SWAPCHAIN_CREATE_IMAGE_FAILED,
-    VULKAN_SWAPCHAIN_ALLOC_IMAGE_DEVICE_MEMORY_FAILED,
-    VULKAN_SWAPCHAIN_BIND_IMAGE_MEMORY_FAILED,
-    VULKAN_ACQUIRE_NEXT_IMAGE_FAILED,
-    VULKAN_QUEUE_PRESENT_FAILED,
-    IMAGE_DATA_SIZE_MISMATCH,
-    DROPPED_FILE_PATH_TOO_LONG,
-    CLIPBOARD_STRING_TOO_BIG,
+	OK,
+	MALLOC_FAILED,
+	SWAPCHAIN_DEPTHFORMAT_INVALID,
+	MACOS_INVALID_NSOPENGL_PROFILE,
+	METAL_CREATE_SWAPCHAIN_DEPTH_TEXTURE_FAILED,
+	METAL_CREATE_SWAPCHAIN_MSAA_TEXTURE_FAILED,
+	WIN32_LOAD_OPENGL32_DLL_FAILED,
+	WIN32_CREATE_HELPER_WINDOW_FAILED,
+	WIN32_HELPER_WINDOW_GETDC_FAILED,
+	WIN32_DUMMY_CONTEXT_SET_PIXELFORMAT_FAILED,
+	WIN32_CREATE_DUMMY_CONTEXT_FAILED,
+	WIN32_DUMMY_CONTEXT_MAKE_CURRENT_FAILED,
+	WIN32_GET_PIXELFORMAT_ATTRIB_FAILED,
+	WIN32_WGL_FIND_PIXELFORMAT_FAILED,
+	WIN32_WGL_DESCRIBE_PIXELFORMAT_FAILED,
+	WIN32_WGL_SET_PIXELFORMAT_FAILED,
+	WIN32_WGL_ARB_CREATE_CONTEXT_REQUIRED,
+	WIN32_WGL_ARB_CREATE_CONTEXT_PROFILE_REQUIRED,
+	WIN32_WGL_OPENGL_VERSION_NOT_SUPPORTED,
+	WIN32_WGL_OPENGL_PROFILE_NOT_SUPPORTED,
+	WIN32_WGL_INCOMPATIBLE_DEVICE_CONTEXT,
+	WIN32_WGL_CREATE_CONTEXT_ATTRIBS_FAILED_OTHER,
+	WIN32_D3D11_CREATE_DEVICE_WITH_DEBUG_FAILED,
+	WIN32_D3D11_CREATE_DEVICE_FAILED,
+	WIN32_D3D11_GET_IDXGIFACTORY_FAILED,
+	WIN32_D3D11_GET_IDXGIADAPTER_FAILED,
+	WIN32_D3D11_QUERY_INTERFACE_IDXGIDEVICE1_FAILED,
+	WIN32_D3D11_CREATE_SWAPCHAIN_FAILED,
+	WIN32_REGISTER_RAW_INPUT_DEVICES_FAILED_MOUSE_LOCK,
+	WIN32_REGISTER_RAW_INPUT_DEVICES_FAILED_MOUSE_UNLOCK,
+	WIN32_GET_RAW_INPUT_DATA_FAILED,
+	WIN32_DESTROYICON_FOR_CURSOR_FAILED,
+	LINUX_GLX_LOAD_LIBGL_FAILED,
+	LINUX_GLX_LOAD_ENTRY_POINTS_FAILED,
+	LINUX_GLX_EXTENSION_NOT_FOUND,
+	LINUX_GLX_QUERY_VERSION_FAILED,
+	LINUX_GLX_VERSION_TOO_LOW,
+	LINUX_GLX_NO_GLXFBCONFIGS,
+	LINUX_GLX_NO_SUITABLE_GLXFBCONFIG,
+	LINUX_GLX_GET_VISUAL_FROM_FBCONFIG_FAILED,
+	LINUX_GLX_REQUIRED_EXTENSIONS_MISSING,
+	LINUX_GLX_CREATE_CONTEXT_FAILED,
+	LINUX_GLX_CREATE_WINDOW_FAILED,
+	LINUX_X11_CREATE_WINDOW_FAILED,
+	LINUX_EGL_BIND_OPENGL_API_FAILED,
+	LINUX_EGL_BIND_OPENGL_ES_API_FAILED,
+	LINUX_EGL_GET_DISPLAY_FAILED,
+	LINUX_EGL_INITIALIZE_FAILED,
+	LINUX_EGL_NO_CONFIGS,
+	LINUX_EGL_NO_NATIVE_VISUAL,
+	LINUX_EGL_GET_VISUAL_INFO_FAILED,
+	LINUX_EGL_CREATE_WINDOW_SURFACE_FAILED,
+	LINUX_EGL_CREATE_CONTEXT_FAILED,
+	LINUX_EGL_MAKE_CURRENT_FAILED,
+	LINUX_X11_OPEN_DISPLAY_FAILED,
+	LINUX_X11_QUERY_SYSTEM_DPI_FAILED,
+	LINUX_X11_DROPPED_FILE_URI_WRONG_SCHEME,
+	LINUX_X11_FAILED_TO_BECOME_OWNER_OF_CLIPBOARD,
+	ANDROID_UNSUPPORTED_INPUT_EVENT_INPUT_CB,
+	ANDROID_UNSUPPORTED_INPUT_EVENT_MAIN_CB,
+	ANDROID_READ_MSG_FAILED,
+	ANDROID_WRITE_MSG_FAILED,
+	ANDROID_MSG_CREATE,
+	ANDROID_MSG_RESUME,
+	ANDROID_MSG_PAUSE,
+	ANDROID_MSG_FOCUS,
+	ANDROID_MSG_NO_FOCUS,
+	ANDROID_MSG_SET_NATIVE_WINDOW,
+	ANDROID_MSG_SET_INPUT_QUEUE,
+	ANDROID_MSG_DESTROY,
+	ANDROID_UNKNOWN_MSG,
+	ANDROID_LOOP_THREAD_STARTED,
+	ANDROID_LOOP_THREAD_DONE,
+	ANDROID_NATIVE_ACTIVITY_ONSTART,
+	ANDROID_NATIVE_ACTIVITY_ONRESUME,
+	ANDROID_NATIVE_ACTIVITY_ONSAVEINSTANCESTATE,
+	ANDROID_NATIVE_ACTIVITY_ONWINDOWFOCUSCHANGED,
+	ANDROID_NATIVE_ACTIVITY_ONPAUSE,
+	ANDROID_NATIVE_ACTIVITY_ONSTOP,
+	ANDROID_NATIVE_ACTIVITY_ONNATIVEWINDOWCREATED,
+	ANDROID_NATIVE_ACTIVITY_ONNATIVEWINDOWDESTROYED,
+	ANDROID_NATIVE_ACTIVITY_ONINPUTQUEUECREATED,
+	ANDROID_NATIVE_ACTIVITY_ONINPUTQUEUEDESTROYED,
+	ANDROID_NATIVE_ACTIVITY_ONCONFIGURATIONCHANGED,
+	ANDROID_NATIVE_ACTIVITY_ONLOWMEMORY,
+	ANDROID_NATIVE_ACTIVITY_ONDESTROY,
+	ANDROID_NATIVE_ACTIVITY_DONE,
+	ANDROID_NATIVE_ACTIVITY_ONCREATE,
+	ANDROID_CREATE_THREAD_PIPE_FAILED,
+	ANDROID_NATIVE_ACTIVITY_CREATE_SUCCESS,
+	ANDROID_CHOREOGRAPHER_ENABLED,
+	ANDROID_CHOREOGRAPHER_UNAVAILABLE,
+	WGPU_DEVICE_LOST,
+	WGPU_DEVICE_LOG,
+	WGPU_DEVICE_UNCAPTURED_ERROR,
+	WGPU_SWAPCHAIN_CREATE_SURFACE_FAILED,
+	WGPU_SWAPCHAIN_SURFACE_GET_CAPABILITIES_FAILED,
+	WGPU_SWAPCHAIN_CREATE_DEPTH_STENCIL_TEXTURE_FAILED,
+	WGPU_SWAPCHAIN_CREATE_DEPTH_STENCIL_VIEW_FAILED,
+	WGPU_SWAPCHAIN_CREATE_MSAA_TEXTURE_FAILED,
+	WGPU_SWAPCHAIN_CREATE_MSAA_VIEW_FAILED,
+	WGPU_SWAPCHAIN_GETCURRENTTEXTURE_FAILED,
+	WGPU_REQUEST_DEVICE_STATUS_ERROR,
+	WGPU_REQUEST_DEVICE_STATUS_UNKNOWN,
+	WGPU_REQUEST_ADAPTER_STATUS_UNAVAILABLE,
+	WGPU_REQUEST_ADAPTER_STATUS_ERROR,
+	WGPU_REQUEST_ADAPTER_STATUS_UNKNOWN,
+	WGPU_CREATE_INSTANCE_FAILED,
+	VULKAN_DEBUG_GENERAL,
+	VULKAN_DEBUG_VALIDATION,
+	VULKAN_DEBUG_PERFORMANCE,
+	VULKAN_REQUIRED_INSTANCE_EXTENSION_FUNCTION_MISSING,
+	VULKAN_ALLOC_DEVICE_MEMORY_NO_SUITABLE_MEMORY_TYPE,
+	VULKAN_ALLOCATE_MEMORY_FAILED,
+	VULKAN_CREATE_INSTANCE_FAILED,
+	VULKAN_ENUMERATE_PHYSICAL_DEVICES_FAILED,
+	VULKAN_NO_PHYSICAL_DEVICES_FOUND,
+	VULKAN_NO_SUITABLE_PHYSICAL_DEVICE_FOUND,
+	VULKAN_CREATE_DEVICE_FAILED_EXTENSION_NOT_PRESENT,
+	VULKAN_CREATE_DEVICE_FAILED_FEATURE_NOT_PRESENT,
+	VULKAN_CREATE_DEVICE_FAILED_INITIALIZATION_FAILED,
+	VULKAN_CREATE_DEVICE_FAILED_OTHER,
+	VULKAN_CREATE_SURFACE_FAILED,
+	VULKAN_CREATE_SWAPCHAIN_FAILED,
+	VULKAN_SWAPCHAIN_CREATE_IMAGE_VIEW_FAILED,
+	VULKAN_SWAPCHAIN_CREATE_IMAGE_FAILED,
+	VULKAN_SWAPCHAIN_ALLOC_IMAGE_DEVICE_MEMORY_FAILED,
+	VULKAN_SWAPCHAIN_BIND_IMAGE_MEMORY_FAILED,
+	VULKAN_ACQUIRE_NEXT_IMAGE_FAILED,
+	VULKAN_QUEUE_PRESENT_FAILED,
+	IMAGE_DATA_SIZE_MISMATCH,
+	DROPPED_FILE_PATH_TOO_LONG,
+	CLIPBOARD_STRING_TOO_BIG,
 }
 
 /*
@@ -2026,15 +2010,15 @@ Log_Item :: enum i32 {
     the enum values are totally different!
 */
 Pixel_Format :: enum i32 {
-    DEFAULT,
-    NONE,
-    RGBA8,
-    SRGB8A8,
-    BGRA8,
-    SBGR8A8,
-    RGBA16F,
-    DEPTH,
-    DEPTH_STENCIL,
+	DEFAULT,
+	NONE,
+	RGBA8,
+	SRGB8A8,
+	BGRA8,
+	SBGR8A8,
+	RGBA16F,
+	DEPTH,
+	DEPTH_STENCIL,
 }
 
 /*
@@ -2050,38 +2034,38 @@ Pixel_Format :: enum i32 {
     from sapp_environment!
 */
 Environment_Defaults :: struct {
-    color_format : Pixel_Format,
-    depth_format : Pixel_Format,
-    sample_count : c.int,
+	color_format: Pixel_Format,
+	depth_format: Pixel_Format,
+	sample_count: c.int,
 }
 
 Metal_Environment :: struct {
-    device : rawptr,
+	device: rawptr,
 }
 
 D3d11_Environment :: struct {
-    device : rawptr,
-    device_context : rawptr,
+	device:         rawptr,
+	device_context: rawptr,
 }
 
 Wgpu_Environment :: struct {
-    device : rawptr,
+	device: rawptr,
 }
 
 Vulkan_Environment :: struct {
-    instance : rawptr,
-    physical_device : rawptr,
-    device : rawptr,
-    queue : rawptr,
-    queue_family_index : u32,
+	instance:           rawptr,
+	physical_device:    rawptr,
+	device:             rawptr,
+	queue:              rawptr,
+	queue_family_index: u32,
 }
 
 Environment :: struct {
-    defaults : Environment_Defaults,
-    metal : Metal_Environment,
-    d3d11 : D3d11_Environment,
-    wgpu : Wgpu_Environment,
-    vulkan : Vulkan_Environment,
+	defaults: Environment_Defaults,
+	metal:    Metal_Environment,
+	d3d11:    D3d11_Environment,
+	wgpu:     Wgpu_Environment,
+	vulkan:   Vulkan_Environment,
 }
 
 /*
@@ -2100,50 +2084,50 @@ Environment :: struct {
     sg_swapchain instead.
 */
 Metal_Swapchain :: struct {
-    current_drawable : rawptr,
-    depth_stencil_texture : rawptr,
-    msaa_color_texture : rawptr,
+	current_drawable:      rawptr,
+	depth_stencil_texture: rawptr,
+	msaa_color_texture:    rawptr,
 }
 
 D3d11_Swapchain :: struct {
-    render_view : rawptr,
-    resolve_view : rawptr,
-    depth_stencil_view : rawptr,
+	render_view:        rawptr,
+	resolve_view:       rawptr,
+	depth_stencil_view: rawptr,
 }
 
 Wgpu_Swapchain :: struct {
-    render_view : rawptr,
-    resolve_view : rawptr,
-    depth_stencil_view : rawptr,
+	render_view:        rawptr,
+	resolve_view:       rawptr,
+	depth_stencil_view: rawptr,
 }
 
 Vulkan_Swapchain :: struct {
-    render_image : rawptr,
-    render_view : rawptr,
-    resolve_image : rawptr,
-    resolve_view : rawptr,
-    depth_stencil_image : rawptr,
-    depth_stencil_view : rawptr,
-    render_finished_semaphore : rawptr,
-    present_complete_semaphore : rawptr,
+	render_image:               rawptr,
+	render_view:                rawptr,
+	resolve_image:              rawptr,
+	resolve_view:               rawptr,
+	depth_stencil_image:        rawptr,
+	depth_stencil_view:         rawptr,
+	render_finished_semaphore:  rawptr,
+	present_complete_semaphore: rawptr,
 }
 
 Gl_Swapchain :: struct {
-    framebuffer : u32,
+	framebuffer: u32,
 }
 
 Swapchain :: struct {
-    invalid : bool,
-    width : c.int,
-    height : c.int,
-    sample_count : c.int,
-    color_format : Pixel_Format,
-    depth_format : Pixel_Format,
-    metal : Metal_Swapchain,
-    d3d11 : D3d11_Swapchain,
-    wgpu : Wgpu_Swapchain,
-    vulkan : Vulkan_Swapchain,
-    gl : Gl_Swapchain,
+	invalid:      bool,
+	width:        c.int,
+	height:       c.int,
+	sample_count: c.int,
+	color_format: Pixel_Format,
+	depth_format: Pixel_Format,
+	metal:        Metal_Swapchain,
+	d3d11:        D3d11_Swapchain,
+	wgpu:         Wgpu_Swapchain,
+	vulkan:       Vulkan_Swapchain,
+	gl:           Gl_Swapchain,
 }
 
 /*
@@ -2154,9 +2138,9 @@ Swapchain :: struct {
     on the web APIs (WebGL2 and WebGPU)
 */
 Composite_Mode :: enum i32 {
-    DEFAULT,
-    OPAQUE,
-    PREMULTIPLIED,
+	DEFAULT,
+	OPAQUE,
+	PREMULTIPLIED,
 }
 
 /*
@@ -2169,8 +2153,16 @@ Composite_Mode :: enum i32 {
     the standard logging function from sokol_log.h).
 */
 Logger :: struct {
-    func : proc "c" (a0: cstring, a1: u32, a2: u32, a3: cstring, a4: u32, a5: cstring, a6: rawptr),
-    user_data : rawptr,
+	func:      proc "c" (
+		a0: cstring,
+		a1: u32,
+		a2: u32,
+		a3: cstring,
+		a4: u32,
+		a5: cstring,
+		a6: rawptr,
+	),
+	user_data: rawptr,
 }
 
 /*
@@ -2178,79 +2170,79 @@ Logger :: struct {
     or sapp_run() argument.
 */
 Gl_Desc :: struct {
-    major_version : c.int,
-    minor_version : c.int,
+	major_version: c.int,
+	minor_version: c.int,
 }
 
 Win32_Desc :: struct {
-    console_utf8 : bool,
-    console_create : bool,
-    console_attach : bool,
+	console_utf8:   bool,
+	console_create: bool,
+	console_attach: bool,
 }
 
 Html5_Desc :: struct {
-    canvas_selector : cstring,
-    canvas_resize : bool,
-    preserve_drawing_buffer : bool,
-    ask_leave_site : bool,
-    update_document_title : bool,
-    bubble_mouse_events : bool,
-    bubble_touch_events : bool,
-    bubble_wheel_events : bool,
-    bubble_key_events : bool,
-    bubble_char_events : bool,
-    use_emsc_set_main_loop : bool,
-    emsc_set_main_loop_simulate_infinite_loop : bool,
+	canvas_selector:                           cstring,
+	canvas_resize:                             bool,
+	preserve_drawing_buffer:                   bool,
+	ask_leave_site:                            bool,
+	update_document_title:                     bool,
+	bubble_mouse_events:                       bool,
+	bubble_touch_events:                       bool,
+	bubble_wheel_events:                       bool,
+	bubble_key_events:                         bool,
+	bubble_char_events:                        bool,
+	use_emsc_set_main_loop:                    bool,
+	emsc_set_main_loop_simulate_infinite_loop: bool,
 }
 
 Ios_Desc :: struct {
-    keyboard_resizes_canvas : bool,
+	keyboard_resizes_canvas: bool,
 }
 
 Metal_Desc :: struct {
-    disable_display_sync : bool,
+	disable_display_sync: bool,
 }
 
 Android_Desc :: struct {
-    native_event_cb : proc "c" (a0: rawptr) -> bool,
+	native_event_cb: proc "c" (a0: rawptr) -> bool,
 }
 
 Desc :: struct {
-    init_cb : proc "c" (),
-    frame_cb : proc "c" (),
-    cleanup_cb : proc "c" (),
-    event_cb : proc "c" (a0: ^Event),
-    user_data : rawptr,
-    init_userdata_cb : proc "c" (a0: rawptr),
-    frame_userdata_cb : proc "c" (a0: rawptr),
-    cleanup_userdata_cb : proc "c" (a0: rawptr),
-    event_userdata_cb : proc "c" (a0: ^Event, a1: rawptr),
-    width : c.int,
-    height : c.int,
-    depth_format : Pixel_Format,
-    composite_mode : Composite_Mode,
-    sample_count : c.int,
-    swap_interval : c.int,
-    srgb : bool,
-    hdr : bool,
-    disable_vsync : bool,
-    high_dpi : bool,
-    fullscreen : bool,
-    window_title : cstring,
-    enable_clipboard : bool,
-    clipboard_size : c.int,
-    enable_dragndrop : bool,
-    max_dropped_files : c.int,
-    max_dropped_file_path_length : c.int,
-    icon : Icon_Desc,
-    allocator : Allocator,
-    logger : Logger,
-    gl : Gl_Desc,
-    metal : Metal_Desc,
-    win32 : Win32_Desc,
-    html5 : Html5_Desc,
-    ios : Ios_Desc,
-    android : Android_Desc,
+	init_cb:                      proc "c" (),
+	frame_cb:                     proc "c" (),
+	cleanup_cb:                   proc "c" (),
+	event_cb:                     proc "c" (a0: ^Event),
+	user_data:                    rawptr,
+	init_userdata_cb:             proc "c" (a0: rawptr),
+	frame_userdata_cb:            proc "c" (a0: rawptr),
+	cleanup_userdata_cb:          proc "c" (a0: rawptr),
+	event_userdata_cb:            proc "c" (a0: ^Event, a1: rawptr),
+	width:                        c.int,
+	height:                       c.int,
+	depth_format:                 Pixel_Format,
+	composite_mode:               Composite_Mode,
+	sample_count:                 c.int,
+	swap_interval:                c.int,
+	srgb:                         bool,
+	hdr:                          bool,
+	disable_vsync:                bool,
+	high_dpi:                     bool,
+	fullscreen:                   bool,
+	window_title:                 cstring,
+	enable_clipboard:             bool,
+	clipboard_size:               c.int,
+	enable_dragndrop:             bool,
+	max_dropped_files:            c.int,
+	max_dropped_file_path_length: c.int,
+	icon:                         Icon_Desc,
+	allocator:                    Allocator,
+	logger:                       Logger,
+	gl:                           Gl_Desc,
+	metal:                        Metal_Desc,
+	win32:                        Win32_Desc,
+	html5:                        Html5_Desc,
+	ios:                          Ios_Desc,
+	android:                      Android_Desc,
 }
 
 /*
@@ -2258,25 +2250,25 @@ Desc :: struct {
       asynchronously loading dropped-file content.
 */
 Html5_Fetch_Error :: enum i32 {
-    FETCH_ERROR_NO_ERROR,
-    FETCH_ERROR_BUFFER_TOO_SMALL,
-    FETCH_ERROR_OTHER,
+	FETCH_ERROR_NO_ERROR,
+	FETCH_ERROR_BUFFER_TOO_SMALL,
+	FETCH_ERROR_OTHER,
 }
 
 Html5_Fetch_Response :: struct {
-    succeeded : bool,
-    error_code : Html5_Fetch_Error,
-    file_index : c.int,
-    data : Range,
-    buffer : Range,
-    user_data : rawptr,
+	succeeded:  bool,
+	error_code: Html5_Fetch_Error,
+	file_index: c.int,
+	data:       Range,
+	buffer:     Range,
+	user_data:  rawptr,
 }
 
 Html5_Fetch_Request :: struct {
-    dropped_file_index : c.int,
-    callback : proc "c" (a0: ^Html5_Fetch_Response),
-    buffer : Range,
-    user_data : rawptr,
+	dropped_file_index: c.int,
+	callback:           proc "c" (a0: ^Html5_Fetch_Response),
+	buffer:             Range,
+	user_data:          rawptr,
 }
 
 /*
@@ -2285,32 +2277,31 @@ Html5_Fetch_Request :: struct {
     Predefined cursor image definitions, set with sapp_set_mouse_cursor(sapp_mouse_cursor cursor)
 */
 Mouse_Cursor :: enum i32 {
-    DEFAULT = 0,
-    ARROW,
-    IBEAM,
-    CROSSHAIR,
-    POINTING_HAND,
-    RESIZE_EW,
-    RESIZE_NS,
-    RESIZE_NWSE,
-    RESIZE_NESW,
-    RESIZE_ALL,
-    NOT_ALLOWED,
-    CUSTOM_0,
-    CUSTOM_1,
-    CUSTOM_2,
-    CUSTOM_3,
-    CUSTOM_4,
-    CUSTOM_5,
-    CUSTOM_6,
-    CUSTOM_7,
-    CUSTOM_8,
-    CUSTOM_9,
-    CUSTOM_10,
-    CUSTOM_11,
-    CUSTOM_12,
-    CUSTOM_13,
-    CUSTOM_14,
-    CUSTOM_15,
+	DEFAULT = 0,
+	ARROW,
+	IBEAM,
+	CROSSHAIR,
+	POINTING_HAND,
+	RESIZE_EW,
+	RESIZE_NS,
+	RESIZE_NWSE,
+	RESIZE_NESW,
+	RESIZE_ALL,
+	NOT_ALLOWED,
+	CUSTOM_0,
+	CUSTOM_1,
+	CUSTOM_2,
+	CUSTOM_3,
+	CUSTOM_4,
+	CUSTOM_5,
+	CUSTOM_6,
+	CUSTOM_7,
+	CUSTOM_8,
+	CUSTOM_9,
+	CUSTOM_10,
+	CUSTOM_11,
+	CUSTOM_12,
+	CUSTOM_13,
+	CUSTOM_14,
+	CUSTOM_15,
 }
-

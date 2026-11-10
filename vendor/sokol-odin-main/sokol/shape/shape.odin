@@ -395,100 +395,84 @@ USE_GL :: #config(SOKOL_USE_GL, false)
 USE_DLL :: #config(SOKOL_DLL, false)
 
 when ODIN_OS == .Windows {
-    when USE_DLL {
-        when USE_GL {
-            when DEBUG { foreign import sokol_shape_clib { "../sokol_dll_windows_x64_gl_debug.lib" } }
-            else       { foreign import sokol_shape_clib { "../sokol_dll_windows_x64_gl_release.lib" } }
-        } else {
-            when DEBUG { foreign import sokol_shape_clib { "../sokol_dll_windows_x64_d3d11_debug.lib" } }
-            else       { foreign import sokol_shape_clib { "../sokol_dll_windows_x64_d3d11_release.lib" } }
-        }
-    } else {
-        when USE_GL {
-            when DEBUG { foreign import sokol_shape_clib { "sokol_shape_windows_x64_gl_debug.lib" } }
-            else       { foreign import sokol_shape_clib { "sokol_shape_windows_x64_gl_release.lib" } }
-        } else {
-            when DEBUG { foreign import sokol_shape_clib { "sokol_shape_windows_x64_d3d11_debug.lib" } }
-            else       { foreign import sokol_shape_clib { "sokol_shape_windows_x64_d3d11_release.lib" } }
-        }
-    }
+	when USE_DLL {
+		when USE_GL {
+			when DEBUG {foreign import sokol_shape_clib "../sokol_dll_windows_x64_gl_debug.lib"} else {foreign import sokol_shape_clib "../sokol_dll_windows_x64_gl_release.lib"}
+		} else {
+			when DEBUG {foreign import sokol_shape_clib "../sokol_dll_windows_x64_d3d11_debug.lib"} else {foreign import sokol_shape_clib "../sokol_dll_windows_x64_d3d11_release.lib"}
+		}
+	} else {
+		when USE_GL {
+			when DEBUG {foreign import sokol_shape_clib "sokol_shape_windows_x64_gl_debug.lib"} else {foreign import sokol_shape_clib "sokol_shape_windows_x64_gl_release.lib"}
+		} else {
+			when DEBUG {foreign import sokol_shape_clib "sokol_shape_windows_x64_d3d11_debug.lib"} else {foreign import sokol_shape_clib "sokol_shape_windows_x64_d3d11_release.lib"}
+		}
+	}
 } else when ODIN_OS == .Darwin {
-    when USE_DLL {
-             when  USE_GL && ODIN_ARCH == .arm64 &&  DEBUG { foreign import sokol_shape_clib { "../dylib/sokol_dylib_macos_arm64_gl_debug.dylib" } }
-        else when  USE_GL && ODIN_ARCH == .arm64 && !DEBUG { foreign import sokol_shape_clib { "../dylib/sokol_dylib_macos_arm64_gl_release.dylib" } }
-        else when  USE_GL && ODIN_ARCH == .amd64 &&  DEBUG { foreign import sokol_shape_clib { "../dylib/sokol_dylib_macos_x64_gl_debug.dylib" } }
-        else when  USE_GL && ODIN_ARCH == .amd64 && !DEBUG { foreign import sokol_shape_clib { "../dylib/sokol_dylib_macos_x64_gl_release.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .arm64 &&  DEBUG { foreign import sokol_shape_clib { "../dylib/sokol_dylib_macos_arm64_metal_debug.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .arm64 && !DEBUG { foreign import sokol_shape_clib { "../dylib/sokol_dylib_macos_arm64_metal_release.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .amd64 &&  DEBUG { foreign import sokol_shape_clib { "../dylib/sokol_dylib_macos_x64_metal_debug.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .amd64 && !DEBUG { foreign import sokol_shape_clib { "../dylib/sokol_dylib_macos_x64_metal_release.dylib" } }
-    } else {
-        when USE_GL {
-            when ODIN_ARCH == .arm64 {
-                when DEBUG { foreign import sokol_shape_clib { "sokol_shape_macos_arm64_gl_debug.a" } }
-                else       { foreign import sokol_shape_clib { "sokol_shape_macos_arm64_gl_release.a" } }
-            } else {
-                when DEBUG { foreign import sokol_shape_clib { "sokol_shape_macos_x64_gl_debug.a" } }
-                else       { foreign import sokol_shape_clib { "sokol_shape_macos_x64_gl_release.a" } }
-            }
-        } else {
-            when ODIN_ARCH == .arm64 {
-                when DEBUG { foreign import sokol_shape_clib { "sokol_shape_macos_arm64_metal_debug.a" } }
-                else       { foreign import sokol_shape_clib { "sokol_shape_macos_arm64_metal_release.a" } }
-            } else {
-                when DEBUG { foreign import sokol_shape_clib { "sokol_shape_macos_x64_metal_debug.a" } }
-                else       { foreign import sokol_shape_clib { "sokol_shape_macos_x64_metal_release.a" } }
-            }
-        }
-    }
+	when USE_DLL {
+		when USE_GL && ODIN_ARCH ==
+			.arm64 && DEBUG {foreign import sokol_shape_clib "../dylib/sokol_dylib_macos_arm64_gl_debug.dylib"} else when USE_GL && ODIN_ARCH == .arm64 && !DEBUG {foreign import sokol_shape_clib "../dylib/sokol_dylib_macos_arm64_gl_release.dylib"} else when USE_GL && ODIN_ARCH == .amd64 && DEBUG {foreign import sokol_shape_clib "../dylib/sokol_dylib_macos_x64_gl_debug.dylib"} else when USE_GL && ODIN_ARCH == .amd64 && !DEBUG {foreign import sokol_shape_clib "../dylib/sokol_dylib_macos_x64_gl_release.dylib"} else when !USE_GL && ODIN_ARCH == .arm64 && DEBUG {foreign import sokol_shape_clib "../dylib/sokol_dylib_macos_arm64_metal_debug.dylib"} else when !USE_GL && ODIN_ARCH == .arm64 && !DEBUG {foreign import sokol_shape_clib "../dylib/sokol_dylib_macos_arm64_metal_release.dylib"} else when !USE_GL && ODIN_ARCH == .amd64 && DEBUG {foreign import sokol_shape_clib "../dylib/sokol_dylib_macos_x64_metal_debug.dylib"} else when !USE_GL && ODIN_ARCH == .amd64 && !DEBUG {foreign import sokol_shape_clib "../dylib/sokol_dylib_macos_x64_metal_release.dylib"}
+	} else {
+		when USE_GL {
+			when ODIN_ARCH == .arm64 {
+				when DEBUG {foreign import sokol_shape_clib "sokol_shape_macos_arm64_gl_debug.a"} else {foreign import sokol_shape_clib "sokol_shape_macos_arm64_gl_release.a"}
+			} else {
+				when DEBUG {foreign import sokol_shape_clib "sokol_shape_macos_x64_gl_debug.a"} else {foreign import sokol_shape_clib "sokol_shape_macos_x64_gl_release.a"}
+			}
+		} else {
+			when ODIN_ARCH == .arm64 {
+				when DEBUG {foreign import sokol_shape_clib "sokol_shape_macos_arm64_metal_debug.a"} else {foreign import sokol_shape_clib "sokol_shape_macos_arm64_metal_release.a"}
+			} else {
+				when DEBUG {foreign import sokol_shape_clib "sokol_shape_macos_x64_metal_debug.a"} else {foreign import sokol_shape_clib "sokol_shape_macos_x64_metal_release.a"}
+			}
+		}
+	}
 } else when ODIN_OS == .Linux {
-    when USE_DLL {
-        when DEBUG { foreign import sokol_shape_clib { "sokol_shape_linux_x64_gl_debug.so" } }
-        else       { foreign import sokol_shape_clib { "sokol_shape_linux_x64_gl_release.so" } }
-    } else {
-        when DEBUG { foreign import sokol_shape_clib { "sokol_shape_linux_x64_gl_debug.a" } }
-        else       { foreign import sokol_shape_clib { "sokol_shape_linux_x64_gl_release.a" } }
-    }
+	when USE_DLL {
+		when DEBUG {foreign import sokol_shape_clib "sokol_shape_linux_x64_gl_debug.so"} else {foreign import sokol_shape_clib "sokol_shape_linux_x64_gl_release.so"}
+	} else {
+		when DEBUG {foreign import sokol_shape_clib "sokol_shape_linux_x64_gl_debug.a"} else {foreign import sokol_shape_clib "sokol_shape_linux_x64_gl_release.a"}
+	}
 } else when ODIN_ARCH == .wasm32 || ODIN_ARCH == .wasm64p32 {
-    // Feed sokol_shape_wasm_gl_debug.a or sokol_shape_wasm_gl_release.a into emscripten compiler.
-    foreign import sokol_shape_clib { "env.o" }
+	// Feed sokol_shape_wasm_gl_debug.a or sokol_shape_wasm_gl_release.a into emscripten compiler.
+	foreign import sokol_shape_clib "env.o"
 } else {
-    #panic("This OS is currently not supported")
+	#panic("This OS is currently not supported")
 }
 
-@(default_calling_convention="c", link_prefix="sshape_")
+@(default_calling_convention = "c", link_prefix = "sshape_")
 foreign sokol_shape_clib {
-    // shape builder functions
-    build_plane :: proc(state: ^State, #by_ptr params: Plane)  ---
-    build_box :: proc(state: ^State, #by_ptr params: Box)  ---
-    build_sphere :: proc(state: ^State, #by_ptr params: Sphere)  ---
-    build_cylinder :: proc(state: ^State, #by_ptr params: Cylinder)  ---
-    build_torus :: proc(state: ^State, #by_ptr params: Torus)  ---
-    // compute size of vertex given optional components
-    vertex_size :: proc(#by_ptr components: Optional_Components) -> c.size_t ---
-    // query required vertex- and index-buffer sizes in bytes
-    plane_sizes :: proc(tiles: u32, vertex_size: c.size_t) -> Sizes ---
-    box_sizes :: proc(tiles: u32, vertex_size: c.size_t) -> Sizes ---
-    sphere_sizes :: proc(slices: u32, stacks: u32, vertex_size: c.size_t) -> Sizes ---
-    cylinder_sizes :: proc(slices: u32, stacks: u32, vertex_size: c.size_t) -> Sizes ---
-    torus_sizes :: proc(sides: u32, rings: u32, vertex_size: c.size_t) -> Sizes ---
-    // extract sokol-gfx desc structs and primitive ranges from build state
-    element_range :: proc(#by_ptr state: State) -> Element_Range ---
-    vertex_buffer_desc :: proc(#by_ptr state: State) -> sg.Buffer_Desc ---
-    index_buffer_desc :: proc(#by_ptr state: State) -> sg.Buffer_Desc ---
-    vertex_buffer_layout_state :: proc(#by_ptr state: State) -> sg.Vertex_Buffer_Layout_State ---
-    position_vertex_attr_state :: proc(#by_ptr state: State) -> sg.Vertex_Attr_State ---
-    normal_vertex_attr_state :: proc(#by_ptr state: State) -> sg.Vertex_Attr_State ---
-    texcoord_vertex_attr_state :: proc(#by_ptr state: State) -> sg.Vertex_Attr_State ---
-    color_vertex_attr_state :: proc(#by_ptr state: State) -> sg.Vertex_Attr_State ---
-    // helper functions to build packed color value from floats or bytes
-    color_4f :: proc(r: f32, g: f32, b: f32, a: f32) -> u32 ---
-    color_3f :: proc(r: f32, g: f32, b: f32) -> u32 ---
-    color_4b :: proc(r: u8, g: u8, b: u8, a: u8) -> u32 ---
-    color_3b :: proc(r: u8, g: u8, b: u8) -> u32 ---
-    // adapter function for filling matrix struct from generic float[16] array
-    mat4 :: proc(m: ^f32) -> Mat4 ---
-    mat4_transpose :: proc(m: ^f32) -> Mat4 ---
+	// shape builder functions
+	build_plane :: proc(state: ^State, #by_ptr params: Plane) ---
+	build_box :: proc(state: ^State, #by_ptr params: Box) ---
+	build_sphere :: proc(state: ^State, #by_ptr params: Sphere) ---
+	build_cylinder :: proc(state: ^State, #by_ptr params: Cylinder) ---
+	build_torus :: proc(state: ^State, #by_ptr params: Torus) ---
+	// compute size of vertex given optional components
+	vertex_size :: proc(#by_ptr components: Optional_Components) -> c.size_t ---
+	// query required vertex- and index-buffer sizes in bytes
+	plane_sizes :: proc(tiles: u32, vertex_size: c.size_t) -> Sizes ---
+	box_sizes :: proc(tiles: u32, vertex_size: c.size_t) -> Sizes ---
+	sphere_sizes :: proc(slices: u32, stacks: u32, vertex_size: c.size_t) -> Sizes ---
+	cylinder_sizes :: proc(slices: u32, stacks: u32, vertex_size: c.size_t) -> Sizes ---
+	torus_sizes :: proc(sides: u32, rings: u32, vertex_size: c.size_t) -> Sizes ---
+	// extract sokol-gfx desc structs and primitive ranges from build state
+	element_range :: proc(#by_ptr state: State) -> Element_Range ---
+	vertex_buffer_desc :: proc(#by_ptr state: State) -> sg.Buffer_Desc ---
+	index_buffer_desc :: proc(#by_ptr state: State) -> sg.Buffer_Desc ---
+	vertex_buffer_layout_state :: proc(#by_ptr state: State) -> sg.Vertex_Buffer_Layout_State ---
+	position_vertex_attr_state :: proc(#by_ptr state: State) -> sg.Vertex_Attr_State ---
+	normal_vertex_attr_state :: proc(#by_ptr state: State) -> sg.Vertex_Attr_State ---
+	texcoord_vertex_attr_state :: proc(#by_ptr state: State) -> sg.Vertex_Attr_State ---
+	color_vertex_attr_state :: proc(#by_ptr state: State) -> sg.Vertex_Attr_State ---
+	// helper functions to build packed color value from floats or bytes
+	color_4f :: proc(r: f32, g: f32, b: f32, a: f32) -> u32 ---
+	color_3f :: proc(r: f32, g: f32, b: f32) -> u32 ---
+	color_4b :: proc(r: u8, g: u8, b: u8, a: u8) -> u32 ---
+	color_3b :: proc(r: u8, g: u8, b: u8) -> u32 ---
+	// adapter function for filling matrix struct from generic float[16] array
+	mat4 :: proc(m: ^f32) -> Mat4 ---
+	mat4_transpose :: proc(m: ^f32) -> Mat4 ---
 }
 
 /*
@@ -498,8 +482,8 @@ foreign sokol_shape_clib {
     an sshape_range struct.
 */
 Range :: struct {
-    ptr : rawptr,
-    size : c.size_t,
+	ptr:  rawptr,
+	size: c.size_t,
 }
 
 MIN_VERTEX_SIZE :: 12
@@ -507,98 +491,97 @@ MAX_VERTEX_SIZE :: 24
 
 // a 4x4 matrix wrapper struct
 Mat4 :: struct {
-    m : [4][4]f32,
+	m: [4][4]f32,
 }
 
 // a struct for configuring optional vertex components
 Optional_Components :: struct {
-    normals : bool,
-    texcoords : bool,
-    colors : bool,
+	normals:   bool,
+	texcoords: bool,
+	colors:    bool,
 }
 
 // a range of draw-elements (sg_draw(int base_element, int num_element, ...))
 Element_Range :: struct {
-    base_element : c.int,
-    num_elements : c.int,
+	base_element: c.int,
+	num_elements: c.int,
 }
 
 // number of elements and byte size of build actions
 Sizes_Item :: struct {
-    num : u32,
-    size : u32,
+	num:  u32,
+	size: u32,
 }
 
 Sizes :: struct {
-    vertices : Sizes_Item,
-    indices : Sizes_Item,
+	vertices: Sizes_Item,
+	indices:  Sizes_Item,
 }
 
 // in/out struct to keep track of mesh-build state
 Buffer_State :: struct {
-    buffer : Range,
-    data_size : c.size_t,
-    shape_offset : c.size_t,
+	buffer:       Range,
+	data_size:    c.size_t,
+	shape_offset: c.size_t,
 }
 
 State :: struct {
-    valid : bool,
-    disable : Optional_Components,
-    vertices : Buffer_State,
-    indices : Buffer_State,
+	valid:    bool,
+	disable:  Optional_Components,
+	vertices: Buffer_State,
+	indices:  Buffer_State,
 }
 
 // creation parameters for the different shape types
 Plane :: struct {
-    width : f32,
-    depth : f32,
-    tiles : u16,
-    color : u32,
-    random_colors : bool,
-    merge : bool,
-    transform : Mat4,
+	width:         f32,
+	depth:         f32,
+	tiles:         u16,
+	color:         u32,
+	random_colors: bool,
+	merge:         bool,
+	transform:     Mat4,
 }
 
 Box :: struct {
-    width : f32,
-    height : f32,
-    depth : f32,
-    tiles : u16,
-    color : u32,
-    random_colors : bool,
-    merge : bool,
-    transform : Mat4,
+	width:         f32,
+	height:        f32,
+	depth:         f32,
+	tiles:         u16,
+	color:         u32,
+	random_colors: bool,
+	merge:         bool,
+	transform:     Mat4,
 }
 
 Sphere :: struct {
-    radius : f32,
-    slices : u16,
-    stacks : u16,
-    color : u32,
-    random_colors : bool,
-    merge : bool,
-    transform : Mat4,
+	radius:        f32,
+	slices:        u16,
+	stacks:        u16,
+	color:         u32,
+	random_colors: bool,
+	merge:         bool,
+	transform:     Mat4,
 }
 
 Cylinder :: struct {
-    radius : f32,
-    height : f32,
-    slices : u16,
-    stacks : u16,
-    color : u32,
-    random_colors : bool,
-    merge : bool,
-    transform : Mat4,
+	radius:        f32,
+	height:        f32,
+	slices:        u16,
+	stacks:        u16,
+	color:         u32,
+	random_colors: bool,
+	merge:         bool,
+	transform:     Mat4,
 }
 
 Torus :: struct {
-    radius : f32,
-    ring_radius : f32,
-    sides : u16,
-    rings : u16,
-    color : u32,
-    random_colors : bool,
-    merge : bool,
-    transform : Mat4,
+	radius:        f32,
+	ring_radius:   f32,
+	sides:         u16,
+	rings:         u16,
+	color:         u32,
+	random_colors: bool,
+	merge:         bool,
+	transform:     Mat4,
 }
-

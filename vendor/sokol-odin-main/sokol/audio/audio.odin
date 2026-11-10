@@ -555,128 +555,112 @@ USE_GL :: #config(SOKOL_USE_GL, false)
 USE_DLL :: #config(SOKOL_DLL, false)
 
 when ODIN_OS == .Windows {
-    when USE_DLL {
-        when USE_GL {
-            when DEBUG { foreign import sokol_audio_clib { "../sokol_dll_windows_x64_gl_debug.lib" } }
-            else       { foreign import sokol_audio_clib { "../sokol_dll_windows_x64_gl_release.lib" } }
-        } else {
-            when DEBUG { foreign import sokol_audio_clib { "../sokol_dll_windows_x64_d3d11_debug.lib" } }
-            else       { foreign import sokol_audio_clib { "../sokol_dll_windows_x64_d3d11_release.lib" } }
-        }
-    } else {
-        when USE_GL {
-            when DEBUG { foreign import sokol_audio_clib { "sokol_audio_windows_x64_gl_debug.lib" } }
-            else       { foreign import sokol_audio_clib { "sokol_audio_windows_x64_gl_release.lib" } }
-        } else {
-            when DEBUG { foreign import sokol_audio_clib { "sokol_audio_windows_x64_d3d11_debug.lib" } }
-            else       { foreign import sokol_audio_clib { "sokol_audio_windows_x64_d3d11_release.lib" } }
-        }
-    }
+	when USE_DLL {
+		when USE_GL {
+			when DEBUG {foreign import sokol_audio_clib "../sokol_dll_windows_x64_gl_debug.lib"} else {foreign import sokol_audio_clib "../sokol_dll_windows_x64_gl_release.lib"}
+		} else {
+			when DEBUG {foreign import sokol_audio_clib "../sokol_dll_windows_x64_d3d11_debug.lib"} else {foreign import sokol_audio_clib "../sokol_dll_windows_x64_d3d11_release.lib"}
+		}
+	} else {
+		when USE_GL {
+			when DEBUG {foreign import sokol_audio_clib "sokol_audio_windows_x64_gl_debug.lib"} else {foreign import sokol_audio_clib "sokol_audio_windows_x64_gl_release.lib"}
+		} else {
+			when DEBUG {foreign import sokol_audio_clib "sokol_audio_windows_x64_d3d11_debug.lib"} else {foreign import sokol_audio_clib "sokol_audio_windows_x64_d3d11_release.lib"}
+		}
+	}
 } else when ODIN_OS == .Darwin {
-    when USE_DLL {
-             when  USE_GL && ODIN_ARCH == .arm64 &&  DEBUG { foreign import sokol_audio_clib { "../dylib/sokol_dylib_macos_arm64_gl_debug.dylib" } }
-        else when  USE_GL && ODIN_ARCH == .arm64 && !DEBUG { foreign import sokol_audio_clib { "../dylib/sokol_dylib_macos_arm64_gl_release.dylib" } }
-        else when  USE_GL && ODIN_ARCH == .amd64 &&  DEBUG { foreign import sokol_audio_clib { "../dylib/sokol_dylib_macos_x64_gl_debug.dylib" } }
-        else when  USE_GL && ODIN_ARCH == .amd64 && !DEBUG { foreign import sokol_audio_clib { "../dylib/sokol_dylib_macos_x64_gl_release.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .arm64 &&  DEBUG { foreign import sokol_audio_clib { "../dylib/sokol_dylib_macos_arm64_metal_debug.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .arm64 && !DEBUG { foreign import sokol_audio_clib { "../dylib/sokol_dylib_macos_arm64_metal_release.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .amd64 &&  DEBUG { foreign import sokol_audio_clib { "../dylib/sokol_dylib_macos_x64_metal_debug.dylib" } }
-        else when !USE_GL && ODIN_ARCH == .amd64 && !DEBUG { foreign import sokol_audio_clib { "../dylib/sokol_dylib_macos_x64_metal_release.dylib" } }
-    } else {
-        when USE_GL {
-            when ODIN_ARCH == .arm64 {
-                when DEBUG { foreign import sokol_audio_clib { "sokol_audio_macos_arm64_gl_debug.a", "system:AudioToolbox.framework" } }
-                else       { foreign import sokol_audio_clib { "sokol_audio_macos_arm64_gl_release.a", "system:AudioToolbox.framework" } }
-            } else {
-                when DEBUG { foreign import sokol_audio_clib { "sokol_audio_macos_x64_gl_debug.a", "system:AudioToolbox.framework" } }
-                else       { foreign import sokol_audio_clib { "sokol_audio_macos_x64_gl_release.a", "system:AudioToolbox.framework" } }
-            }
-        } else {
-            when ODIN_ARCH == .arm64 {
-                when DEBUG { foreign import sokol_audio_clib { "sokol_audio_macos_arm64_metal_debug.a", "system:AudioToolbox.framework" } }
-                else       { foreign import sokol_audio_clib { "sokol_audio_macos_arm64_metal_release.a", "system:AudioToolbox.framework" } }
-            } else {
-                when DEBUG { foreign import sokol_audio_clib { "sokol_audio_macos_x64_metal_debug.a", "system:AudioToolbox.framework" } }
-                else       { foreign import sokol_audio_clib { "sokol_audio_macos_x64_metal_release.a", "system:AudioToolbox.framework" } }
-            }
-        }
-    }
+	when USE_DLL {
+		when USE_GL && ODIN_ARCH ==
+			.arm64 && DEBUG {foreign import sokol_audio_clib "../dylib/sokol_dylib_macos_arm64_gl_debug.dylib"} else when USE_GL && ODIN_ARCH == .arm64 && !DEBUG {foreign import sokol_audio_clib "../dylib/sokol_dylib_macos_arm64_gl_release.dylib"} else when USE_GL && ODIN_ARCH == .amd64 && DEBUG {foreign import sokol_audio_clib "../dylib/sokol_dylib_macos_x64_gl_debug.dylib"} else when USE_GL && ODIN_ARCH == .amd64 && !DEBUG {foreign import sokol_audio_clib "../dylib/sokol_dylib_macos_x64_gl_release.dylib"} else when !USE_GL && ODIN_ARCH == .arm64 && DEBUG {foreign import sokol_audio_clib "../dylib/sokol_dylib_macos_arm64_metal_debug.dylib"} else when !USE_GL && ODIN_ARCH == .arm64 && !DEBUG {foreign import sokol_audio_clib "../dylib/sokol_dylib_macos_arm64_metal_release.dylib"} else when !USE_GL && ODIN_ARCH == .amd64 && DEBUG {foreign import sokol_audio_clib "../dylib/sokol_dylib_macos_x64_metal_debug.dylib"} else when !USE_GL && ODIN_ARCH == .amd64 && !DEBUG {foreign import sokol_audio_clib "../dylib/sokol_dylib_macos_x64_metal_release.dylib"}
+	} else {
+		when USE_GL {
+			when ODIN_ARCH == .arm64 {
+				when DEBUG {foreign import sokol_audio_clib {"sokol_audio_macos_arm64_gl_debug.a", "system:AudioToolbox.framework"}} else {foreign import sokol_audio_clib {"sokol_audio_macos_arm64_gl_release.a", "system:AudioToolbox.framework"}}
+			} else {
+				when DEBUG {foreign import sokol_audio_clib {"sokol_audio_macos_x64_gl_debug.a", "system:AudioToolbox.framework"}} else {foreign import sokol_audio_clib {"sokol_audio_macos_x64_gl_release.a", "system:AudioToolbox.framework"}}
+			}
+		} else {
+			when ODIN_ARCH == .arm64 {
+				when DEBUG {foreign import sokol_audio_clib {"sokol_audio_macos_arm64_metal_debug.a", "system:AudioToolbox.framework"}} else {foreign import sokol_audio_clib {"sokol_audio_macos_arm64_metal_release.a", "system:AudioToolbox.framework"}}
+			} else {
+				when DEBUG {foreign import sokol_audio_clib {"sokol_audio_macos_x64_metal_debug.a", "system:AudioToolbox.framework"}} else {foreign import sokol_audio_clib {"sokol_audio_macos_x64_metal_release.a", "system:AudioToolbox.framework"}}
+			}
+		}
+	}
 } else when ODIN_OS == .Linux {
-    when USE_DLL {
-        when DEBUG { foreign import sokol_audio_clib { "sokol_audio_linux_x64_gl_debug.so", "system:dl", "system:pthread" } }
-        else       { foreign import sokol_audio_clib { "sokol_audio_linux_x64_gl_release.so", "system:dl", "system:pthread" } }
-    } else {
-        when DEBUG { foreign import sokol_audio_clib { "sokol_audio_linux_x64_gl_debug.a", "system:pulse-simple", "system:pulse", "system:dl", "system:pthread" } }
-        else       { foreign import sokol_audio_clib { "sokol_audio_linux_x64_gl_release.a", "system:pulse-simple", "system:pulse", "system:dl", "system:pthread" } }
-    }
+	when USE_DLL {
+		when DEBUG {foreign import sokol_audio_clib {"sokol_audio_linux_x64_gl_debug.so", "system:dl", "system:pthread"}} else {foreign import sokol_audio_clib {"sokol_audio_linux_x64_gl_release.so", "system:dl", "system:pthread"}}
+	} else {
+		when DEBUG {foreign import sokol_audio_clib {"sokol_audio_linux_x64_gl_debug.a", "system:pulse-simple", "system:pulse", "system:dl", "system:pthread"}} else {foreign import sokol_audio_clib {"sokol_audio_linux_x64_gl_release.a", "system:pulse-simple", "system:pulse", "system:dl", "system:pthread"}}
+	}
 } else when ODIN_ARCH == .wasm32 || ODIN_ARCH == .wasm64p32 {
-    // Feed sokol_audio_wasm_gl_debug.a or sokol_audio_wasm_gl_release.a into emscripten compiler.
-    foreign import sokol_audio_clib { "env.o" }
+	// Feed sokol_audio_wasm_gl_debug.a or sokol_audio_wasm_gl_release.a into emscripten compiler.
+	foreign import sokol_audio_clib "env.o"
 } else {
-    #panic("This OS is currently not supported")
+	#panic("This OS is currently not supported")
 }
 
-@(default_calling_convention="c", link_prefix="saudio_")
+@(default_calling_convention = "c", link_prefix = "saudio_")
 foreign sokol_audio_clib {
-    // setup sokol-audio
-    setup :: proc(#by_ptr desc: Desc)  ---
-    // shutdown sokol-audio
-    shutdown :: proc()  ---
-    // true after setup if audio backend was successfully initialized
-    isvalid :: proc() -> bool ---
-    // return the saudio_desc.user_data pointer
-    userdata :: proc() -> rawptr ---
-    // return a copy of the original saudio_desc struct
-    query_desc :: proc() -> Desc ---
-    // actual sample rate
-    sample_rate :: proc() -> c.int ---
-    // return actual backend buffer size in number of frames
-    buffer_frames :: proc() -> c.int ---
-    // actual number of channels
-    channels :: proc() -> c.int ---
-    // return true if audio context is currently suspended (only in WebAudio backend, all other backends return false)
-    suspended :: proc() -> bool ---
-    // get current number of frames to fill packet queue
-    expect :: proc() -> c.int ---
-    // push sample frames from main thread, returns number of frames actually pushed
-    push :: proc(frames: ^f32, #any_int num_frames: c.int) -> c.int ---
+	// setup sokol-audio
+	setup :: proc(#by_ptr desc: Desc) ---
+	// shutdown sokol-audio
+	shutdown :: proc() ---
+	// true after setup if audio backend was successfully initialized
+	isvalid :: proc() -> bool ---
+	// return the saudio_desc.user_data pointer
+	userdata :: proc() -> rawptr ---
+	// return a copy of the original saudio_desc struct
+	query_desc :: proc() -> Desc ---
+	// actual sample rate
+	sample_rate :: proc() -> c.int ---
+	// return actual backend buffer size in number of frames
+	buffer_frames :: proc() -> c.int ---
+	// actual number of channels
+	channels :: proc() -> c.int ---
+	// return true if audio context is currently suspended (only in WebAudio backend, all other backends return false)
+	suspended :: proc() -> bool ---
+	// get current number of frames to fill packet queue
+	expect :: proc() -> c.int ---
+	// push sample frames from main thread, returns number of frames actually pushed
+	push :: proc(frames: ^f32, #any_int num_frames: c.int) -> c.int ---
 }
 
 Log_Item :: enum i32 {
-    OK,
-    MALLOC_FAILED,
-    ALSA_SND_PCM_OPEN_FAILED,
-    ALSA_FLOAT_SAMPLES_NOT_SUPPORTED,
-    ALSA_REQUESTED_BUFFER_SIZE_NOT_SUPPORTED,
-    ALSA_REQUESTED_CHANNEL_COUNT_NOT_SUPPORTED,
-    ALSA_SND_PCM_HW_PARAMS_SET_RATE_NEAR_FAILED,
-    ALSA_SND_PCM_HW_PARAMS_FAILED,
-    ALSA_PTHREAD_CREATE_FAILED,
-    PULSEAUDIO_INVALID_SAMPLE_SPEC,
-    PULSEAUDIO_SIMPLE_NEW_FAILED,
-    PULSEAUDIO_SIMPLE_WRITE_FAILED,
-    PULSEAUDIO_PTHREAD_CREATE_FAILED,
-    WASAPI_CREATE_EVENT_FAILED,
-    WASAPI_CREATE_DEVICE_ENUMERATOR_FAILED,
-    WASAPI_GET_DEFAULT_AUDIO_ENDPOINT_FAILED,
-    WASAPI_DEVICE_ACTIVATE_FAILED,
-    WASAPI_AUDIO_CLIENT_INITIALIZE_FAILED,
-    WASAPI_AUDIO_CLIENT_GET_BUFFER_SIZE_FAILED,
-    WASAPI_AUDIO_CLIENT_GET_SERVICE_FAILED,
-    WASAPI_AUDIO_CLIENT_SET_EVENT_HANDLE_FAILED,
-    WASAPI_CREATE_THREAD_FAILED,
-    AAUDIO_STREAMBUILDER_OPEN_STREAM_FAILED,
-    AAUDIO_PTHREAD_CREATE_FAILED,
-    AAUDIO_RESTARTING_STREAM_AFTER_ERROR,
-    USING_AAUDIO_BACKEND,
-    AAUDIO_CREATE_STREAMBUILDER_FAILED,
-    COREAUDIO_NEW_OUTPUT_FAILED,
-    COREAUDIO_ALLOCATE_BUFFER_FAILED,
-    COREAUDIO_START_FAILED,
-    BACKEND_BUFFER_SIZE_ISNT_MULTIPLE_OF_PACKET_SIZE,
-    VITA_SCEAUDIO_OPEN_FAILED,
-    VITA_PTHREAD_CREATE_FAILED,
-    N3DS_NDSP_OPEN_FAILED,
+	OK,
+	MALLOC_FAILED,
+	ALSA_SND_PCM_OPEN_FAILED,
+	ALSA_FLOAT_SAMPLES_NOT_SUPPORTED,
+	ALSA_REQUESTED_BUFFER_SIZE_NOT_SUPPORTED,
+	ALSA_REQUESTED_CHANNEL_COUNT_NOT_SUPPORTED,
+	ALSA_SND_PCM_HW_PARAMS_SET_RATE_NEAR_FAILED,
+	ALSA_SND_PCM_HW_PARAMS_FAILED,
+	ALSA_PTHREAD_CREATE_FAILED,
+	PULSEAUDIO_INVALID_SAMPLE_SPEC,
+	PULSEAUDIO_SIMPLE_NEW_FAILED,
+	PULSEAUDIO_SIMPLE_WRITE_FAILED,
+	PULSEAUDIO_PTHREAD_CREATE_FAILED,
+	WASAPI_CREATE_EVENT_FAILED,
+	WASAPI_CREATE_DEVICE_ENUMERATOR_FAILED,
+	WASAPI_GET_DEFAULT_AUDIO_ENDPOINT_FAILED,
+	WASAPI_DEVICE_ACTIVATE_FAILED,
+	WASAPI_AUDIO_CLIENT_INITIALIZE_FAILED,
+	WASAPI_AUDIO_CLIENT_GET_BUFFER_SIZE_FAILED,
+	WASAPI_AUDIO_CLIENT_GET_SERVICE_FAILED,
+	WASAPI_AUDIO_CLIENT_SET_EVENT_HANDLE_FAILED,
+	WASAPI_CREATE_THREAD_FAILED,
+	AAUDIO_STREAMBUILDER_OPEN_STREAM_FAILED,
+	AAUDIO_PTHREAD_CREATE_FAILED,
+	AAUDIO_RESTARTING_STREAM_AFTER_ERROR,
+	USING_AAUDIO_BACKEND,
+	AAUDIO_CREATE_STREAMBUILDER_FAILED,
+	COREAUDIO_NEW_OUTPUT_FAILED,
+	COREAUDIO_ALLOCATE_BUFFER_FAILED,
+	COREAUDIO_START_FAILED,
+	BACKEND_BUFFER_SIZE_ISNT_MULTIPLE_OF_PACKET_SIZE,
+	VITA_SCEAUDIO_OPEN_FAILED,
+	VITA_PTHREAD_CREATE_FAILED,
+	N3DS_NDSP_OPEN_FAILED,
 }
 
 /*
@@ -686,8 +670,16 @@ Log_Item :: enum i32 {
     callback to sokol-audio.
 */
 Logger :: struct {
-    func : proc "c" (a0: cstring, a1: u32, a2: u32, a3: cstring, a4: u32, a5: cstring, a6: rawptr),
-    user_data : rawptr,
+	func:      proc "c" (
+		a0: cstring,
+		a1: u32,
+		a2: u32,
+		a3: cstring,
+		a4: u32,
+		a5: cstring,
+		a6: rawptr,
+	),
+	user_data: rawptr,
 }
 
 /*
@@ -699,39 +691,38 @@ Logger :: struct {
     override one function but not the other).
 */
 Allocator :: struct {
-    alloc_fn : proc "c" (a0: c.size_t, a1: rawptr) -> rawptr,
-    free_fn : proc "c" (a0: rawptr, a1: rawptr),
-    user_data : rawptr,
+	alloc_fn:  proc "c" (a0: c.size_t, a1: rawptr) -> rawptr,
+	free_fn:   proc "c" (a0: rawptr, a1: rawptr),
+	user_data: rawptr,
 }
 
 N3ds_Ndspinterptype :: enum i32 {
-    DSP_INTERP_POLYPHASE = 0,
-    DSP_INTERP_LINEAR = 1,
-    DSP_INTERP_NONE = 2,
+	DSP_INTERP_POLYPHASE = 0,
+	DSP_INTERP_LINEAR    = 1,
+	DSP_INTERP_NONE      = 2,
 }
 
 N3ds_Desc :: struct {
-    queue_count : c.int,
-    interpolation_type : N3ds_Ndspinterptype,
-    channel_id : c.int,
+	queue_count:        c.int,
+	interpolation_type: N3ds_Ndspinterptype,
+	channel_id:         c.int,
 }
 
 Win32_Desc :: struct {
-    skip_coinitialize : bool,
+	skip_coinitialize: bool,
 }
 
 Desc :: struct {
-    sample_rate : c.int,
-    num_channels : c.int,
-    buffer_frames : c.int,
-    packet_frames : c.int,
-    num_packets : c.int,
-    stream_cb : proc "c" (a0: ^f32, a1: c.int, a2: c.int),
-    stream_userdata_cb : proc "c" (a0: ^f32, a1: c.int, a2: c.int, a3: rawptr),
-    user_data : rawptr,
-    win32 : Win32_Desc,
-    n3ds : N3ds_Desc,
-    allocator : Allocator,
-    logger : Logger,
+	sample_rate:        c.int,
+	num_channels:       c.int,
+	buffer_frames:      c.int,
+	packet_frames:      c.int,
+	num_packets:        c.int,
+	stream_cb:          proc "c" (a0: ^f32, a1: c.int, a2: c.int),
+	stream_userdata_cb: proc "c" (a0: ^f32, a1: c.int, a2: c.int, a3: rawptr),
+	user_data:          rawptr,
+	win32:              Win32_Desc,
+	n3ds:               N3ds_Desc,
+	allocator:          Allocator,
+	logger:             Logger,
 }
-
