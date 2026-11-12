@@ -394,17 +394,50 @@ input :: proc(
 // are stored verbatim as '\n' and are the only line break the widget honors
 // (no soft-wrap). Content is still raw bytes — rune-aware edits step past
 // UTF-8 continuation bytes the same way the single-line input does.
-// scroll is the vertical pixel offset into the content, owned by the value
-// so each textarea remembers its own position across frames.
+// caret is a byte index into data[:len] and must land on a rune boundary;
+// every mutation routes through textarea_insert / textarea_backspace so this
+// stays invariant. scroll, dragging and grab_y retain scroll and drag across
+// frames so each textarea remembers its own view and interaction state.
 Text_Area :: struct {
-	data:   [1024]u8,
-	len:    int,
-	scroll: f32,
+	data:     [1024]u8,
+	len:      int,
+	caret:    int,
+	scroll:   f32,
+	dragging: bool,
+	grab_y:   f32,
 }
 
 set_area_text :: proc(value: ^Text_Area, text: string) {
 	value.len = min(len(text), len(value.data))
 	copy(value.data[:value.len], transmute([]u8)text[:value.len])
+	value.caret = value.len
+}
+
+// Shifts the suffix right and copies bytes into the gap at value.caret.
+// Returns the number of bytes actually inserted (0 when full or empty).
+textarea_insert :: proc(value: ^Text_Area, bytes: []u8) -> int {
+	n := min(len(bytes), len(value.data) - value.len)
+	if n <= 0 {return 0}
+	for i := value.len - 1; i >= value.caret; i -= 1 {value.data[i + n] = value.data[i]}
+	copy(value.data[value.caret:value.caret + n], bytes[:n])
+	value.len += n
+	value.caret += n
+	return n
+}
+
+// Removes the rune to the left of the caret by stepping back past UTF-8
+// continuation bytes (top two bits == 10), then shifting the suffix left.
+// Returns true when a rune was removed.
+textarea_backspace :: proc(value: ^Text_Area) -> bool {
+	if value.caret == 0 {return false}
+	end := value.caret
+	start := end - 1
+	for start > 0 && (value.data[start] & 0xC0) == 0x80 {start -= 1}
+	shift := end - start
+	for i := end; i < value.len; i += 1 {value.data[i - shift] = value.data[i]}
+	value.len -= shift
+	value.caret = start
+	return true
 }
 
 // Multi-line text input. Lines break only on explicit '\n' (Enter inserts
@@ -421,30 +454,151 @@ textarea :: proc(
 	corner_radius := resolve_corner_radius(c, radius)
 	hover := contains(c, r)
 	if hover {c.pointer_cursor = true}
+	pad_x: f32 = 14
+	pad_y: f32 = 10
+	line_height: f32 = 22
+	view_h := r.h
+	line_count := 1
+	for i in 0 ..< value.len {
+		if value.data[i] == '\n' {line_count += 1}
+	}
+	content_h := pad_y * 2 + f32(line_count) * line_height
+	max_scroll := max(0, content_h - view_h)
+	// Scrollbar track geometry, reused by the drag hit test and by the
+	// scrollbar visual. thumb_h stays 0 when there is no overflow — the drag
+	// block below guards on max_scroll before using it.
+	track_x: f32 = r.x + r.w - 8
+	track_w: f32 = 3
+	track_y: f32 = r.y + 6
+	track_h: f32 = r.h - 12
+	thumb_hit := Rect{r.x + r.w - 14, r.y + 4, 14, r.h - 8}
+	thumb_h: f32
+	thumb_y: f32
+	thumb_hovered: bool
+	if max_scroll > 0 {
+		thumb_h = max(24, track_h * view_h / content_h)
+		travel := track_h - thumb_h
+		thumb_y = track_y + (travel > 0 ? travel * value.scroll / max_scroll : 0)
+		thumb_hovered = contains(c, thumb_hit)
+	}
+	// Press routing: scrollbar wins over text. A press inside the thumb hit
+	// zone starts a drag and focuses the widget without moving the caret;
+	// a press anywhere else inside r focuses and positions the caret at the
+	// closest rune boundary; a press outside clears focus.
 	if c.pressed {
-		if hover {c.focused = id} else if c.focused == id {c.focused = 0}
+		if max_scroll > 0 && thumb_hovered {
+			value.dragging = true
+			value.grab_y =
+				c.my >= thumb_y && c.my < thumb_y + thumb_h ? c.my - thumb_y : thumb_h / 2
+			c.focused = id
+		} else if hover {
+			c.focused = id
+			// Convert screen y to content y, then index the line band.
+			local_y := c.my - (r.y + c.offset_y) - pad_y + value.scroll
+			click_line := clamp(int(local_y / line_height), 0, line_count - 1)
+			// Scan to find the byte range of the clicked line.
+			line_start := 0
+			li := 0
+			for i in 0 ..< value.len {
+				if li == click_line {break}
+				if value.data[i] == '\n' {
+					line_start = i + 1
+					li += 1
+				}
+			}
+			line_end := value.len
+			for i in line_start ..< value.len {
+				if value.data[i] == '\n' {line_end = i; break}
+			}
+			assert(
+				c.measure_text != nil,
+				"Textarea click positioning requires a text measurement callback",
+			)
+			text := string(value.data[line_start:line_end])
+			target_x := c.mx - r.x - pad_x
+			if target_x <= 0 {
+				value.caret = line_start
+			} else {
+				// Walk runes from the line start, measuring each prefix width
+				// and placing the caret at whichever rune boundary the click
+				// is closer to.
+				byte_pos := 0
+				prev_w: f32 = 0
+				placed := false
+				for byte_pos < len(text) {
+					_, rs := utf8.decode_rune_in_string(text[byte_pos:])
+					end := byte_pos + rs
+					if end > len(text) {end = len(text)}
+					w := c.measure_text(text[:end], 17)
+					if target_x < (prev_w + w) / 2 {
+						value.caret = line_start + byte_pos
+						placed = true
+						break
+					}
+					prev_w = w
+					byte_pos = end
+				}
+				if !placed {value.caret = line_end}
+			}
+		} else if c.focused == id {
+			c.focused = 0
+		}
 	}
 	focused := c.focused == id
 	edited := false
 	if focused {
-		if c.backspace && value.len > 0 {
-			value.len -= 1
-			for value.len > 0 && (value.data[value.len] & 0xC0) == 0x80 {value.len -= 1}
-			edited = true
+		if c.backspace && textarea_backspace(value) {edited = true}
+		if c.enter {
+			nl := [1]u8{'\n'}
+			if textarea_insert(value, nl[:]) > 0 {edited = true}
 		}
-		if c.enter && value.len < len(value.data) {
-			value.data[value.len] = '\n'
-			value.len += 1
-			edited = true
-		}
-		for ch in c.typed[:c.typed_len] {
-			if value.len < len(value.data) {value.data[value.len] = ch; value.len += 1
-				edited = true}
+		if c.typed_len > 0 {
+			if textarea_insert(value, c.typed[:c.typed_len]) > 0 {edited = true}
 		}
 		c.typed_len = 0
 		c.backspace = false
 		c.enter = false
 	}
+	// Recount after the edit so the follow-caret math and scrollbar reflect
+	// the just-typed newline or deleted rune.
+	if edited {
+		line_count = 1
+		for i in 0 ..< value.len {
+			if value.data[i] == '\n' {line_count += 1}
+		}
+		content_h = pad_y * 2 + f32(line_count) * line_height
+		max_scroll = max(0, content_h - view_h)
+	}
+	// Locate the caret: line_index + byte offset of its line start.
+	caret_line := 0
+	caret_line_start := 0
+	for i in 0 ..< value.caret {
+		if value.data[i] == '\n' {
+			caret_line += 1
+			caret_line_start = i + 1
+		}
+	}
+	// Follow the caret on edit frames only, in both directions. A pure
+	// wheel/drag frame leaves scroll alone so the viewer isn't yanked back.
+	if edited {
+		caret_top := pad_y + f32(caret_line) * line_height
+		caret_bottom := caret_top + line_height
+		if caret_bottom > value.scroll + view_h {
+			value.scroll = caret_bottom - view_h
+		} else if caret_top < value.scroll {
+			value.scroll = caret_top
+		}
+	}
+	if hover && c.wheel_y != 0 {value.scroll += c.wheel_y}
+	if value.dragging {
+		travel := track_h - thumb_h
+		if travel > 0 {
+			value.scroll = (c.my - track_y - value.grab_y) / travel * max_scroll
+		}
+		if !c.down {value.dragging = false}
+	}
+	if thumb_hovered || value.dragging {c.pointer_cursor = true}
+	value.scroll = clamp(value.scroll, 0, max_scroll)
 	border := DEFAULT_PALETTE.border
 	if hover {border = DEFAULT_PALETTE.border_hover}
 	if focused {border = DEFAULT_PALETTE.primary_bright}
@@ -455,31 +609,6 @@ textarea :: proc(
 		DEFAULT_PALETTE.surface,
 		max(0, corner_radius - 1),
 	)
-	pad_x: f32 = 14
-	pad_y: f32 = 10
-	line_height: f32 = 22
-	content := string(value.data[:value.len])
-	// Lay out in content coordinates (y = 0 at content top), then subtract
-	// value.scroll when drawing. Everything about overflow — wheel, auto
-	// follow caret, scrollbar — reads from these two numbers.
-	line_count := 1
-	for i in 0 ..< value.len {
-		if value.data[i] == '\n' {line_count += 1}
-	}
-	content_h := pad_y * 2 + f32(line_count) * line_height
-	view_h := r.h
-	max_scroll := max(0, content_h - view_h)
-	// Keep the caret line visible when an edit extended past the bottom.
-	// Runs on the edit frame only, so the viewer can still wheel up while
-	// the textarea is focused without being yanked back.
-	if edited {
-		caret_line_bottom := pad_y + f32(line_count) * line_height + 4
-		if caret_line_bottom - value.scroll > view_h {
-			value.scroll = caret_line_bottom - view_h
-		}
-	}
-	if hover && c.wheel_y != 0 {value.scroll += c.wheel_y}
-	value.scroll = clamp(value.scroll, 0, max_scroll)
 	if value.len == 0 && !focused {
 		label(
 			c,
@@ -500,46 +629,49 @@ textarea :: proc(
 	right_gutter: f32 = max_scroll > 0 ? 14 : 2
 	c.clip = {r.x + 1, r.y + 1, r.w - 1 - right_gutter, r.h - 2}
 	c.clipped = true
+	content := string(value.data[:value.len])
 	first_baseline := r.y + pad_y + 17 - value.scroll
 	line_start := 0
-	line_index := 0
+	li := 0
 	for i in 0 ..< len(content) {
 		if content[i] == '\n' {
-			baseline := first_baseline + f32(line_index) * line_height
+			baseline := first_baseline + f32(li) * line_height
 			if baseline > r.y - line_height && baseline - 14 < r.y + r.h {
 				label(c, r.x + pad_x, baseline, content[line_start:i], 17, DEFAULT_PALETTE.text)
 			}
 			line_start = i + 1
-			line_index += 1
+			li += 1
 		}
 	}
 	last_line := content[line_start:]
-	last_baseline := first_baseline + f32(line_index) * line_height
+	last_baseline := first_baseline + f32(li) * line_height
 	if last_baseline > r.y - line_height && last_baseline - 14 < r.y + r.h {
 		label(c, r.x + pad_x, last_baseline, last_line, 17, DEFAULT_PALETTE.text)
 	}
 	if focused {
 		assert(c.measure_text != nil, "Focused textareas require a text measurement callback")
-		caret_x := r.x + pad_x + c.measure_text(last_line, 17)
+		caret_prefix := string(value.data[caret_line_start:value.caret])
+		caret_x := r.x + pad_x + c.measure_text(caret_prefix, 17)
+		caret_baseline := first_baseline + f32(caret_line) * line_height
 		box(
 			c,
-			{min(caret_x, r.x + r.w - 2 - right_gutter), last_baseline - 14, 1, 18},
+			{min(caret_x, r.x + r.w - 2 - right_gutter), caret_baseline - 14, 1, 18},
 			DEFAULT_PALETTE.primary_bright,
 		)
 	}
 	c.clip = prev_clip
 	c.clipped = prev_clipped
-	// Thin scrollbar in the right gutter. Drawn only on overflow and never
-	// interactive — this is the same affordance the gallery page scroll uses
-	// at rest, miniaturized.
 	if max_scroll > 0 {
-		track := Rect{r.x + r.w - 8, r.y + 6, 3, r.h - 12}
-		thumb_h := max(24, track.h * view_h / content_h)
-		thumb_y := track.y + (track.h - thumb_h) * value.scroll / max_scroll
+		travel := track_h - thumb_h
+		thumb_y_draw := track_y + (travel > 0 ? travel * value.scroll / max_scroll : 0)
+		hot := thumb_hovered || value.dragging
+		w: f32 = hot ? 5 : track_w
+		alpha: f32 = hot ? 0.95 : 0.75
+		center_x := track_x + track_w / 2
 		tr := DEFAULT_PALETTE.scroll_track
 		th := DEFAULT_PALETTE.scroll_thumb
-		box(c, track, {tr[0], tr[1], tr[2], 0.18}, 1.5)
-		box(c, {track.x, thumb_y, track.w, thumb_h}, {th[0], th[1], th[2], 0.75}, 1.5)
+		box(c, {track_x, track_y, track_w, track_h}, {tr[0], tr[1], tr[2], 0.18}, 1.5)
+		box(c, {center_x - w / 2, thumb_y_draw, w, thumb_h}, {th[0], th[1], th[2], alpha}, w / 2)
 	}
 }
 
