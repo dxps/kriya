@@ -67,6 +67,7 @@ Context :: struct {
 	typed:                   [32]u8,
 	typed_len:               int,
 	backspace:               bool,
+	enter:                   bool,
 	corner_radius:           Maybe(f32),
 	layer:                   Command_Layer,
 	content_bottom:          f32,
@@ -78,7 +79,8 @@ begin :: proc(c: ^Context) {clear(&c.commands); c.pointer_cursor = false; c.offs
 	c.content_bottom = 0}
 end :: proc(c: ^Context) {c.pressed = false; c.released = false; c.moved = false; c.wheel_y = 0
 	c.typed_len = 0
-	c.backspace = false}
+	c.backspace = false
+	c.enter = false}
 set_corner_radius :: proc(c: ^Context, radius: f32) {c.corner_radius = max(0, radius)}
 resolve_corner_radius :: proc(c: ^Context, radius: Maybe(f32)) -> f32 {
 	if r, ok := radius.?; ok {return r}
@@ -385,6 +387,159 @@ input :: proc(
 			)
 			line(c, eye.x - 2, eye.y + eye.h + 3, eye.x + eye.w + 2, eye.y - 3, 1.25, eye_color)
 		}
+	}
+}
+
+// Multi-line text buffer. Larger than Text_Input so paragraphs fit; newlines
+// are stored verbatim as '\n' and are the only line break the widget honors
+// (no soft-wrap). Content is still raw bytes — rune-aware edits step past
+// UTF-8 continuation bytes the same way the single-line input does.
+// scroll is the vertical pixel offset into the content, owned by the value
+// so each textarea remembers its own position across frames.
+Text_Area :: struct {
+	data:   [1024]u8,
+	len:    int,
+	scroll: f32,
+}
+
+set_area_text :: proc(value: ^Text_Area, text: string) {
+	value.len = min(len(text), len(value.data))
+	copy(value.data[:value.len], transmute([]u8)text[:value.len])
+}
+
+// Multi-line text input. Lines break only on explicit '\n' (Enter inserts
+// one); content below the box is clipped rather than scrolled. Shares the
+// single-line input's focus plumbing: click to focus, click outside to blur.
+textarea :: proc(
+	c: ^Context,
+	id: u64,
+	r: Rect,
+	placeholder: string,
+	value: ^Text_Area,
+	radius: Maybe(f32) = nil,
+) {
+	corner_radius := resolve_corner_radius(c, radius)
+	hover := contains(c, r)
+	if hover {c.pointer_cursor = true}
+	if c.pressed {
+		if hover {c.focused = id} else if c.focused == id {c.focused = 0}
+	}
+	focused := c.focused == id
+	edited := false
+	if focused {
+		if c.backspace && value.len > 0 {
+			value.len -= 1
+			for value.len > 0 && (value.data[value.len] & 0xC0) == 0x80 {value.len -= 1}
+			edited = true
+		}
+		if c.enter && value.len < len(value.data) {
+			value.data[value.len] = '\n'
+			value.len += 1
+			edited = true
+		}
+		for ch in c.typed[:c.typed_len] {
+			if value.len < len(value.data) {value.data[value.len] = ch; value.len += 1
+				edited = true}
+		}
+		c.typed_len = 0
+		c.backspace = false
+		c.enter = false
+	}
+	border := DEFAULT_PALETTE.border
+	if hover {border = DEFAULT_PALETTE.border_hover}
+	if focused {border = DEFAULT_PALETTE.primary_bright}
+	box(c, r, border, corner_radius)
+	box(
+		c,
+		{r.x + 1, r.y + 1, r.w - 2, r.h - 2},
+		DEFAULT_PALETTE.surface,
+		max(0, corner_radius - 1),
+	)
+	pad_x: f32 = 14
+	pad_y: f32 = 10
+	line_height: f32 = 22
+	content := string(value.data[:value.len])
+	// Lay out in content coordinates (y = 0 at content top), then subtract
+	// value.scroll when drawing. Everything about overflow — wheel, auto
+	// follow caret, scrollbar — reads from these two numbers.
+	line_count := 1
+	for i in 0 ..< value.len {
+		if value.data[i] == '\n' {line_count += 1}
+	}
+	content_h := pad_y * 2 + f32(line_count) * line_height
+	view_h := r.h
+	max_scroll := max(0, content_h - view_h)
+	// Keep the caret line visible when an edit extended past the bottom.
+	// Runs on the edit frame only, so the viewer can still wheel up while
+	// the textarea is focused without being yanked back.
+	if edited {
+		caret_line_bottom := pad_y + f32(line_count) * line_height + 4
+		if caret_line_bottom - value.scroll > view_h {
+			value.scroll = caret_line_bottom - view_h
+		}
+	}
+	if hover && c.wheel_y != 0 {value.scroll += c.wheel_y}
+	value.scroll = clamp(value.scroll, 0, max_scroll)
+	if value.len == 0 && !focused {
+		label(
+			c,
+			r.x + pad_x,
+			r.y + pad_y + 17,
+			placeholder,
+			17,
+			DEFAULT_PALETTE.text_muted,
+		)
+		return
+	}
+	// Scissor to the interior so partially-visible top / bottom lines clip
+	// instead of jumping. The right edge shrinks when a scrollbar is on, so
+	// long lines don't bleed under the thumb. Saved and restored because the
+	// gallery sets its own page-scroll clip around this call.
+	prev_clip := c.clip
+	prev_clipped := c.clipped
+	right_gutter: f32 = max_scroll > 0 ? 14 : 2
+	c.clip = {r.x + 1, r.y + 1, r.w - 1 - right_gutter, r.h - 2}
+	c.clipped = true
+	first_baseline := r.y + pad_y + 17 - value.scroll
+	line_start := 0
+	line_index := 0
+	for i in 0 ..< len(content) {
+		if content[i] == '\n' {
+			baseline := first_baseline + f32(line_index) * line_height
+			if baseline > r.y - line_height && baseline - 14 < r.y + r.h {
+				label(c, r.x + pad_x, baseline, content[line_start:i], 17, DEFAULT_PALETTE.text)
+			}
+			line_start = i + 1
+			line_index += 1
+		}
+	}
+	last_line := content[line_start:]
+	last_baseline := first_baseline + f32(line_index) * line_height
+	if last_baseline > r.y - line_height && last_baseline - 14 < r.y + r.h {
+		label(c, r.x + pad_x, last_baseline, last_line, 17, DEFAULT_PALETTE.text)
+	}
+	if focused {
+		assert(c.measure_text != nil, "Focused textareas require a text measurement callback")
+		caret_x := r.x + pad_x + c.measure_text(last_line, 17)
+		box(
+			c,
+			{min(caret_x, r.x + r.w - 2 - right_gutter), last_baseline - 14, 1, 18},
+			DEFAULT_PALETTE.primary_bright,
+		)
+	}
+	c.clip = prev_clip
+	c.clipped = prev_clipped
+	// Thin scrollbar in the right gutter. Drawn only on overflow and never
+	// interactive — this is the same affordance the gallery page scroll uses
+	// at rest, miniaturized.
+	if max_scroll > 0 {
+		track := Rect{r.x + r.w - 8, r.y + 6, 3, r.h - 12}
+		thumb_h := max(24, track.h * view_h / content_h)
+		thumb_y := track.y + (track.h - thumb_h) * value.scroll / max_scroll
+		tr := DEFAULT_PALETTE.scroll_track
+		th := DEFAULT_PALETTE.scroll_thumb
+		box(c, track, {tr[0], tr[1], tr[2], 0.18}, 1.5)
+		box(c, {track.x, thumb_y, track.w, thumb_h}, {th[0], th[1], th[2], 0.75}, 1.5)
 	}
 }
 

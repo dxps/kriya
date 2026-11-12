@@ -10,6 +10,7 @@ View :: struct {
 views := [?]View {
 	{draw_buttons, "apps/gallery/buttons.odin"},
 	{draw_inputs, "apps/gallery/inputs.odin"},
+	{draw_textareas, "apps/gallery/textareas.odin"},
 	{draw_dropdowns, "apps/gallery/dropdowns.odin"},
 	{draw_checkboxes, "apps/gallery/checkboxes.odin"},
 	{draw_toggles, "apps/gallery/toggles.odin"},

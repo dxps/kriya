@@ -325,6 +325,7 @@ event :: proc "c" (e: ^sapp.Event) {
 		}
 	case .KEY_DOWN:
 		if e.key_code == .BACKSPACE {ctx.backspace = true}
+		if e.key_code == .ENTER || e.key_code == .KP_ENTER {ctx.enter = true}
 	case:
 	}
 }
@@ -348,6 +349,7 @@ kriya_start :: proc "c" () {
 	context.temp_allocator = mem.arena_allocator(&temp_arena)
 	app_context = context
 	init_input_examples()
+	init_textarea_examples()
 	kriya_route_changed()
 	sapp.run(
 		{
