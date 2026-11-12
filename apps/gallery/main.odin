@@ -358,6 +358,7 @@ kriya_start :: proc "c" () {
 			width = 1200,
 			height = 760,
 			high_dpi = true,
+			sample_count = 4,
 			window_title = "Kriya",
 			html5 = {canvas_selector = "#canvas"},
 			logger = {func = slog.func},
