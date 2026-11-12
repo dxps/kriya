@@ -68,6 +68,12 @@ Context :: struct {
 	typed_len:               int,
 	backspace:               bool,
 	enter:                   bool,
+	nav_left:                bool,
+	nav_right:               bool,
+	nav_up:                  bool,
+	nav_down:                bool,
+	nav_home:                bool,
+	nav_end:                 bool,
 	corner_radius:           Maybe(f32),
 	layer:                   Command_Layer,
 	content_bottom:          f32,
@@ -80,7 +86,13 @@ begin :: proc(c: ^Context) {clear(&c.commands); c.pointer_cursor = false; c.offs
 end :: proc(c: ^Context) {c.pressed = false; c.released = false; c.moved = false; c.wheel_y = 0
 	c.typed_len = 0
 	c.backspace = false
-	c.enter = false}
+	c.enter = false
+	c.nav_left = false
+	c.nav_right = false
+	c.nav_up = false
+	c.nav_down = false
+	c.nav_home = false
+	c.nav_end = false}
 set_corner_radius :: proc(c: ^Context, radius: f32) {c.corner_radius = max(0, radius)}
 resolve_corner_radius :: proc(c: ^Context, radius: Maybe(f32)) -> f32 {
 	if r, ok := radius.?; ok {return r}
@@ -399,18 +411,73 @@ input :: proc(
 // stays invariant. scroll, dragging and grab_y retain scroll and drag across
 // frames so each textarea remembers its own view and interaction state.
 Text_Area :: struct {
-	data:     [1024]u8,
-	len:      int,
-	caret:    int,
-	scroll:   f32,
-	dragging: bool,
-	grab_y:   f32,
+	data:        [1024]u8,
+	len:         int,
+	caret:       int,
+	// goal_x is the ideal horizontal position (pixels from line start) that
+	// Up and Down try to land at. goal_sticky stays true across consecutive
+	// vertical moves so the caret returns to its original column after a
+	// detour through a shorter line; any horizontal action, click or edit
+	// clears it and the next vertical press re-anchors from the caret's
+	// current x.
+	goal_x:      f32,
+	goal_sticky: bool,
+	scroll:      f32,
+	dragging:    bool,
+	grab_y:      f32,
 }
 
 set_area_text :: proc(value: ^Text_Area, text: string) {
 	value.len = min(len(text), len(value.data))
 	copy(value.data[:value.len], transmute([]u8)text[:value.len])
 	value.caret = value.len
+	value.goal_sticky = false
+}
+
+// Byte index of the start of the line containing caret. Walks forward
+// because rune-aware edits only guarantee a valid caret on rune
+// boundaries, not that we can scan backward one byte at a time.
+textarea_line_start :: proc(data: []u8, caret: int) -> int {
+	s := 0
+	for i in 0 ..< caret {
+		if data[i] == '\n' {s = i + 1}
+	}
+	return s
+}
+
+// Byte index of the newline terminating the line containing caret, or
+// len(data) when the line has no trailing newline.
+textarea_line_end :: proc(data: []u8, caret: int) -> int {
+	for i in caret ..< len(data) {
+		if data[i] == '\n' {return i}
+	}
+	return len(data)
+}
+
+// Given a target x in pixels relative to the line's text origin, returns
+// the byte index on that line whose rune boundary is closest to the
+// target. Used by click positioning and by Up / Down to project the goal
+// column onto a different line.
+textarea_x_to_caret :: proc(
+	c: ^Context,
+	data: []u8,
+	line_start, line_end: int,
+	target_x: f32,
+) -> int {
+	if target_x <= 0 {return line_start}
+	text := string(data[line_start:line_end])
+	byte_pos := 0
+	prev_w: f32 = 0
+	for byte_pos < len(text) {
+		_, rs := utf8.decode_rune_in_string(text[byte_pos:])
+		end := byte_pos + rs
+		if end > len(text) {end = len(text)}
+		w := c.measure_text(text[:end], 17)
+		if target_x < (prev_w + w) / 2 {return line_start + byte_pos}
+		prev_w = w
+		byte_pos = end
+	}
+	return line_end
 }
 
 // Shifts the suffix right and copies bytes into the gap at value.caret.
@@ -493,10 +560,10 @@ textarea :: proc(
 			c.focused = id
 		} else if hover {
 			c.focused = id
-			// Convert screen y to content y, then index the line band.
+			// Convert screen y to content y, then index the line band. The
+			// horizontal scan runs in textarea_x_to_caret.
 			local_y := c.my - (r.y + c.offset_y) - pad_y + value.scroll
 			click_line := clamp(int(local_y / line_height), 0, line_count - 1)
-			// Scan to find the byte range of the clicked line.
 			line_start := 0
 			li := 0
 			for i in 0 ..< value.len {
@@ -506,58 +573,124 @@ textarea :: proc(
 					li += 1
 				}
 			}
-			line_end := value.len
-			for i in line_start ..< value.len {
-				if value.data[i] == '\n' {line_end = i; break}
-			}
+			line_end := textarea_line_end(value.data[:value.len], line_start)
 			assert(
 				c.measure_text != nil,
 				"Textarea click positioning requires a text measurement callback",
 			)
-			text := string(value.data[line_start:line_end])
-			target_x := c.mx - r.x - pad_x
-			if target_x <= 0 {
-				value.caret = line_start
-			} else {
-				// Walk runes from the line start, measuring each prefix width
-				// and placing the caret at whichever rune boundary the click
-				// is closer to.
-				byte_pos := 0
-				prev_w: f32 = 0
-				placed := false
-				for byte_pos < len(text) {
-					_, rs := utf8.decode_rune_in_string(text[byte_pos:])
-					end := byte_pos + rs
-					if end > len(text) {end = len(text)}
-					w := c.measure_text(text[:end], 17)
-					if target_x < (prev_w + w) / 2 {
-						value.caret = line_start + byte_pos
-						placed = true
-						break
-					}
-					prev_w = w
-					byte_pos = end
-				}
-				if !placed {value.caret = line_end}
-			}
+			value.caret = textarea_x_to_caret(
+				c,
+				value.data[:value.len],
+				line_start,
+				line_end,
+				c.mx - r.x - pad_x,
+			)
+			value.goal_sticky = false
 		} else if c.focused == id {
 			c.focused = 0
 		}
 	}
 	focused := c.focused == id
 	edited := false
+	navigated := false
 	if focused {
-		if c.backspace && textarea_backspace(value) {edited = true}
+		// Horizontal moves clear the sticky goal column, so a later Up / Down
+		// anchors at the caret's new x. Vertical moves consume goal_x (or
+		// anchor it on first press) and leave it sticky.
+		if c.nav_left && value.caret > 0 {
+			new := value.caret - 1
+			for new > 0 && (value.data[new] & 0xC0) == 0x80 {new -= 1}
+			value.caret = new
+			value.goal_sticky = false
+			navigated = true
+		}
+		if c.nav_right && value.caret < value.len {
+			_, rs := utf8.decode_rune_in_string(
+				string(value.data[value.caret:value.len]),
+			)
+			value.caret = min(value.caret + rs, value.len)
+			value.goal_sticky = false
+			navigated = true
+		}
+		if c.nav_home {
+			value.caret = textarea_line_start(value.data[:value.len], value.caret)
+			value.goal_sticky = false
+			navigated = true
+		}
+		if c.nav_end {
+			value.caret = textarea_line_end(value.data[:value.len], value.caret)
+			value.goal_sticky = false
+			navigated = true
+		}
+		if c.nav_up || c.nav_down {
+			if !value.goal_sticky {
+				assert(
+					c.measure_text != nil,
+					"Vertical navigation requires a text measurement callback",
+				)
+				line_start := textarea_line_start(value.data[:value.len], value.caret)
+				value.goal_x = c.measure_text(
+					string(value.data[line_start:value.caret]),
+					17,
+				)
+				value.goal_sticky = true
+			}
+			if c.nav_up {
+				cur := textarea_line_start(value.data[:value.len], value.caret)
+				if cur > 0 {
+					prev := textarea_line_start(value.data[:value.len], cur - 1)
+					value.caret = textarea_x_to_caret(
+						c,
+						value.data[:value.len],
+						prev,
+						cur - 1,
+						value.goal_x,
+					)
+					navigated = true
+				}
+			}
+			if c.nav_down {
+				cur_end := textarea_line_end(value.data[:value.len], value.caret)
+				if cur_end < value.len {
+					next_start := cur_end + 1
+					next_end := textarea_line_end(value.data[:value.len], next_start)
+					value.caret = textarea_x_to_caret(
+						c,
+						value.data[:value.len],
+						next_start,
+						next_end,
+						value.goal_x,
+					)
+					navigated = true
+				}
+			}
+		}
+		if c.backspace && textarea_backspace(value) {
+			edited = true
+			value.goal_sticky = false
+		}
 		if c.enter {
 			nl := [1]u8{'\n'}
-			if textarea_insert(value, nl[:]) > 0 {edited = true}
+			if textarea_insert(value, nl[:]) > 0 {
+				edited = true
+				value.goal_sticky = false
+			}
 		}
 		if c.typed_len > 0 {
-			if textarea_insert(value, c.typed[:c.typed_len]) > 0 {edited = true}
+			if textarea_insert(value, c.typed[:c.typed_len]) > 0 {
+				edited = true
+				value.goal_sticky = false
+			}
 		}
 		c.typed_len = 0
 		c.backspace = false
 		c.enter = false
+		c.nav_left = false
+		c.nav_right = false
+		c.nav_up = false
+		c.nav_down = false
+		c.nav_home = false
+		c.nav_end = false
 	}
 	// Recount after the edit so the follow-caret math and scrollbar reflect
 	// the just-typed newline or deleted rune.
@@ -578,9 +711,10 @@ textarea :: proc(
 			caret_line_start = i + 1
 		}
 	}
-	// Follow the caret on edit frames only, in both directions. A pure
-	// wheel/drag frame leaves scroll alone so the viewer isn't yanked back.
-	if edited {
+	// Follow the caret on edit and navigation frames, in both directions. A
+	// pure wheel / drag frame leaves scroll alone so the viewer isn't
+	// yanked back.
+	if edited || navigated {
 		caret_top := pad_y + f32(caret_line) * line_height
 		caret_bottom := caret_top + line_height
 		if caret_bottom > value.scroll + view_h {

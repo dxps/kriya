@@ -326,6 +326,12 @@ event :: proc "c" (e: ^sapp.Event) {
 	case .KEY_DOWN:
 		if e.key_code == .BACKSPACE {ctx.backspace = true}
 		if e.key_code == .ENTER || e.key_code == .KP_ENTER {ctx.enter = true}
+		if e.key_code == .LEFT {ctx.nav_left = true}
+		if e.key_code == .RIGHT {ctx.nav_right = true}
+		if e.key_code == .UP {ctx.nav_up = true}
+		if e.key_code == .DOWN {ctx.nav_down = true}
+		if e.key_code == .HOME {ctx.nav_home = true}
+		if e.key_code == .END {ctx.nav_end = true}
 	case:
 	}
 }
