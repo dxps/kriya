@@ -304,7 +304,11 @@ event :: proc "c" (e: ^sapp.Event) {
 	ctx.mx = e.mouse_x / sapp.dpi_scale(); ctx.my = e.mouse_y / sapp.dpi_scale()
 	#partial switch e.type {
 	case .MOUSE_DOWN:
-		if e.mouse_button == .LEFT {ctx.pressed = true; ctx.down = true}
+		if e.mouse_button == .LEFT {
+			ctx.pressed = true
+			ctx.down = true
+			ctx.mouse_shift = (e.modifiers & sapp.MODIFIER_SHIFT) != 0
+		}
 	case .MOUSE_UP:
 		if e.mouse_button == .LEFT {ctx.released = true; ctx.down = false}
 	case .UNFOCUSED:
@@ -332,6 +336,7 @@ event :: proc "c" (e: ^sapp.Event) {
 		if e.key_code == .DOWN {ctx.nav_down = true}
 		if e.key_code == .HOME {ctx.nav_home = true}
 		if e.key_code == .END {ctx.nav_end = true}
+		if (e.modifiers & sapp.MODIFIER_SHIFT) != 0 {ctx.nav_shift = true}
 	case:
 	}
 }

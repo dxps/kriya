@@ -74,6 +74,8 @@ Context :: struct {
 	nav_down:                bool,
 	nav_home:                bool,
 	nav_end:                 bool,
+	nav_shift:               bool,
+	mouse_shift:             bool,
 	corner_radius:           Maybe(f32),
 	layer:                   Command_Layer,
 	content_bottom:          f32,
@@ -92,7 +94,9 @@ end :: proc(c: ^Context) {c.pressed = false; c.released = false; c.moved = false
 	c.nav_up = false
 	c.nav_down = false
 	c.nav_home = false
-	c.nav_end = false}
+	c.nav_end = false
+	c.nav_shift = false
+	c.mouse_shift = false}
 set_corner_radius :: proc(c: ^Context, radius: f32) {c.corner_radius = max(0, radius)}
 resolve_corner_radius :: proc(c: ^Context, radius: Maybe(f32)) -> f32 {
 	if r, ok := radius.?; ok {return r}
@@ -411,27 +415,53 @@ input :: proc(
 // stays invariant. scroll, dragging and grab_y retain scroll and drag across
 // frames so each textarea remembers its own view and interaction state.
 Text_Area :: struct {
-	data:        [1024]u8,
-	len:         int,
-	caret:       int,
+	data:         [1024]u8,
+	len:          int,
+	caret:        int,
+	// anchor is the opposite end of the selection. When anchor == caret
+	// there is no selection; otherwise the selected byte range is
+	// [min(anchor, caret), max(anchor, caret)). Every edit path that
+	// should "replace selection" calls textarea_delete_selection first,
+	// which collapses the pair to the start of the range.
+	anchor:       int,
 	// goal_x is the ideal horizontal position (pixels from line start) that
 	// Up and Down try to land at. goal_sticky stays true across consecutive
 	// vertical moves so the caret returns to its original column after a
 	// detour through a shorter line; any horizontal action, click or edit
 	// clears it and the next vertical press re-anchors from the caret's
 	// current x.
-	goal_x:      f32,
-	goal_sticky: bool,
-	scroll:      f32,
-	dragging:    bool,
-	grab_y:      f32,
+	goal_x:       f32,
+	goal_sticky:  bool,
+	scroll:       f32,
+	dragging:     bool,
+	grab_y:       f32,
+	// text_dragging retains the mouse-drag select state across frames so a
+	// drag that leaves the widget keeps extending the selection until the
+	// button is released.
+	text_dragging: bool,
 }
 
 set_area_text :: proc(value: ^Text_Area, text: string) {
 	value.len = min(len(text), len(value.data))
 	copy(value.data[:value.len], transmute([]u8)text[:value.len])
 	value.caret = value.len
+	value.anchor = value.len
 	value.goal_sticky = false
+}
+
+// Removes the selected byte range (when anchor != caret) by shifting the
+// suffix left, then collapses the pair to the start of the range. Returns
+// true when a selection was deleted.
+textarea_delete_selection :: proc(value: ^Text_Area) -> bool {
+	if value.anchor == value.caret {return false}
+	s := min(value.anchor, value.caret)
+	e := max(value.anchor, value.caret)
+	shift := e - s
+	for i := e; i < value.len; i += 1 {value.data[i - shift] = value.data[i]}
+	value.len -= shift
+	value.caret = s
+	value.anchor = s
+	return true
 }
 
 // Byte index of the start of the line containing caret. Walks forward
@@ -480,8 +510,9 @@ textarea_x_to_caret :: proc(
 	return line_end
 }
 
-// Shifts the suffix right and copies bytes into the gap at value.caret.
-// Returns the number of bytes actually inserted (0 when full or empty).
+// Shifts the suffix right and copies bytes into the gap at value.caret,
+// then collapses the selection. Returns the number of bytes actually
+// inserted (0 when full or empty).
 textarea_insert :: proc(value: ^Text_Area, bytes: []u8) -> int {
 	n := min(len(bytes), len(value.data) - value.len)
 	if n <= 0 {return 0}
@@ -489,12 +520,13 @@ textarea_insert :: proc(value: ^Text_Area, bytes: []u8) -> int {
 	copy(value.data[value.caret:value.caret + n], bytes[:n])
 	value.len += n
 	value.caret += n
+	value.anchor = value.caret
 	return n
 }
 
 // Removes the rune to the left of the caret by stepping back past UTF-8
-// continuation bytes (top two bits == 10), then shifting the suffix left.
-// Returns true when a rune was removed.
+// continuation bytes (top two bits == 10), then shifting the suffix left
+// and collapsing the selection. Returns true when a rune was removed.
 textarea_backspace :: proc(value: ^Text_Area) -> bool {
 	if value.caret == 0 {return false}
 	end := value.caret
@@ -504,6 +536,7 @@ textarea_backspace :: proc(value: ^Text_Area) -> bool {
 	for i := end; i < value.len; i += 1 {value.data[i - shift] = value.data[i]}
 	value.len -= shift
 	value.caret = start
+	value.anchor = start
 	return true
 }
 
@@ -548,10 +581,31 @@ textarea :: proc(
 		thumb_y = track_y + (travel > 0 ? travel * value.scroll / max_scroll : 0)
 		thumb_hovered = contains(c, thumb_hit)
 	}
+	// Resolves the mouse position to a caret byte index. Shared by initial
+	// press and the ongoing drag-select path.
+	mouse_to_caret :: proc(
+		c: ^Context,
+		r: Rect,
+		data: []u8,
+		scroll, pad_x, pad_y, line_height: f32,
+		line_count: int,
+	) -> int {
+		local_y := c.my - (r.y + c.offset_y) - pad_y + scroll
+		line_i := clamp(int(local_y / line_height), 0, line_count - 1)
+		start := 0
+		li := 0
+		for i in 0 ..< len(data) {
+			if li == line_i {break}
+			if data[i] == '\n' {start = i + 1; li += 1}
+		}
+		end := textarea_line_end(data, start)
+		return textarea_x_to_caret(c, data, start, end, c.mx - r.x - pad_x)
+	}
 	// Press routing: scrollbar wins over text. A press inside the thumb hit
 	// zone starts a drag and focuses the widget without moving the caret;
-	// a press anywhere else inside r focuses and positions the caret at the
-	// closest rune boundary; a press outside clears focus.
+	// a press anywhere else inside r focuses, positions the caret, and
+	// begins a drag-select that runs until mouse-up. Shift extends the
+	// existing selection instead of collapsing it.
 	if c.pressed {
 		if max_scroll > 0 && thumb_hovered {
 			value.dragging = true
@@ -560,43 +614,52 @@ textarea :: proc(
 			c.focused = id
 		} else if hover {
 			c.focused = id
-			// Convert screen y to content y, then index the line band. The
-			// horizontal scan runs in textarea_x_to_caret.
-			local_y := c.my - (r.y + c.offset_y) - pad_y + value.scroll
-			click_line := clamp(int(local_y / line_height), 0, line_count - 1)
-			line_start := 0
-			li := 0
-			for i in 0 ..< value.len {
-				if li == click_line {break}
-				if value.data[i] == '\n' {
-					line_start = i + 1
-					li += 1
-				}
-			}
-			line_end := textarea_line_end(value.data[:value.len], line_start)
 			assert(
 				c.measure_text != nil,
 				"Textarea click positioning requires a text measurement callback",
 			)
-			value.caret = textarea_x_to_caret(
+			new_caret := mouse_to_caret(
 				c,
+				r,
 				value.data[:value.len],
-				line_start,
-				line_end,
-				c.mx - r.x - pad_x,
+				value.scroll,
+				pad_x,
+				pad_y,
+				line_height,
+				line_count,
 			)
+			if !c.mouse_shift {value.anchor = new_caret}
+			value.caret = new_caret
+			value.text_dragging = true
 			value.goal_sticky = false
 		} else if c.focused == id {
 			c.focused = 0
+		}
+	}
+	if value.text_dragging {
+		if c.down {
+			value.caret = mouse_to_caret(
+				c,
+				r,
+				value.data[:value.len],
+				value.scroll,
+				pad_x,
+				pad_y,
+				line_height,
+				line_count,
+			)
+		} else {
+			value.text_dragging = false
 		}
 	}
 	focused := c.focused == id
 	edited := false
 	navigated := false
 	if focused {
-		// Horizontal moves clear the sticky goal column, so a later Up / Down
-		// anchors at the caret's new x. Vertical moves consume goal_x (or
-		// anchor it on first press) and leave it sticky.
+		// Horizontal moves clear the sticky goal column; vertical moves
+		// anchor it on first press and reuse it on subsequent presses.
+		// nav_shift extends the selection — the caret moves but the anchor
+		// stays — otherwise the selection collapses to the caret.
 		if c.nav_left && value.caret > 0 {
 			new := value.caret - 1
 			for new > 0 && (value.data[new] & 0xC0) == 0x80 {new -= 1}
@@ -665,11 +728,20 @@ textarea :: proc(
 				}
 			}
 		}
-		if c.backspace && textarea_backspace(value) {
-			edited = true
-			value.goal_sticky = false
+		if navigated && !c.nav_shift {value.anchor = value.caret}
+		// Backspace with a selection deletes the selection; otherwise it
+		// removes the rune to the left of the caret.
+		if c.backspace {
+			if textarea_delete_selection(value) {
+				edited = true
+				value.goal_sticky = false
+			} else if textarea_backspace(value) {
+				edited = true
+				value.goal_sticky = false
+			}
 		}
 		if c.enter {
+			_ = textarea_delete_selection(value)
 			nl := [1]u8{'\n'}
 			if textarea_insert(value, nl[:]) > 0 {
 				edited = true
@@ -677,6 +749,7 @@ textarea :: proc(
 			}
 		}
 		if c.typed_len > 0 {
+			_ = textarea_delete_selection(value)
 			if textarea_insert(value, c.typed[:c.typed_len]) > 0 {
 				edited = true
 				value.goal_sticky = false
@@ -765,12 +838,61 @@ textarea :: proc(
 	c.clipped = true
 	content := string(value.data[:value.len])
 	first_baseline := r.y + pad_y + 17 - value.scroll
+	// Draws the selection band for one line as a translucent rect behind
+	// the text. A trailing newline that is inside the selection extends the
+	// highlight ~a space-width past the last rune so adjacent full-line
+	// selections read as one continuous band.
+	draw_sel :: proc(
+		c: ^Context,
+		data: []u8,
+		ls, le, ss, se: int,
+		baseline, line_height, left_x, right_max: f32,
+	) {
+		// Clamp the selection endpoints into this line's text range. When
+		// the selection crosses the newline terminating this line, show a
+		// short trailer past the last rune so adjacent full-line
+		// selections read as one continuous band.
+		start := clamp(ss, ls, le)
+		end := clamp(se, ls, le)
+		extend: f32 = 0
+		if se > le && ss <= le && le < len(data) && data[le] == '\n' {extend = 8}
+		x0 := start > ls ? c.measure_text(string(data[ls:start]), 17) : 0
+		x1 := end > ls ? c.measure_text(string(data[ls:end]), 17) : 0
+		rect_x := left_x + x0
+		rect_w := min((x1 - x0) + extend, right_max - rect_x)
+		if rect_w <= 0 {return}
+		hi := DEFAULT_PALETTE.primary
+		box(
+			c,
+			{rect_x, baseline - 15, rect_w, line_height - 2},
+			{hi[0], hi[1], hi[2], 0.35},
+			2,
+		)
+	}
+	s_sel := min(value.anchor, value.caret)
+	e_sel := max(value.anchor, value.caret)
+	has_sel := focused && s_sel != e_sel
+	sel_right_max := r.x + r.w - 1 - right_gutter
 	line_start := 0
 	li := 0
 	for i in 0 ..< len(content) {
 		if content[i] == '\n' {
 			baseline := first_baseline + f32(li) * line_height
 			if baseline > r.y - line_height && baseline - 14 < r.y + r.h {
+				if has_sel {
+					draw_sel(
+						c,
+						value.data[:value.len],
+						line_start,
+						i,
+						s_sel,
+						e_sel,
+						baseline,
+						line_height,
+						r.x + pad_x,
+						sel_right_max,
+					)
+				}
 				label(c, r.x + pad_x, baseline, content[line_start:i], 17, DEFAULT_PALETTE.text)
 			}
 			line_start = i + 1
@@ -780,6 +902,20 @@ textarea :: proc(
 	last_line := content[line_start:]
 	last_baseline := first_baseline + f32(li) * line_height
 	if last_baseline > r.y - line_height && last_baseline - 14 < r.y + r.h {
+		if has_sel {
+			draw_sel(
+				c,
+				value.data[:value.len],
+				line_start,
+				value.len,
+				s_sel,
+				e_sel,
+				last_baseline,
+				line_height,
+				r.x + pad_x,
+				sel_right_max,
+			)
+		}
 		label(c, r.x + pad_x, last_baseline, last_line, 17, DEFAULT_PALETTE.text)
 	}
 	if focused {
