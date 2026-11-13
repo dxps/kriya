@@ -74,6 +74,8 @@ Context :: struct {
 	nav_down:                bool,
 	nav_home:                bool,
 	nav_end:                 bool,
+	nav_page_up:             bool,
+	nav_page_down:           bool,
 	nav_shift:               bool,
 	nav_word:                bool,
 	nav_line:                bool,
@@ -113,6 +115,8 @@ end :: proc(c: ^Context) {c.pressed = false; c.released = false; c.moved = false
 	c.nav_down = false
 	c.nav_home = false
 	c.nav_end = false
+	c.nav_page_up = false
+	c.nav_page_down = false
 	c.nav_shift = false
 	c.nav_word = false
 	c.nav_line = false
@@ -882,6 +886,8 @@ textarea :: proc(
 		   c.nav_down ||
 		   c.nav_home ||
 		   c.nav_end ||
+		   c.nav_page_up ||
+		   c.nav_page_down ||
 		   c.select_all {
 			value.last_edit_kind = .None
 		}
@@ -937,7 +943,7 @@ textarea :: proc(
 			value.goal_sticky = false
 			navigated = true
 		}
-		if c.nav_up || c.nav_down {
+		if c.nav_up || c.nav_down || c.nav_page_up || c.nav_page_down {
 			if !value.goal_sticky {
 				assert(
 					c.measure_text != nil,
@@ -978,6 +984,44 @@ textarea :: proc(
 					)
 					navigated = true
 				}
+			}
+			// Page keys step by how many lines fit in the view, less one so
+			// a line of overlap stays visible between pages. Walks the
+			// newline table one line at a time; a O(lines) loop is fine for
+			// the sizes we handle here.
+			if c.nav_page_up {
+				rows := max(1, int(view_h / line_height) - 1)
+				cur := textarea_line_start(value.data[:value.len], value.caret)
+				for _ in 0 ..< rows {
+					if cur == 0 {break}
+					cur = textarea_line_start(value.data[:value.len], cur - 1)
+				}
+				line_end := textarea_line_end(value.data[:value.len], cur)
+				value.caret = textarea_x_to_caret(
+					c,
+					value.data[:value.len],
+					cur,
+					line_end,
+					value.goal_x,
+				)
+				navigated = true
+			}
+			if c.nav_page_down {
+				rows := max(1, int(view_h / line_height) - 1)
+				cur_end := textarea_line_end(value.data[:value.len], value.caret)
+				for _ in 0 ..< rows {
+					if cur_end >= value.len {break}
+					cur_end = textarea_line_end(value.data[:value.len], cur_end + 1)
+				}
+				start := textarea_line_start(value.data[:value.len], cur_end)
+				value.caret = textarea_x_to_caret(
+					c,
+					value.data[:value.len],
+					start,
+					cur_end,
+					value.goal_x,
+				)
+				navigated = true
 			}
 		}
 		if navigated && !c.nav_shift {value.anchor = value.caret}
@@ -1060,6 +1104,8 @@ textarea :: proc(
 		c.nav_down = false
 		c.nav_home = false
 		c.nav_end = false
+		c.nav_page_up = false
+		c.nav_page_down = false
 	}
 	// Recount after the edit so the follow-caret math and scrollbar reflect
 	// the just-typed newline or deleted rune.

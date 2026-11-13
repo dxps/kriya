@@ -365,6 +365,8 @@ event :: proc "c" (e: ^sapp.Event) {
 		if e.key_code == .DOWN {ctx.nav_down = true}
 		if e.key_code == .HOME {ctx.nav_home = true}
 		if e.key_code == .END {ctx.nav_end = true}
+		if e.key_code == .PAGE_UP {ctx.nav_page_up = true}
+		if e.key_code == .PAGE_DOWN {ctx.nav_page_down = true}
 		if (e.modifiers & sapp.MODIFIER_SHIFT) != 0 {ctx.nav_shift = true}
 		// Word-jump modifier: Alt (Option on macOS). Walks the caret to
 		// the next / previous word boundary.
