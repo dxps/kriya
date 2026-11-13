@@ -76,6 +76,7 @@ Context :: struct {
 	nav_end:                 bool,
 	nav_shift:               bool,
 	nav_word:                bool,
+	nav_line:                bool,
 	mouse_shift:             bool,
 	double_click:            bool,
 	triple_click:            bool,
@@ -112,6 +113,7 @@ end :: proc(c: ^Context) {c.pressed = false; c.released = false; c.moved = false
 	c.nav_end = false
 	c.nav_shift = false
 	c.nav_word = false
+	c.nav_line = false
 	c.mouse_shift = false
 	c.double_click = false
 	c.triple_click = false
@@ -758,7 +760,9 @@ textarea :: proc(
 		// nav_shift extends the selection — the caret moves but the anchor
 		// stays — otherwise the selection collapses to the caret.
 		if c.nav_left && value.caret > 0 {
-			if c.nav_word {
+			if c.nav_line {
+				value.caret = textarea_line_start(value.data[:value.len], value.caret)
+			} else if c.nav_word {
 				value.caret = textarea_prev_word(value.data[:value.len], value.caret)
 			} else {
 				new := value.caret - 1
@@ -769,7 +773,9 @@ textarea :: proc(
 			navigated = true
 		}
 		if c.nav_right && value.caret < value.len {
-			if c.nav_word {
+			if c.nav_line {
+				value.caret = textarea_line_end(value.data[:value.len], value.caret)
+			} else if c.nav_word {
 				value.caret = textarea_next_word(value.data[:value.len], value.caret)
 			} else {
 				_, rs := utf8.decode_rune_in_string(

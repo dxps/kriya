@@ -366,11 +366,13 @@ event :: proc "c" (e: ^sapp.Event) {
 		if e.key_code == .HOME {ctx.nav_home = true}
 		if e.key_code == .END {ctx.nav_end = true}
 		if (e.modifiers & sapp.MODIFIER_SHIFT) != 0 {ctx.nav_shift = true}
-		// Word-jump modifier: Ctrl on Linux / Windows / Web, Alt (Option) on
-		// macOS. Keep this separate from the editor clipboard modifier so
-		// Cmd+Left on macOS stays available for whatever Mac idiom we add
-		// later (beginning of line, typically).
-		if (e.modifiers & (sapp.MODIFIER_CTRL | sapp.MODIFIER_ALT)) != 0 {ctx.nav_word = true}
+		// Word-jump modifier: Alt (Option on macOS). Walks the caret to
+		// the next / previous word boundary.
+		if (e.modifiers & sapp.MODIFIER_ALT) != 0 {ctx.nav_word = true}
+		// Line-jump modifier: Ctrl on Linux / Windows / Web, Cmd on
+		// macOS. Collapses Left / Right to Home / End so beginning- and
+		// end-of-line are available from the same hand as the caret.
+		if (e.modifiers & (sapp.MODIFIER_CTRL | sapp.MODIFIER_SUPER)) != 0 {ctx.nav_line = true}
 		// Ctrl on Linux / Windows / Web, Cmd on macOS — accept either so
 		// each host's conventional shortcut works. Paste is delivered
 		// through the CLIPBOARD_PASTED event; Ctrl+V on web can't read the
