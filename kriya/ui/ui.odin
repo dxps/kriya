@@ -77,6 +77,7 @@ Context :: struct {
 	nav_shift:               bool,
 	mouse_shift:             bool,
 	double_click:            bool,
+	triple_click:            bool,
 	// Clipboard plumbing. The backend captures clipboard shortcuts into
 	// these per-frame flags and the matching paste text (delivered through
 	// sokol's CLIPBOARD_PASTED event on web, where KEY_DOWN for V can't read
@@ -111,6 +112,7 @@ end :: proc(c: ^Context) {c.pressed = false; c.released = false; c.moved = false
 	c.nav_shift = false
 	c.mouse_shift = false
 	c.double_click = false
+	c.triple_click = false
 	c.select_all = false
 	c.copy_request = false
 	c.cut_request = false
@@ -675,7 +677,16 @@ textarea :: proc(
 				line_height,
 				line_count,
 			)
-			if c.double_click {
+			if c.triple_click {
+				// Select the whole clicked line, trailing newline included
+				// so cut / paste moves the line as a unit; the last line
+				// has no newline to include.
+				ls := textarea_line_start(value.data[:value.len], new_caret)
+				le := textarea_line_end(value.data[:value.len], new_caret)
+				if le < value.len && value.data[le] == '\n' {le += 1}
+				value.anchor = ls
+				value.caret = le
+			} else if c.double_click {
 				// Expand to word boundaries around the click, bounded by
 				// the enclosing line so the selection never crosses a '\n'.
 				ls := textarea_line_start(value.data[:value.len], new_caret)
