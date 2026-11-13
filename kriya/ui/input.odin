@@ -22,6 +22,16 @@ Text_Input :: struct {
 	// trailing clamp keeps empty space from appearing past the end.
 	scroll_x: f32,
 	revealed: bool,
+	// Undo / redo stacks and the kind of the most recent edit. undo holds
+	// pre-edit snapshots; redo holds post-undo snapshots so successive
+	// redos walk back to where the user was. last_edit_kind drives
+	// coalescing: the next edit opens a new entry only when its kind
+	// changes (or a non-edit interaction flushes last_edit_kind to .None).
+	undo:           [HISTORY_CAP]Input_History_Entry,
+	undo_len:       int,
+	redo:           [HISTORY_CAP]Input_History_Entry,
+	redo_len:       int,
+	last_edit_kind: Edit_Kind,
 }
 
 set_text :: proc(value: ^Text_Input, text: string) {
@@ -29,6 +39,9 @@ set_text :: proc(value: ^Text_Input, text: string) {
 	copy(value.data[:value.len], transmute([]u8)text[:value.len])
 	value.caret = value.len
 	value.anchor = value.len
+	value.undo_len = 0
+	value.redo_len = 0
+	value.last_edit_kind = .None
 }
 
 // Counts the runes in data[:n]. Used to project a byte offset onto the
@@ -132,6 +145,9 @@ input :: proc(
 	if c.pressed {
 		if contains(c, text_hit) {
 			c.focused = id
+			// Any click starts a new edit group so the next keystroke
+			// doesn't coalesce with earlier typing.
+			value.last_edit_kind = .None
 			// Position caret at the click. target_x is pixels past the text
 			// origin (r.x + pad_x), plus the current horizontal scroll so a
 			// click on an already-scrolled line lands on what the user saw.
@@ -174,6 +190,16 @@ input :: proc(
 	value.anchor = clamp(value.anchor, 0, value.len)
 	navigated := false
 	if focused {
+		// Any non-edit interaction this frame flushes the coalescing kind,
+		// so the next keystroke opens a fresh undo entry.
+		if c.nav_left || c.nav_right || c.nav_home || c.nav_end || c.select_all {
+			value.last_edit_kind = .None
+		}
+		// Undo / redo swap current state with the top of the matching stack.
+		// Reported as navigation so the caret-follow pass brings the
+		// restored caret into view.
+		if c.undo_request && input_undo(value) {navigated = true}
+		if c.redo_request && input_redo(value) {navigated = true}
 		// Select-all stretches the selection across the whole buffer.
 		if c.select_all {
 			value.anchor = 0
@@ -193,12 +219,14 @@ input :: proc(
 			c.set_clipboard(string(value.data[s:e]))
 		}
 		if c.cut_request && value.anchor != value.caret && !masked {
+			input_begin_edit(value, .Other)
 			_ = input_delete_selection(value)
 		}
 		// Paste replaces any current selection with the clipboard text.
 		// Single-line fields clip to the first line of a multi-line paste
 		// so pasted paragraphs don't wedge an unprintable '\n' in.
 		if c.paste_len > 0 {
+			input_begin_edit(value, .Other)
 			_ = input_delete_selection(value)
 			paste_end := c.paste_len
 			for i in 0 ..< c.paste_len {
@@ -206,14 +234,21 @@ input :: proc(
 			}
 			input_insert(value, c.paste[:paste_end])
 		}
+		// Backspace with a selection deletes the selection as one "other"
+		// edit; a run of single-rune backspaces coalesces as .Delete so one
+		// undo reverses the whole run.
 		if c.backspace {
 			if value.anchor != value.caret {
+				input_begin_edit(value, .Other)
 				_ = input_delete_selection(value)
-			} else {
+			} else if value.caret > 0 {
+				input_begin_edit(value, .Delete)
 				input_backspace(value)
 			}
 		}
 		if c.typed_len > 0 {
+			kind: Edit_Kind = value.anchor != value.caret ? .Other : .Insert
+			input_begin_edit(value, kind)
 			_ = input_delete_selection(value)
 			input_insert(value, c.typed[:c.typed_len])
 		}
