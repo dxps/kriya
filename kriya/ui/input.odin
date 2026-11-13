@@ -253,16 +253,24 @@ input :: proc(
 			input_insert(value, c.typed[:c.typed_len])
 		}
 		// Horizontal moves only — single-line has no Up / Down. nav_line
-		// (Ctrl / Cmd) collapses Left / Right onto Home / End so each
-		// host's conventional shortcut jumps to the edges. nav_word (Alt)
-		// handled in a later step.
+		// (Ctrl / Cmd) collapses Left / Right onto Home / End; nav_word
+		// (Alt / Option) steps by word boundary, sharing the textarea's
+		// scanner since the single line is one continuous word stream.
 		if c.nav_left && value.caret > 0 {
-			value.caret = c.nav_line ? 0 : input_step_back(value.data[:value.len], value.caret)
+			if c.nav_line {
+				value.caret = 0
+			} else if c.nav_word {
+				value.caret = textarea_prev_word(value.data[:value.len], value.caret)
+			} else {
+				value.caret = input_step_back(value.data[:value.len], value.caret)
+			}
 			navigated = true
 		}
 		if c.nav_right && value.caret < value.len {
 			if c.nav_line {
 				value.caret = value.len
+			} else if c.nav_word {
+				value.caret = textarea_next_word(value.data[:value.len], value.caret)
 			} else {
 				_, rs := utf8.decode_rune_in_string(string(value.data[value.caret:value.len]))
 				value.caret = min(value.caret + rs, value.len)
