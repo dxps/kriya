@@ -45,6 +45,12 @@ sampler: sg.Sampler
 pipeline: sgl.Pipeline
 selected: int
 sections := routes.SECTIONS
+// Double-click detection state. Sokol delivers each press as MOUSE_DOWN;
+// we promote the second one to a double-click when it arrives within
+// ~333ms (20 frames at 60Hz) and ~4 CSS pixels of the first.
+last_click_frame: u64 = max(u64)
+last_click_x:     f32
+last_click_y:     f32
 storage: [16 * 1024 * 1024]u8
 arena: mem.Arena
 temp_storage: [1024 * 1024]u8
@@ -317,6 +323,16 @@ event :: proc "c" (e: ^sapp.Event) {
 			ctx.pressed = true
 			ctx.down = true
 			ctx.mouse_shift = (e.modifiers & sapp.MODIFIER_SHIFT) != 0
+			frame := sapp.frame_count()
+			if last_click_frame != max(u64) &&
+			   frame - last_click_frame <= 20 &&
+			   math.abs(ctx.mx - last_click_x) < 4 &&
+			   math.abs(ctx.my - last_click_y) < 4 {
+				ctx.double_click = true
+			}
+			last_click_frame = frame
+			last_click_x = ctx.mx
+			last_click_y = ctx.my
 		}
 	case .MOUSE_UP:
 		if e.mouse_button == .LEFT {ctx.released = true; ctx.down = false}

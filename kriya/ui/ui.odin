@@ -76,6 +76,7 @@ Context :: struct {
 	nav_end:                 bool,
 	nav_shift:               bool,
 	mouse_shift:             bool,
+	double_click:            bool,
 	// Clipboard plumbing. The backend captures clipboard shortcuts into
 	// these per-frame flags and the matching paste text (delivered through
 	// sokol's CLIPBOARD_PASTED event on web, where KEY_DOWN for V can't read
@@ -109,6 +110,7 @@ end :: proc(c: ^Context) {c.pressed = false; c.released = false; c.moved = false
 	c.nav_end = false
 	c.nav_shift = false
 	c.mouse_shift = false
+	c.double_click = false
 	c.select_all = false
 	c.copy_request = false
 	c.cut_request = false
@@ -500,6 +502,35 @@ textarea_line_end :: proc(data: []u8, caret: int) -> int {
 	return len(data)
 }
 
+// Classifies a byte as "word" (letters, digits, underscore and every
+// non-ASCII byte — UTF-8 lead and continuation bytes are both >= 0x80, so
+// multi-byte word characters stay grouped). Newlines, spaces and ASCII
+// punctuation are not word bytes.
+textarea_is_word_byte :: proc(b: u8) -> bool {
+	if b >= 0x80 {return true}
+	if b >= 'a' && b <= 'z' {return true}
+	if b >= 'A' && b <= 'Z' {return true}
+	if b >= '0' && b <= '9' {return true}
+	return b == '_'
+}
+
+// Returns the byte range [ws, we) of the word around pos, bounded by the
+// enclosing line. Used by double-click to expand a caret click into a
+// word selection. If pos lands on whitespace or punctuation and neither
+// neighbor is a word byte, returns pos, pos — the caller should keep the
+// caret where it is.
+textarea_word_bounds :: proc(data: []u8, pos, line_start, line_end: int) -> (int, int) {
+	ws := pos
+	we := pos
+	if pos > line_start && textarea_is_word_byte(data[pos - 1]) {
+		for ws > line_start && textarea_is_word_byte(data[ws - 1]) {ws -= 1}
+	}
+	if pos < line_end && textarea_is_word_byte(data[pos]) {
+		for we < line_end && textarea_is_word_byte(data[we]) {we += 1}
+	}
+	return ws, we
+}
+
 // Given a target x in pixels relative to the line's text origin, returns
 // the byte index on that line whose rune boundary is closest to the
 // target. Used by click positioning and by Up / Down to project the goal
@@ -644,9 +675,24 @@ textarea :: proc(
 				line_height,
 				line_count,
 			)
-			if !c.mouse_shift {value.anchor = new_caret}
-			value.caret = new_caret
-			value.text_dragging = true
+			if c.double_click {
+				// Expand to word boundaries around the click, bounded by
+				// the enclosing line so the selection never crosses a '\n'.
+				ls := textarea_line_start(value.data[:value.len], new_caret)
+				le := textarea_line_end(value.data[:value.len], new_caret)
+				ws, we := textarea_word_bounds(
+					value.data[:value.len],
+					new_caret,
+					ls,
+					le,
+				)
+				value.anchor = ws
+				value.caret = we
+			} else {
+				if !c.mouse_shift {value.anchor = new_caret}
+				value.caret = new_caret
+				value.text_dragging = true
+			}
 			value.goal_sticky = false
 		} else if c.focused == id {
 			c.focused = 0
