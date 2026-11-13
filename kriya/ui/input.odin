@@ -137,12 +137,26 @@ input :: proc(
 			// click on an already-scrolled line lands on what the user saw.
 			target_x := c.mx - r.x - pad_x + value.scroll_x
 			new_caret := input_x_to_caret(c, value.data[:value.len], target_x, masked)
-			// Shift-click extends the selection: caret moves, anchor stays.
-			// Plain click collapses to the clicked position and begins a
-			// drag-select that runs until mouse-up.
-			if !c.mouse_shift {value.anchor = new_caret}
-			value.caret = new_caret
-			value.text_dragging = true
+			if c.triple_click {
+				// Single-line field has no notion of "line" past the whole
+				// buffer, so triple-click selects everything.
+				value.anchor = 0
+				value.caret = value.len
+			} else if c.double_click {
+				// Expand to word boundaries around the click. Shares the
+				// textarea's word scanner since a single line is the degenerate
+				// case of a textarea row (line_start = 0, line_end = len).
+				ws, we := textarea_word_bounds(value.data[:value.len], new_caret, 0, value.len)
+				value.anchor = ws
+				value.caret = we
+			} else {
+				// Shift-click extends the selection: caret moves, anchor stays.
+				// Plain click collapses to the clicked position and begins a
+				// drag-select that runs until mouse-up.
+				if !c.mouse_shift {value.anchor = new_caret}
+				value.caret = new_caret
+				value.text_dragging = true
+			}
 		} else if c.focused == id && !hover {c.focused = 0}
 	}
 	if value.text_dragging {
