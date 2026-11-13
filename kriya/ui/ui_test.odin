@@ -103,6 +103,10 @@ input_focus_types_backspaces_and_masks_password :: proc(t: ^testing.T) {
 	}
 	testing.expect(t, bullet_count == 2)
 	end(&c); begin(&c)
+	// Simulate mouse release before the keystroke so the live drag doesn't
+	// extend a selection across to the click point and turn Backspace into
+	// a selection delete.
+	c.down = false
 	c.backspace = true
 	input(&c, 7, {0, 0, 240, 44}, "Password", &value, true)
 	testing.expect(t, string(value.data[:value.len]) == "a")

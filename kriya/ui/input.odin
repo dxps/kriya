@@ -10,6 +10,13 @@ Text_Input :: struct {
 	data:     [128]u8,
 	len:      int,
 	caret:    int,
+	// anchor is the opposite end of the selection. anchor == caret means no
+	// selection; otherwise the selected byte range is [min(a, c), max(a, c)).
+	anchor:   int,
+	// text_dragging retains the mouse drag-select state across frames so a
+	// drag that leaves the widget keeps extending the selection until the
+	// button is released.
+	text_dragging: bool,
 	// scroll_x pulls the visible text left so long buffers stay scrollable.
 	// The caret-follow at render time keeps the caret inside the view; a
 	// trailing clamp keeps empty space from appearing past the end.
@@ -21,6 +28,7 @@ set_text :: proc(value: ^Text_Input, text: string) {
 	value.len = min(len(text), len(value.data))
 	copy(value.data[:value.len], transmute([]u8)text[:value.len])
 	value.caret = value.len
+	value.anchor = value.len
 }
 
 // Counts the runes in data[:n]. Used to project a byte offset onto the
@@ -41,7 +49,7 @@ input_step_back :: proc(data: []u8, caret: int) -> int {
 	return new
 }
 
-// Removes the rune to the left of caret; returns the new caret.
+// Removes the rune to the left of caret and collapses the selection.
 input_backspace :: proc(value: ^Text_Input) {
 	if value.caret == 0 {return}
 	end := value.caret
@@ -50,6 +58,21 @@ input_backspace :: proc(value: ^Text_Input) {
 	for i := end; i < value.len; i += 1 {value.data[i - shift] = value.data[i]}
 	value.len -= shift
 	value.caret = start
+	value.anchor = start
+}
+
+// Removes the selected byte range and collapses caret / anchor to the
+// start. Returns true when a selection was deleted.
+input_delete_selection :: proc(value: ^Text_Input) -> bool {
+	if value.anchor == value.caret {return false}
+	s := min(value.anchor, value.caret)
+	e := max(value.anchor, value.caret)
+	shift := e - s
+	for i := e; i < value.len; i += 1 {value.data[i - shift] = value.data[i]}
+	value.len -= shift
+	value.caret = s
+	value.anchor = s
+	return true
 }
 
 // Pixel width of data[:caret] in the current display mode. Password-
@@ -77,7 +100,8 @@ input_x_to_caret :: proc(c: ^Context, data: []u8, target_x: f32, masked: bool) -
 	return byte_pos
 }
 
-// Shifts the suffix right and copies bytes into the gap at caret.
+// Shifts the suffix right and copies bytes into the gap at caret, then
+// collapses the selection.
 input_insert :: proc(value: ^Text_Input, bytes: []u8) {
 	n := min(len(bytes), len(value.data) - value.len)
 	if n <= 0 {return}
@@ -85,6 +109,7 @@ input_insert :: proc(value: ^Text_Input, bytes: []u8) {
 	copy(value.data[value.caret:value.caret + n], bytes[:n])
 	value.len += n
 	value.caret += n
+	value.anchor = value.caret
 }
 
 input :: proc(
@@ -111,22 +136,48 @@ input :: proc(
 			// origin (r.x + pad_x), plus the current horizontal scroll so a
 			// click on an already-scrolled line lands on what the user saw.
 			target_x := c.mx - r.x - pad_x + value.scroll_x
-			value.caret = input_x_to_caret(c, value.data[:value.len], target_x, masked)
+			new_caret := input_x_to_caret(c, value.data[:value.len], target_x, masked)
+			// Shift-click extends the selection: caret moves, anchor stays.
+			// Plain click collapses to the clicked position and begins a
+			// drag-select that runs until mouse-up.
+			if !c.mouse_shift {value.anchor = new_caret}
+			value.caret = new_caret
+			value.text_dragging = true
 		} else if c.focused == id && !hover {c.focused = 0}
+	}
+	if value.text_dragging {
+		if c.down {
+			target_x := c.mx - r.x - pad_x + value.scroll_x
+			value.caret = input_x_to_caret(c, value.data[:value.len], target_x, masked)
+		} else {
+			value.text_dragging = false
+		}
 	}
 	focused := c.focused == id
 	// Clamp caret into the valid byte range in case the caller shrank the
 	// buffer behind our back (set_text, etc).
 	value.caret = clamp(value.caret, 0, value.len)
+	value.anchor = clamp(value.anchor, 0, value.len)
+	navigated := false
 	if focused {
-		if c.backspace {input_backspace(value)}
-		if c.typed_len > 0 {input_insert(value, c.typed[:c.typed_len])}
+		if c.backspace {
+			if value.anchor != value.caret {
+				_ = input_delete_selection(value)
+			} else {
+				input_backspace(value)
+			}
+		}
+		if c.typed_len > 0 {
+			_ = input_delete_selection(value)
+			input_insert(value, c.typed[:c.typed_len])
+		}
 		// Horizontal moves only — single-line has no Up / Down. nav_line
 		// (Ctrl / Cmd) collapses Left / Right onto Home / End so each
 		// host's conventional shortcut jumps to the edges. nav_word (Alt)
 		// handled in a later step.
 		if c.nav_left && value.caret > 0 {
 			value.caret = c.nav_line ? 0 : input_step_back(value.data[:value.len], value.caret)
+			navigated = true
 		}
 		if c.nav_right && value.caret < value.len {
 			if c.nav_line {
@@ -135,9 +186,13 @@ input :: proc(
 				_, rs := utf8.decode_rune_in_string(string(value.data[value.caret:value.len]))
 				value.caret = min(value.caret + rs, value.len)
 			}
+			navigated = true
 		}
-		if c.nav_home {value.caret = 0}
-		if c.nav_end {value.caret = value.len}
+		if c.nav_home {value.caret = 0; navigated = true}
+		if c.nav_end {value.caret = value.len; navigated = true}
+		// Shift held: selection extends — caret moves but anchor stays.
+		// Otherwise the selection collapses to the caret after the move.
+		if navigated && !c.nav_shift {value.anchor = value.caret}
 		c.typed_len = 0
 		c.backspace = false
 		c.nav_left = false
@@ -186,6 +241,15 @@ input :: proc(
 	c.clip = {r.x + 1, r.y + 1, r.w - 2 - eye_w, r.h - 2}
 	c.clipped = true
 	text_x_origin := r.x + pad_x - value.scroll_x
+	// Selection band — draw first so text / bullets paint over it.
+	if focused && value.anchor != value.caret {
+		s_sel := min(value.anchor, value.caret)
+		e_sel := max(value.anchor, value.caret)
+		start_x := text_x_origin + input_caret_x(c, value.data[:value.len], s_sel, masked)
+		end_x := text_x_origin + input_caret_x(c, value.data[:value.len], e_sel, masked)
+		hi := DEFAULT_PALETTE.primary
+		box(c, {start_x, r.y + 11, end_x - start_x, r.h - 22}, {hi[0], hi[1], hi[2], 0.35}, 2)
+	}
 	if value.len == 0 {
 		// Placeholder isn't scrollable — it stays at the pad origin.
 		label(c, r.x + pad_x, r.y + 29, shown, 17, color)
