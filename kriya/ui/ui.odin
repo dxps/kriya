@@ -76,6 +76,18 @@ Context :: struct {
 	nav_end:                 bool,
 	nav_shift:               bool,
 	mouse_shift:             bool,
+	// Clipboard plumbing. The backend captures clipboard shortcuts into
+	// these per-frame flags and the matching paste text (delivered through
+	// sokol's CLIPBOARD_PASTED event on web, where KEY_DOWN for V can't read
+	// clipboard contents synchronously). set_clipboard is a callback the
+	// backend installs so widgets can send text out without importing a
+	// windowing backend; nil when the host has no clipboard.
+	select_all:              bool,
+	copy_request:            bool,
+	cut_request:             bool,
+	paste:                   [1024]u8,
+	paste_len:               int,
+	set_clipboard:           proc(text: string),
 	corner_radius:           Maybe(f32),
 	layer:                   Command_Layer,
 	content_bottom:          f32,
@@ -96,7 +108,11 @@ end :: proc(c: ^Context) {c.pressed = false; c.released = false; c.moved = false
 	c.nav_home = false
 	c.nav_end = false
 	c.nav_shift = false
-	c.mouse_shift = false}
+	c.mouse_shift = false
+	c.select_all = false
+	c.copy_request = false
+	c.cut_request = false
+	c.paste_len = 0}
 set_corner_radius :: proc(c: ^Context, radius: f32) {c.corner_radius = max(0, radius)}
 resolve_corner_radius :: proc(c: ^Context, radius: Maybe(f32)) -> f32 {
 	if r, ok := radius.?; ok {return r}
@@ -729,6 +745,36 @@ textarea :: proc(
 			}
 		}
 		if navigated && !c.nav_shift {value.anchor = value.caret}
+		// Select-all stretches the selection across the whole buffer; the
+		// view stays where it is, matching conventional editor behavior.
+		if c.select_all {
+			value.anchor = 0
+			value.caret = value.len
+			value.goal_sticky = false
+		}
+		// Copy and cut hand the selected bytes to the host clipboard via
+		// the backend-supplied callback. Cut also deletes the selection
+		// and routes through textarea_delete_selection so it counts as an
+		// edit (caret follow, goal column reset).
+		if (c.copy_request || c.cut_request) &&
+		   value.anchor != value.caret &&
+		   c.set_clipboard != nil {
+			s := min(value.anchor, value.caret)
+			e := max(value.anchor, value.caret)
+			c.set_clipboard(string(value.data[s:e]))
+		}
+		if c.cut_request && textarea_delete_selection(value) {
+			edited = true
+			value.goal_sticky = false
+		}
+		// Paste replaces any current selection with the clipboard text.
+		if c.paste_len > 0 {
+			_ = textarea_delete_selection(value)
+			if textarea_insert(value, c.paste[:c.paste_len]) > 0 {
+				edited = true
+				value.goal_sticky = false
+			}
+		}
 		// Backspace with a selection deletes the selection; otherwise it
 		// removes the rune to the left of the caret.
 		if c.backspace {

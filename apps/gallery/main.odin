@@ -6,6 +6,7 @@ import "../../routes"
 import "base:runtime"
 import "core:math"
 import "core:mem"
+import "core:strings"
 import "core:unicode/utf8"
 import ui "kriya:ui"
 import sapp "sokol:app"
@@ -165,6 +166,13 @@ rounded_box :: proc(r: ui.Rect, requested_radius: f32) {
 measure_text :: proc(text: string, size: f32) -> f32 {
 	return measure_font_text(text, size, .Body)
 }
+// Send text to sokol's internal clipboard buffer. Converts to a
+// null-terminated cstring using the temp allocator; sokol copies into its
+// own buffer, so the temp lifetime is fine.
+app_set_clipboard :: proc(text: string) {
+	ctext := strings.clone_to_cstring(text, context.temp_allocator)
+	sapp.set_clipboard_string(ctext)
+}
 measure_font_text :: proc(text: string, size: f32, face: ui.Font) -> f32 {
 	dpi := sapp.dpi_scale()
 	a := font_atlas(size, dpi, face)
@@ -272,6 +280,7 @@ frame :: proc "c" () {
 	context = app_context
 	ui.begin(&ctx)
 	ctx.measure_text = measure_text
+	ctx.set_clipboard = app_set_clipboard
 	w := sapp.widthf() / sapp.dpi_scale()
 	h := sapp.heightf() / sapp.dpi_scale()
 	draw_sidebar(h)
@@ -337,6 +346,22 @@ event :: proc "c" (e: ^sapp.Event) {
 		if e.key_code == .HOME {ctx.nav_home = true}
 		if e.key_code == .END {ctx.nav_end = true}
 		if (e.modifiers & sapp.MODIFIER_SHIFT) != 0 {ctx.nav_shift = true}
+		// Ctrl on Linux / Windows / Web, Cmd on macOS — accept either so
+		// each host's conventional shortcut works. Paste is delivered
+		// through the CLIPBOARD_PASTED event; Ctrl+V on web can't read the
+		// clipboard from a KEY_DOWN handler.
+		editor_mod := (e.modifiers & (sapp.MODIFIER_CTRL | sapp.MODIFIER_SUPER)) != 0
+		if editor_mod && e.key_code == .A {ctx.select_all = true}
+		if editor_mod && e.key_code == .C {ctx.copy_request = true}
+		if editor_mod && e.key_code == .X {ctx.cut_request = true}
+	case .CLIPBOARD_PASTED:
+		raw := sapp.get_clipboard_string()
+		if raw != nil {
+			text := string(raw)
+			n := min(len(text), len(ctx.paste))
+			copy(ctx.paste[:n], transmute([]u8)text[:n])
+			ctx.paste_len = n
+		}
 	case:
 	}
 }
@@ -372,6 +397,8 @@ kriya_start :: proc "c" () {
 			height = 760,
 			high_dpi = true,
 			sample_count = 4,
+			enable_clipboard = true,
+			clipboard_size = 1024,
 			window_title = "Kriya",
 			html5 = {canvas_selector = "#canvas"},
 			logger = {func = slog.func},
