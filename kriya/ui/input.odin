@@ -160,6 +160,38 @@ input :: proc(
 	value.anchor = clamp(value.anchor, 0, value.len)
 	navigated := false
 	if focused {
+		// Select-all stretches the selection across the whole buffer.
+		if c.select_all {
+			value.anchor = 0
+			value.caret = value.len
+		}
+		// Copy and cut hand the selected bytes to the host clipboard via
+		// the backend callback. Masked password mode suppresses both so
+		// the raw password can't leave the field through Ctrl+C / Ctrl+X;
+		// select-all and paste remain available, matching web password
+		// field conventions.
+		if (c.copy_request || c.cut_request) &&
+		   value.anchor != value.caret &&
+		   c.set_clipboard != nil &&
+		   !masked {
+			s := min(value.anchor, value.caret)
+			e := max(value.anchor, value.caret)
+			c.set_clipboard(string(value.data[s:e]))
+		}
+		if c.cut_request && value.anchor != value.caret && !masked {
+			_ = input_delete_selection(value)
+		}
+		// Paste replaces any current selection with the clipboard text.
+		// Single-line fields clip to the first line of a multi-line paste
+		// so pasted paragraphs don't wedge an unprintable '\n' in.
+		if c.paste_len > 0 {
+			_ = input_delete_selection(value)
+			paste_end := c.paste_len
+			for i in 0 ..< c.paste_len {
+				if c.paste[i] == '\n' || c.paste[i] == '\r' {paste_end = i; break}
+			}
+			input_insert(value, c.paste[:paste_end])
+		}
 		if c.backspace {
 			if value.anchor != value.caret {
 				_ = input_delete_selection(value)
