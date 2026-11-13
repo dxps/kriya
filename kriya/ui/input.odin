@@ -10,6 +10,10 @@ Text_Input :: struct {
 	data:     [128]u8,
 	len:      int,
 	caret:    int,
+	// scroll_x pulls the visible text left so long buffers stay scrollable.
+	// The caret-follow at render time keeps the caret inside the view; a
+	// trailing clamp keeps empty space from appearing past the end.
+	scroll_x: f32,
 	revealed: bool,
 }
 
@@ -46,6 +50,13 @@ input_backspace :: proc(value: ^Text_Input) {
 	for i := end; i < value.len; i += 1 {value.data[i - shift] = value.data[i]}
 	value.len -= shift
 	value.caret = start
+}
+
+// Pixel width of data[:caret] in the current display mode. Password-
+// bullet mode projects onto the 14px grid; text mode measures the prefix.
+input_caret_x :: proc(c: ^Context, data: []u8, caret: int, masked: bool) -> f32 {
+	if masked {return f32(input_rune_count(data, caret)) * 14}
+	return c.measure_text(string(data[:caret]), 17)
 }
 
 // Maps a pixel x (relative to the text origin r.x + 14) to a byte offset.
@@ -87,17 +98,19 @@ input :: proc(
 ) {
 	corner_radius := resolve_corner_radius(c, radius)
 	hover := contains(c, r)
+	pad_x: f32 = 14
 	eye_w: f32 = password ? 44 : 0
 	text_hit := Rect{r.x, r.y, r.w - eye_w, r.h}
+	view_w := r.w - eye_w - pad_x * 2
 	if hover {c.pointer_cursor = true}
 	masked := password && !value.revealed && value.len > 0
 	if c.pressed {
 		if contains(c, text_hit) {
 			c.focused = id
 			// Position caret at the click. target_x is pixels past the text
-			// origin (r.x + pad_x); input_x_to_caret maps it to a byte offset,
-			// rounding to the nearest rune boundary or bullet column.
-			target_x := c.mx - r.x - 14
+			// origin (r.x + pad_x), plus the current horizontal scroll so a
+			// click on an already-scrolled line lands on what the user saw.
+			target_x := c.mx - r.x - pad_x + value.scroll_x
 			value.caret = input_x_to_caret(c, value.data[:value.len], target_x, masked)
 		} else if c.focused == id && !hover {c.focused = 0}
 	}
@@ -145,6 +158,17 @@ input :: proc(
 	// Edits this frame can toggle masked (typing into an empty password
 	// field, backspacing to empty); recompute now that the buffer is final.
 	masked = password && !value.revealed && value.len > 0
+	// Follow the caret horizontally — pull just enough to keep it inside
+	// the inner padded rect — then clamp so the empty tail doesn't appear.
+	caret_content_x := input_caret_x(c, value.data[:value.len], value.caret, masked)
+	content_w := input_caret_x(c, value.data[:value.len], value.len, masked)
+	max_scroll_x := max(0, content_w - view_w)
+	if caret_content_x < value.scroll_x {
+		value.scroll_x = max(0, caret_content_x)
+	} else if caret_content_x > value.scroll_x + view_w {
+		value.scroll_x = caret_content_x - view_w
+	}
+	value.scroll_x = clamp(value.scroll_x, 0, max_scroll_x)
 	shown := placeholder
 	color := DEFAULT_PALETTE.text_muted
 	if value.len > 0 {
@@ -154,34 +178,35 @@ input :: proc(
 		}
 	}
 	rune_count := input_rune_count(value.data[:value.len], value.len)
-	if masked {
+	// Clip the content to the inner rect (minus the eye gutter) so scrolled
+	// text and bullets don't leak into the border or under the eye. Saved
+	// and restored so an outer scroll clip is left untouched.
+	prev_clip := c.clip
+	prev_clipped := c.clipped
+	c.clip = {r.x + 1, r.y + 1, r.w - 2 - eye_w, r.h - 2}
+	c.clipped = true
+	text_x_origin := r.x + pad_x - value.scroll_x
+	if value.len == 0 {
+		// Placeholder isn't scrollable — it stays at the pad origin.
+		label(c, r.x + pad_x, r.y + 29, shown, 17, color)
+	} else if masked {
 		// Draw round password bullets independently of the text font so their
 		// shape remains circular at every display scale. One bullet per rune,
 		// not per UTF-8 byte.
-		bullet_x := r.x + 14
+		bullet_x := text_x_origin
 		for _ in 0 ..< rune_count {
 			box(c, {bullet_x, r.y + r.h / 2 - 4, 8, 8}, color, 4)
 			bullet_x += 14
 		}
 	} else {
-		label(c, r.x + 14, r.y + 29, shown, 17, color)
+		label(c, text_x_origin, r.y + 29, shown, 17, color)
 	}
 	if focused {
-		// Caret-x from the caret's byte offset. Password-bullet mode projects
-		// onto the 14px grid; text mode measures the prefix.
-		caret_x: f32
-		if masked {
-			caret_x = r.x + 14 + f32(input_rune_count(value.data[:value.len], value.caret)) * 14
-		} else {
-			assert(c.measure_text != nil, "Focused inputs require a text measurement callback")
-			caret_x = r.x + 14 + c.measure_text(string(value.data[:value.caret]), 17)
-		}
-		box(
-			c,
-			{min(caret_x, r.x + r.w - eye_w - 12), r.y + 11, 1, r.h - 22},
-			DEFAULT_PALETTE.primary_bright,
-		)
+		caret_x := text_x_origin + caret_content_x
+		box(c, {caret_x, r.y + 11, 1, r.h - 22}, DEFAULT_PALETTE.primary_bright)
 	}
+	c.clip = prev_clip
+	c.clipped = prev_clipped
 	if password {
 		divider_x := r.x + r.w - eye_w
 		box(c, {divider_x, r.y + 8, 1, r.h - 16}, DEFAULT_PALETTE.divider)
