@@ -75,6 +75,7 @@ Context :: struct {
 	nav_home:                bool,
 	nav_end:                 bool,
 	nav_shift:               bool,
+	nav_word:                bool,
 	mouse_shift:             bool,
 	double_click:            bool,
 	triple_click:            bool,
@@ -110,6 +111,7 @@ end :: proc(c: ^Context) {c.pressed = false; c.released = false; c.moved = false
 	c.nav_home = false
 	c.nav_end = false
 	c.nav_shift = false
+	c.nav_word = false
 	c.mouse_shift = false
 	c.double_click = false
 	c.triple_click = false
@@ -516,6 +518,28 @@ textarea_is_word_byte :: proc(b: u8) -> bool {
 	return b == '_'
 }
 
+// Walks forward from pos past any run of non-word bytes, then past the
+// following run of word bytes, and returns that stopping position. Used
+// by Ctrl+Right to jump to the end of the next word. The scan is
+// rune-safe because textarea_is_word_byte treats every UTF-8 lead and
+// continuation byte as a word byte, so every multi-byte word rune is
+// crossed whole.
+textarea_next_word :: proc(data: []u8, pos: int) -> int {
+	i := pos
+	for i < len(data) && !textarea_is_word_byte(data[i]) {i += 1}
+	for i < len(data) && textarea_is_word_byte(data[i]) {i += 1}
+	return i
+}
+
+// Mirror of textarea_next_word for Ctrl+Left: steps backward past any
+// run of non-word bytes, then past the preceding run of word bytes.
+textarea_prev_word :: proc(data: []u8, pos: int) -> int {
+	i := pos
+	for i > 0 && !textarea_is_word_byte(data[i - 1]) {i -= 1}
+	for i > 0 && textarea_is_word_byte(data[i - 1]) {i -= 1}
+	return i
+}
+
 // Returns the byte range [ws, we) of the word around pos, bounded by the
 // enclosing line. Used by double-click to expand a caret click into a
 // word selection. If pos lands on whitespace or punctuation and neither
@@ -734,17 +758,25 @@ textarea :: proc(
 		// nav_shift extends the selection — the caret moves but the anchor
 		// stays — otherwise the selection collapses to the caret.
 		if c.nav_left && value.caret > 0 {
-			new := value.caret - 1
-			for new > 0 && (value.data[new] & 0xC0) == 0x80 {new -= 1}
-			value.caret = new
+			if c.nav_word {
+				value.caret = textarea_prev_word(value.data[:value.len], value.caret)
+			} else {
+				new := value.caret - 1
+				for new > 0 && (value.data[new] & 0xC0) == 0x80 {new -= 1}
+				value.caret = new
+			}
 			value.goal_sticky = false
 			navigated = true
 		}
 		if c.nav_right && value.caret < value.len {
-			_, rs := utf8.decode_rune_in_string(
-				string(value.data[value.caret:value.len]),
-			)
-			value.caret = min(value.caret + rs, value.len)
+			if c.nav_word {
+				value.caret = textarea_next_word(value.data[:value.len], value.caret)
+			} else {
+				_, rs := utf8.decode_rune_in_string(
+					string(value.data[value.caret:value.len]),
+				)
+				value.caret = min(value.caret + rs, value.len)
+			}
 			value.goal_sticky = false
 			navigated = true
 		}
