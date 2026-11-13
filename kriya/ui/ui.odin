@@ -59,6 +59,7 @@ Context :: struct {
 	pointer_cursor:          bool,
 	moved:                   bool,
 	wheel_y:                 f32,
+	wheel_x:                 f32,
 	offset_y:                f32,
 	clip:                    Rect,
 	clipped:                 bool,
@@ -106,6 +107,7 @@ begin :: proc(c: ^Context) {clear(&c.commands); c.pointer_cursor = false; c.offs
 	c.layer = .Base
 	c.content_bottom = 0}
 end :: proc(c: ^Context) {c.pressed = false; c.released = false; c.moved = false; c.wheel_y = 0
+	c.wheel_x = 0
 	c.typed_len = 0
 	c.backspace = false
 	c.enter = false
@@ -491,6 +493,12 @@ Text_Area :: struct {
 	scroll:       f32,
 	dragging:     bool,
 	grab_y:       f32,
+	// Horizontal scroll twins of scroll / dragging / grab_y. scroll_x
+	// slides the content left so overlong lines stop clipping; dragging_x
+	// and grab_x retain the horizontal scrollbar drag across frames.
+	scroll_x:     f32,
+	dragging_x:   bool,
+	grab_x:       f32,
 	// text_dragging retains the mouse-drag select state across frames so a
 	// drag that leaves the widget keeps extending the selection until the
 	// button is released.
@@ -752,21 +760,48 @@ textarea :: proc(
 	pad_x: f32 = 14
 	pad_y: f32 = 10
 	line_height: f32 = 22
-	view_h := r.h
 	line_count := 1
 	for i in 0 ..< value.len {
 		if value.data[i] == '\n' {line_count += 1}
 	}
 	content_h := pad_y * 2 + f32(line_count) * line_height
+	// Widest line sets content_w and therefore horizontal overflow. A line
+	// that's just at the viewport width is not clipped — the right padding
+	// stays visible so the caret at line end has room to breathe.
+	assert(
+		c.measure_text != nil,
+		"Textarea layout requires a text measurement callback",
+	)
+	content_w := pad_x * 2
+	{
+		ls := 0
+		for i in 0 ..< value.len {
+			if value.data[i] == '\n' {
+				w := c.measure_text(string(value.data[ls:i]), 17)
+				if w + pad_x * 2 > content_w {content_w = w + pad_x * 2}
+				ls = i + 1
+			}
+		}
+		w := c.measure_text(string(value.data[ls:value.len]), 17)
+		if w + pad_x * 2 > content_w {content_w = w + pad_x * 2}
+	}
+	// Decide whether each scrollbar is needed, then subtract the gutter
+	// the other one eats so the inner view size reflects reality.
+	need_v := content_h > r.h
+	need_h := content_w > r.w
+	right_gutter: f32 = need_v ? 14 : 2
+	bottom_gutter: f32 = need_h ? 14 : 2
+	view_w := r.w - right_gutter
+	view_h := r.h - bottom_gutter
 	max_scroll := max(0, content_h - view_h)
-	// Scrollbar track geometry, reused by the drag hit test and by the
-	// scrollbar visual. thumb_h stays 0 when there is no overflow — the drag
-	// block below guards on max_scroll before using it.
+	max_scroll_x := max(0, content_w - view_w)
+	// Vertical scrollbar track — shortened when the horizontal scrollbar
+	// occupies the bottom gutter so they don't overlap at the corner.
 	track_x: f32 = r.x + r.w - 8
 	track_w: f32 = 3
 	track_y: f32 = r.y + 6
-	track_h: f32 = r.h - 12
-	thumb_hit := Rect{r.x + r.w - 14, r.y + 4, 14, r.h - 8}
+	track_h: f32 = r.h - 12 - (need_h ? bottom_gutter : 0)
+	thumb_hit := Rect{r.x + r.w - 14, r.y + 4, 14, track_h + 4}
 	thumb_h: f32
 	thumb_y: f32
 	thumb_hovered: bool
@@ -776,13 +811,28 @@ textarea :: proc(
 		thumb_y = track_y + (travel > 0 ? travel * value.scroll / max_scroll : 0)
 		thumb_hovered = contains(c, thumb_hit)
 	}
+	// Horizontal scrollbar track — mirrors the vertical one at the bottom.
+	htrack_x: f32 = r.x + 6
+	htrack_y: f32 = r.y + r.h - 8
+	htrack_w: f32 = r.w - 12 - (need_v ? right_gutter : 0)
+	htrack_h: f32 = 3
+	hthumb_hit := Rect{r.x + 4, r.y + r.h - 14, htrack_w + 4, 14}
+	hthumb_w: f32
+	hthumb_x: f32
+	hthumb_hovered: bool
+	if max_scroll_x > 0 {
+		hthumb_w = max(24, htrack_w * view_w / content_w)
+		travel := htrack_w - hthumb_w
+		hthumb_x = htrack_x + (travel > 0 ? travel * value.scroll_x / max_scroll_x : 0)
+		hthumb_hovered = contains(c, hthumb_hit)
+	}
 	// Resolves the mouse position to a caret byte index. Shared by initial
 	// press and the ongoing drag-select path.
 	mouse_to_caret :: proc(
 		c: ^Context,
 		r: Rect,
 		data: []u8,
-		scroll, pad_x, pad_y, line_height: f32,
+		scroll, scroll_x, pad_x, pad_y, line_height: f32,
 		line_count: int,
 	) -> int {
 		local_y := c.my - (r.y + c.offset_y) - pad_y + scroll
@@ -794,7 +844,7 @@ textarea :: proc(
 			if data[i] == '\n' {start = i + 1; li += 1}
 		}
 		end := textarea_line_end(data, start)
-		return textarea_x_to_caret(c, data, start, end, c.mx - r.x - pad_x)
+		return textarea_x_to_caret(c, data, start, end, c.mx - r.x - pad_x + scroll_x)
 	}
 	// Press routing: scrollbar wins over text. A press inside the thumb hit
 	// zone starts a drag and focuses the widget without moving the caret;
@@ -806,6 +856,11 @@ textarea :: proc(
 			value.dragging = true
 			value.grab_y =
 				c.my >= thumb_y && c.my < thumb_y + thumb_h ? c.my - thumb_y : thumb_h / 2
+			c.focused = id
+		} else if max_scroll_x > 0 && hthumb_hovered {
+			value.dragging_x = true
+			value.grab_x =
+				c.mx >= hthumb_x && c.mx < hthumb_x + hthumb_w ? c.mx - hthumb_x : hthumb_w / 2
 			c.focused = id
 		} else if hover {
 			c.focused = id
@@ -821,6 +876,7 @@ textarea :: proc(
 				r,
 				value.data[:value.len],
 				value.scroll,
+				value.scroll_x,
 				pad_x,
 				pad_y,
 				line_height,
@@ -865,6 +921,7 @@ textarea :: proc(
 				r,
 				value.data[:value.len],
 				value.scroll,
+				value.scroll_x,
 				pad_x,
 				pad_y,
 				line_height,
@@ -1108,7 +1165,9 @@ textarea :: proc(
 		c.nav_page_down = false
 	}
 	// Recount after the edit so the follow-caret math and scrollbar reflect
-	// the just-typed newline or deleted rune.
+	// the just-typed newline or deleted rune. Gutter sizes are intentionally
+	// not re-decided mid-frame; the next frame catches up when a line grows
+	// past the viewport width for the first time.
 	if edited {
 		line_count = 1
 		for i in 0 ..< value.len {
@@ -1116,6 +1175,18 @@ textarea :: proc(
 		}
 		content_h = pad_y * 2 + f32(line_count) * line_height
 		max_scroll = max(0, content_h - view_h)
+		content_w = pad_x * 2
+		ls := 0
+		for i in 0 ..< value.len {
+			if value.data[i] == '\n' {
+				w := c.measure_text(string(value.data[ls:i]), 17)
+				if w + pad_x * 2 > content_w {content_w = w + pad_x * 2}
+				ls = i + 1
+			}
+		}
+		w := c.measure_text(string(value.data[ls:value.len]), 17)
+		if w + pad_x * 2 > content_w {content_w = w + pad_x * 2}
+		max_scroll_x = max(0, content_w - view_w)
 	}
 	// Locate the caret: line_index + byte offset of its line start.
 	caret_line := 0
@@ -1139,6 +1210,7 @@ textarea :: proc(
 		}
 	}
 	if hover && c.wheel_y != 0 {value.scroll += c.wheel_y}
+	if hover && c.wheel_x != 0 {value.scroll_x += c.wheel_x}
 	if value.dragging {
 		travel := track_h - thumb_h
 		if travel > 0 {
@@ -1146,8 +1218,33 @@ textarea :: proc(
 		}
 		if !c.down {value.dragging = false}
 	}
-	if thumb_hovered || value.dragging {c.pointer_cursor = true}
+	if value.dragging_x {
+		travel := htrack_w - hthumb_w
+		if travel > 0 {
+			value.scroll_x = (c.mx - htrack_x - value.grab_x) / travel * max_scroll_x
+		}
+		if !c.down {value.dragging_x = false}
+	}
+	if thumb_hovered || value.dragging || hthumb_hovered || value.dragging_x {
+		c.pointer_cursor = true
+	}
+	// Horizontal caret-follow: pull just enough to keep the caret inside
+	// the inner padded rect. Vertical lives inside the edited||navigated
+	// branch above; horizontal is split out so a click into a long line
+	// also brings the caret into view.
+	if edited || navigated {
+		caret_content_x := pad_x + c.measure_text(
+			string(value.data[caret_line_start:value.caret]),
+			17,
+		)
+		if caret_content_x < value.scroll_x + pad_x {
+			value.scroll_x = max(0, caret_content_x - pad_x)
+		} else if caret_content_x > value.scroll_x + view_w - pad_x {
+			value.scroll_x = caret_content_x - (view_w - pad_x)
+		}
+	}
 	value.scroll = clamp(value.scroll, 0, max_scroll)
+	value.scroll_x = clamp(value.scroll_x, 0, max_scroll_x)
 	border := DEFAULT_PALETTE.border
 	if hover {border = DEFAULT_PALETTE.border_hover}
 	if focused {border = DEFAULT_PALETTE.primary_bright}
@@ -1169,16 +1266,17 @@ textarea :: proc(
 		)
 		return
 	}
-	// Scissor to the interior so partially-visible top / bottom lines clip
-	// instead of jumping. The right edge shrinks when a scrollbar is on, so
-	// long lines don't bleed under the thumb. Saved and restored because the
-	// gallery sets its own page-scroll clip around this call.
+	// Scissor to the interior so partially-visible top / bottom / left /
+	// right lines clip instead of jumping. The right and bottom edges
+	// shrink when a scrollbar is on, so long lines and low lines don't
+	// bleed under the thumbs. Saved and restored because the gallery sets
+	// its own page-scroll clip around this call.
 	prev_clip := c.clip
 	prev_clipped := c.clipped
-	right_gutter: f32 = max_scroll > 0 ? 14 : 2
-	c.clip = {r.x + 1, r.y + 1, r.w - 1 - right_gutter, r.h - 2}
+	c.clip = {r.x + 1, r.y + 1, r.w - 1 - right_gutter, r.h - 1 - bottom_gutter}
 	c.clipped = true
 	content := string(value.data[:value.len])
+	text_x_origin := r.x + pad_x - value.scroll_x
 	first_baseline := r.y + pad_y + 17 - value.scroll
 	// Draws the selection band for one line as a translucent rect behind
 	// the text. A trailing newline that is inside the selection extends the
@@ -1231,11 +1329,11 @@ textarea :: proc(
 						e_sel,
 						baseline,
 						line_height,
-						r.x + pad_x,
+						text_x_origin,
 						sel_right_max,
 					)
 				}
-				label(c, r.x + pad_x, baseline, content[line_start:i], 17, DEFAULT_PALETTE.text)
+				label(c, text_x_origin, baseline, content[line_start:i], 17, DEFAULT_PALETTE.text)
 			}
 			line_start = i + 1
 			li += 1
@@ -1254,20 +1352,19 @@ textarea :: proc(
 				e_sel,
 				last_baseline,
 				line_height,
-				r.x + pad_x,
+				text_x_origin,
 				sel_right_max,
 			)
 		}
-		label(c, r.x + pad_x, last_baseline, last_line, 17, DEFAULT_PALETTE.text)
+		label(c, text_x_origin, last_baseline, last_line, 17, DEFAULT_PALETTE.text)
 	}
 	if focused {
-		assert(c.measure_text != nil, "Focused textareas require a text measurement callback")
 		caret_prefix := string(value.data[caret_line_start:value.caret])
-		caret_x := r.x + pad_x + c.measure_text(caret_prefix, 17)
+		caret_x := text_x_origin + c.measure_text(caret_prefix, 17)
 		caret_baseline := first_baseline + f32(caret_line) * line_height
 		box(
 			c,
-			{min(caret_x, r.x + r.w - 2 - right_gutter), caret_baseline - 14, 1, 18},
+			{caret_x, caret_baseline - 14, 1, 18},
 			DEFAULT_PALETTE.primary_bright,
 		)
 	}
@@ -1284,6 +1381,18 @@ textarea :: proc(
 		th := DEFAULT_PALETTE.scroll_thumb
 		box(c, {track_x, track_y, track_w, track_h}, {tr[0], tr[1], tr[2], 0.18}, 1.5)
 		box(c, {center_x - w / 2, thumb_y_draw, w, thumb_h}, {th[0], th[1], th[2], alpha}, w / 2)
+	}
+	if max_scroll_x > 0 {
+		travel := htrack_w - hthumb_w
+		hthumb_x_draw := htrack_x + (travel > 0 ? travel * value.scroll_x / max_scroll_x : 0)
+		hot := hthumb_hovered || value.dragging_x
+		h: f32 = hot ? 5 : htrack_h
+		alpha: f32 = hot ? 0.95 : 0.75
+		center_y := htrack_y + htrack_h / 2
+		tr := DEFAULT_PALETTE.scroll_track
+		th := DEFAULT_PALETTE.scroll_thumb
+		box(c, {htrack_x, htrack_y, htrack_w, htrack_h}, {tr[0], tr[1], tr[2], 0.18}, 1.5)
+		box(c, {hthumb_x_draw, center_y - h / 2, hthumb_w, h}, {th[0], th[1], th[2], alpha}, h / 2)
 	}
 }
 

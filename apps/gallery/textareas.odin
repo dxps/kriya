@@ -6,7 +6,7 @@ notes: ui.Text_Area
 init_textarea_examples :: proc() {
 	ui.set_area_text(
 		&notes,
-		"Multi-line input.\nEnter inserts a newline.\nBackspace removes a rune.\nScroll with the wheel.\nContent that doesn't fit is clipped.\nThe caret is pulled back into view when you type.\nTry adding a few more lines.\nLine eight.\nLine nine.\nLine ten.",
+		"Multi-line input.\nEnter inserts a newline.\nBackspace removes a rune.\nScroll with the wheel, or shift-wheel for horizontal; drag the scrollbar thumbs.\nContent that doesn't fit is clipped.\nThe caret is pulled back into view when you type.\nTry adding a few more lines.\nLine eight.\nLine nine.\nLine ten.",
 	)
 }
 

@@ -347,7 +347,14 @@ event :: proc "c" (e: ^sapp.Event) {
 	case .MOUSE_MOVE:
 		ctx.moved = true
 	case .MOUSE_SCROLL:
-		ctx.wheel_y -= e.scroll_y * 32
+		// Shift + vertical wheel rolls over to horizontal — desktop
+		// convention for mice without a tilt / twist wheel.
+		if (e.modifiers & sapp.MODIFIER_SHIFT) != 0 {
+			ctx.wheel_x -= e.scroll_y * 32
+		} else {
+			ctx.wheel_y -= e.scroll_y * 32
+		}
+		ctx.wheel_x -= e.scroll_x * 32
 	case .CHAR:
 		if e.char_code < FIRST_GLYPH || e.char_code > LAST_GLYPH {break}
 		bytes, n := utf8.encode_rune(rune(e.char_code))
