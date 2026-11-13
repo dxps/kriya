@@ -749,15 +749,13 @@ textarea_backspace :: proc(value: ^Text_Area) -> bool {
 // Half-open byte range of one visual row. In no-wrap mode there's one
 // visual line per '\n' segment. In wrap mode a logical line can be
 // broken into several visual lines at word boundaries, each with its
-// own [start, end). trailing_space notes the spaces consumed at the
-// end of a wrap break so the caret draws before them but selection
-// highlights extend through them.
+// own [start, end). ends_with_nl marks rows whose end is a '\n' —
+// used by the selection highlight to extend the band past the last
+// rune when the selection crosses the newline.
 Visual_Line :: struct {
 	start, end:     int,
 	ends_with_nl:   bool,
 }
-
-MAX_VISUAL_LINES :: 128
 
 textarea :: proc(
 	c: ^Context,
@@ -780,20 +778,12 @@ textarea :: proc(
 	)
 	// Visual lines: one per rendered row. Without wrap, they match '\n'
 	// segments; with wrap, long logical lines break at word boundaries so
-	// the whole paragraph fits the text width. Fixed-size array — anything
-	// past the cap is still editable but won't be laid out as its own row.
-	visual_lines: [MAX_VISUAL_LINES]Visual_Line
-	visual_count := 0
-	emit_vl :: proc(
-		vls: ^[MAX_VISUAL_LINES]Visual_Line,
-		count: ^int,
-		s, e: int,
-		nl: bool,
-	) {
-		if count^ < MAX_VISUAL_LINES {
-			vls[count^] = {s, e, nl}
-			count^ += 1
-		}
+	// the whole paragraph fits the text width. Backed by the temp allocator
+	// so the array sizes to whatever the buffer needs this frame and gets
+	// freed by the host's free_all at frame end.
+	visual_lines := make([dynamic]Visual_Line, 0, 16, context.temp_allocator)
+	emit_vl :: proc(vls: ^[dynamic]Visual_Line, s, e: int, nl: bool) {
+		append(vls, Visual_Line{s, e, nl})
 	}
 	// In wrap mode, reserve the vertical-scrollbar gutter upfront so the
 	// wrap width is stable regardless of whether vertical overflow kicks
@@ -808,7 +798,7 @@ textarea :: proc(
 		pos := 0
 		for pos < value.len {
 			if value.data[pos] == '\n' {
-				emit_vl(&visual_lines, &visual_count, cur_line_start, pos, true)
+				emit_vl(&visual_lines,cur_line_start, pos, true)
 				pos += 1
 				cur_line_start = pos
 				line_w = 0
@@ -821,11 +811,11 @@ textarea :: proc(
 			char_w := c.measure_text(string(value.data[pos:rune_end]), 17)
 			if line_w + char_w > text_w && cur_line_start < pos {
 				if last_break > cur_line_start {
-					emit_vl(&visual_lines, &visual_count, cur_line_start, last_break, false)
+					emit_vl(&visual_lines,cur_line_start, last_break, false)
 					cur_line_start = last_break
 					pos = cur_line_start
 				} else {
-					emit_vl(&visual_lines, &visual_count, cur_line_start, pos, false)
+					emit_vl(&visual_lines,cur_line_start, pos, false)
 					cur_line_start = pos
 				}
 				line_w = 0
@@ -836,23 +826,23 @@ textarea :: proc(
 			if value.data[pos] == ' ' {last_break = rune_end}
 			pos = rune_end
 		}
-		emit_vl(&visual_lines, &visual_count, cur_line_start, value.len, false)
+		emit_vl(&visual_lines,cur_line_start, value.len, false)
 	} else {
 		ls := 0
 		for i in 0 ..< value.len {
 			if value.data[i] == '\n' {
-				emit_vl(&visual_lines, &visual_count, ls, i, true)
+				emit_vl(&visual_lines,ls, i, true)
 				w := c.measure_text(string(value.data[ls:i]), 17)
 				if w + pad_x * 2 > content_w {content_w = w + pad_x * 2}
 				ls = i + 1
 			}
 		}
-		emit_vl(&visual_lines, &visual_count, ls, value.len, false)
+		emit_vl(&visual_lines,ls, value.len, false)
 		w := c.measure_text(string(value.data[ls:value.len]), 17)
 		if w + pad_x * 2 > content_w {content_w = w + pad_x * 2}
 	}
-	if visual_count == 0 {emit_vl(&visual_lines, &visual_count, 0, 0, false)}
-	content_h := pad_y * 2 + f32(visual_count) * line_height
+	if len(visual_lines) == 0 {emit_vl(&visual_lines, 0, 0, false)}
+	content_h := pad_y * 2 + f32(len(visual_lines)) * line_height
 	// Decide whether each scrollbar is needed, then subtract the gutter
 	// the other one eats so the inner view size reflects reality. Wrap
 	// mode never allows horizontal scroll.
@@ -953,7 +943,7 @@ textarea :: proc(
 				c,
 				r,
 				value.data[:value.len],
-				visual_lines[:visual_count],
+				visual_lines[:],
 				value.scroll,
 				value.scroll_x,
 				pad_x,
@@ -998,7 +988,7 @@ textarea :: proc(
 				c,
 				r,
 				value.data[:value.len],
-				visual_lines[:visual_count],
+				visual_lines[:],
 				value.scroll,
 				value.scroll_x,
 				pad_x,
@@ -1069,12 +1059,12 @@ textarea :: proc(
 			navigated = true
 		}
 		if c.nav_home {
-			value.caret = visual_lines[vl_of_caret(visual_lines[:visual_count], value.caret)].start
+			value.caret = visual_lines[vl_of_caret(visual_lines[:], value.caret)].start
 			value.goal_sticky = false
 			navigated = true
 		}
 		if c.nav_end {
-			value.caret = visual_lines[vl_of_caret(visual_lines[:visual_count], value.caret)].end
+			value.caret = visual_lines[vl_of_caret(visual_lines[:], value.caret)].end
 			value.goal_sticky = false
 			navigated = true
 		}
@@ -1084,22 +1074,22 @@ textarea :: proc(
 					c.measure_text != nil,
 					"Vertical navigation requires a text measurement callback",
 				)
-				cur_vl := visual_lines[vl_of_caret(visual_lines[:visual_count], value.caret)]
+				cur_vl := visual_lines[vl_of_caret(visual_lines[:], value.caret)]
 				value.goal_x = c.measure_text(
 					string(value.data[cur_vl.start:value.caret]),
 					17,
 				)
 				value.goal_sticky = true
 			}
-			cur_i := vl_of_caret(visual_lines[:visual_count], value.caret)
+			cur_i := vl_of_caret(visual_lines[:], value.caret)
 			target_i := cur_i
 			if c.nav_up {target_i = max(0, cur_i - 1)}
-			if c.nav_down {target_i = min(visual_count - 1, cur_i + 1)}
+			if c.nav_down {target_i = min(len(visual_lines) - 1, cur_i + 1)}
 			// Page keys step by rows that fit in the view, minus one so a row
 			// of overlap stays visible between pages.
 			rows := max(1, int(view_h / line_height) - 1)
 			if c.nav_page_up {target_i = max(0, cur_i - rows)}
-			if c.nav_page_down {target_i = min(visual_count - 1, cur_i + rows)}
+			if c.nav_page_down {target_i = min(len(visual_lines) - 1, cur_i + rows)}
 			if target_i != cur_i {
 				vl := visual_lines[target_i]
 				value.caret = textarea_x_to_caret(
@@ -1200,7 +1190,7 @@ textarea :: proc(
 	// Gutter sizes stay as decided up top; the next frame catches up when
 	// a line grows past the viewport for the first time.
 	if edited {
-		visual_count = 0
+		clear(&visual_lines)
 		content_w = pad_x * 2
 		if wrap {
 			cur_line_start := 0
@@ -1209,7 +1199,7 @@ textarea :: proc(
 			pos := 0
 			for pos < value.len {
 				if value.data[pos] == '\n' {
-					emit_vl(&visual_lines, &visual_count, cur_line_start, pos, true)
+					emit_vl(&visual_lines,cur_line_start, pos, true)
 					pos += 1
 					cur_line_start = pos
 					line_w = 0
@@ -1222,11 +1212,11 @@ textarea :: proc(
 				char_w := c.measure_text(string(value.data[pos:rune_end]), 17)
 				if line_w + char_w > text_w && cur_line_start < pos {
 					if last_break > cur_line_start {
-						emit_vl(&visual_lines, &visual_count, cur_line_start, last_break, false)
+						emit_vl(&visual_lines,cur_line_start, last_break, false)
 						cur_line_start = last_break
 						pos = cur_line_start
 					} else {
-						emit_vl(&visual_lines, &visual_count, cur_line_start, pos, false)
+						emit_vl(&visual_lines,cur_line_start, pos, false)
 						cur_line_start = pos
 					}
 					line_w = 0
@@ -1237,28 +1227,28 @@ textarea :: proc(
 				if value.data[pos] == ' ' {last_break = rune_end}
 				pos = rune_end
 			}
-			emit_vl(&visual_lines, &visual_count, cur_line_start, value.len, false)
+			emit_vl(&visual_lines,cur_line_start, value.len, false)
 		} else {
 			ls := 0
 			for i in 0 ..< value.len {
 				if value.data[i] == '\n' {
-					emit_vl(&visual_lines, &visual_count, ls, i, true)
+					emit_vl(&visual_lines,ls, i, true)
 					w := c.measure_text(string(value.data[ls:i]), 17)
 					if w + pad_x * 2 > content_w {content_w = w + pad_x * 2}
 					ls = i + 1
 				}
 			}
-			emit_vl(&visual_lines, &visual_count, ls, value.len, false)
+			emit_vl(&visual_lines,ls, value.len, false)
 			w := c.measure_text(string(value.data[ls:value.len]), 17)
 			if w + pad_x * 2 > content_w {content_w = w + pad_x * 2}
 		}
-		if visual_count == 0 {emit_vl(&visual_lines, &visual_count, 0, 0, false)}
-		content_h = pad_y * 2 + f32(visual_count) * line_height
+		if len(visual_lines) == 0 {emit_vl(&visual_lines, 0, 0, false)}
+		content_h = pad_y * 2 + f32(len(visual_lines)) * line_height
 		max_scroll = max(0, content_h - view_h)
 		max_scroll_x = wrap ? 0 : max(0, content_w - view_w)
 	}
 	// Locate the caret within the visual layout.
-	caret_vl_i := vl_of_caret(visual_lines[:visual_count], value.caret)
+	caret_vl_i := vl_of_caret(visual_lines[:], value.caret)
 	caret_line_start := visual_lines[caret_vl_i].start
 	caret_line := caret_vl_i
 	// Follow the caret on edit and navigation frames, in both directions. A
@@ -1377,7 +1367,7 @@ textarea :: proc(
 	e_sel := max(value.anchor, value.caret)
 	has_sel := focused && s_sel != e_sel
 	sel_right_max := r.x + r.w - 1 - right_gutter
-	for li in 0 ..< visual_count {
+	for li in 0 ..< len(visual_lines) {
 		vl := visual_lines[li]
 		baseline := first_baseline + f32(li) * line_height
 		if baseline <= r.y - line_height || baseline - 14 >= r.y + r.h {continue}
