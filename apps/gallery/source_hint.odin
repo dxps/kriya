@@ -1,16 +1,16 @@
 package main
 import ui "kriya:ui"
 
-draw_source_hint :: proc(c: ^ui.Context, source: string) {
+draw_source_hint :: proc(c: ^ui.Context, source: string, y: f32) {
 	color := GALLERY_SOURCE_HINT_TEXT
 	path_color := GALLERY_SOURCE_HINT_PATH
 	size: f32 = 16
 	// Hasklig has taller vertical metrics; 17px matches Work Sans's 16px cap height.
 	mono_size: f32 = 17
 	x := CONTENT_X
-	ui.label(c, x, SOURCE_HINT_Y, "Edit ", size, color)
+	ui.label(c, x, y, "Edit ", size, color)
 	x += measure_font_text("Edit ", size, .Body)
-	ui.label(c, x, SOURCE_HINT_Y, source, mono_size, path_color, .Mono)
+	ui.label(c, x, y, source, mono_size, path_color, .Mono)
 	x += measure_font_text(source, mono_size, .Mono)
-	ui.label(c, x, SOURCE_HINT_Y, " and save to reload.", size, color)
+	ui.label(c, x, y, " and save to reload.", size, color)
 }

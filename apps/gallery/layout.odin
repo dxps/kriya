@@ -28,9 +28,9 @@ PREVIEW_PAD_X         :: f32(28)
 PREVIEW_HEADER_Y      :: f32(220) // "INTERACTIVE PREVIEW"
 WIDGET_X              :: PREVIEW_X + PREVIEW_PAD_X // 302
 
-// Source hint sits a fixed gap below the preview card.
+// Source hint sits a fixed gap below the preview card, whose height is
+// per-view, so the exact y is computed by the caller.
 SOURCE_HINT_GAP :: f32(26)
-SOURCE_HINT_Y   :: PREVIEW_Y + PREVIEW_H + SOURCE_HINT_GAP // 560
 
 // Shared control metrics used by every view.
 CONTROL_H :: f32(46)

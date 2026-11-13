@@ -304,14 +304,15 @@ frame :: proc "c" () {
 	ui.label(&ctx, CONTENT_X, PAGE_EYEBROW_Y, "LIBRARY / EXPLORER", 13, ui.DEFAULT_PALETTE.text_muted)
 	ui.label(&ctx, CONTENT_X, PAGE_TITLE_Y, sections[selected].title, 40)
 	ui.label(&ctx, CONTENT_X, PAGE_SUB_Y, "Small primitives. Shared behavior. Built in Odin.", 18)
+	preview_h := view.preview_h > 0 ? view.preview_h : PREVIEW_H
 	ui.box(
 		&ctx,
-		{PREVIEW_X, PREVIEW_Y, max(PREVIEW_MIN_W, w - PREVIEW_X - PREVIEW_MARGIN_RIGHT), PREVIEW_H},
+		{PREVIEW_X, PREVIEW_Y, max(PREVIEW_MIN_W, w - PREVIEW_X - PREVIEW_MARGIN_RIGHT), preview_h},
 		ui.DEFAULT_PALETTE.surface_raised,
 	)
 	ui.label(&ctx, WIDGET_X, PREVIEW_HEADER_Y, "INTERACTIVE PREVIEW", 12, ui.DEFAULT_PALETTE.text_muted)
 	view.draw(&ctx)
-	draw_source_hint(&ctx, view.source)
+	draw_source_hint(&ctx, view.source, PREVIEW_Y + preview_h + SOURCE_HINT_GAP)
 	ui.end_scroll(&ctx, scroll)
 	sapp.set_mouse_cursor(ctx.pointer_cursor ? .POINTING_HAND : .DEFAULT)
 	render(); ui.end(&ctx)
