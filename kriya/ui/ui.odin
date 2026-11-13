@@ -89,6 +89,8 @@ Context :: struct {
 	select_all:              bool,
 	copy_request:            bool,
 	cut_request:             bool,
+	undo_request:            bool,
+	redo_request:            bool,
 	paste:                   [1024]u8,
 	paste_len:               int,
 	set_clipboard:           proc(text: string),
@@ -120,6 +122,8 @@ end :: proc(c: ^Context) {c.pressed = false; c.released = false; c.moved = false
 	c.select_all = false
 	c.copy_request = false
 	c.cut_request = false
+	c.undo_request = false
+	c.redo_request = false
 	c.paste_len = 0}
 set_corner_radius :: proc(c: ^Context, radius: f32) {c.corner_radius = max(0, radius)}
 resolve_corner_radius :: proc(c: ^Context, radius: Maybe(f32)) -> f32 {
@@ -438,6 +442,30 @@ input :: proc(
 // every mutation routes through textarea_insert / textarea_backspace so this
 // stays invariant. scroll, dragging and grab_y retain scroll and drag across
 // frames so each textarea remembers its own view and interaction state.
+// Edit_Kind classifies the previous write so consecutive edits of the
+// same kind coalesce into one undo entry — typing a word creates one
+// undo step, not one per character; a run of Backspaces is one step too.
+// Anything less uniform (Enter, paste, cut, backspace with selection)
+// flushes to .Other so each stands alone.
+Edit_Kind :: enum u8 {
+	None,
+	Insert,
+	Delete,
+	Other,
+}
+
+// Fixed-size snapshot of the editable state. Stored on undo / redo stacks
+// so a revert is one struct copy — simple and allocation-free at the
+// cost of ~1 KB per entry.
+History_Entry :: struct {
+	data:   [1024]u8,
+	len:    int,
+	caret:  int,
+	anchor: int,
+}
+
+HISTORY_CAP :: 8
+
 Text_Area :: struct {
 	data:         [1024]u8,
 	len:          int,
@@ -462,7 +490,18 @@ Text_Area :: struct {
 	// text_dragging retains the mouse-drag select state across frames so a
 	// drag that leaves the widget keeps extending the selection until the
 	// button is released.
-	text_dragging: bool,
+	text_dragging:  bool,
+	// Undo / redo stacks and the kind of the most recent edit. undo holds
+	// pre-edit snapshots; redo holds post-undo snapshots so successive
+	// redos walk back to where the user was. last_edit_kind drives
+	// coalescing — the next edit opens a new entry only when its kind
+	// changes (or when a non-edit interaction flushes last_edit_kind to
+	// .None).
+	undo:           [HISTORY_CAP]History_Entry,
+	undo_len:       int,
+	redo:           [HISTORY_CAP]History_Entry,
+	redo_len:       int,
+	last_edit_kind: Edit_Kind,
 }
 
 set_area_text :: proc(value: ^Text_Area, text: string) {
@@ -471,6 +510,83 @@ set_area_text :: proc(value: ^Text_Area, text: string) {
 	value.caret = value.len
 	value.anchor = value.len
 	value.goal_sticky = false
+	value.undo_len = 0
+	value.redo_len = 0
+	value.last_edit_kind = .None
+}
+
+// Captures the current buffer, length, caret and anchor as a History_Entry.
+textarea_snapshot :: proc(value: ^Text_Area) -> History_Entry {
+	entry: History_Entry
+	copy(entry.data[:value.len], value.data[:value.len])
+	entry.len = value.len
+	entry.caret = value.caret
+	entry.anchor = value.anchor
+	return entry
+}
+
+// Replaces the current state with a History_Entry. Clears the goal column
+// and the sticky-drag flags because they don't belong to the saved text.
+// The entry comes in by pointer so its embedded array stays addressable
+// for the slice copy — Odin procedure parameters aren't.
+textarea_restore :: proc(value: ^Text_Area, entry: ^History_Entry) {
+	value.len = entry.len
+	copy(value.data[:entry.len], entry.data[:entry.len])
+	value.caret = entry.caret
+	value.anchor = entry.anchor
+	value.goal_sticky = false
+}
+
+// Pushes onto a fixed-size stack. When full, shifts left so the oldest
+// entry is dropped and the new entry lands at the top; cheap enough for
+// an 8-slot stack and avoids ring-buffer bookkeeping.
+textarea_history_push :: proc(
+	stack: ^[HISTORY_CAP]History_Entry,
+	len: ^int,
+	entry: ^History_Entry,
+) {
+	if len^ < HISTORY_CAP {
+		stack[len^] = entry^
+		len^ += 1
+	} else {
+		for i in 0 ..< HISTORY_CAP - 1 {stack[i] = stack[i + 1]}
+		stack[HISTORY_CAP - 1] = entry^
+	}
+}
+
+// Call right before every write. Pushes the current state onto undo when
+// the edit kind changed (so same-kind runs coalesce) and always clears
+// the redo stack — a new edit forks history.
+textarea_begin_edit :: proc(value: ^Text_Area, kind: Edit_Kind) {
+	if kind != value.last_edit_kind {
+		snap := textarea_snapshot(value)
+		textarea_history_push(&value.undo, &value.undo_len, &snap)
+		value.last_edit_kind = kind
+	}
+	value.redo_len = 0
+}
+
+// Reverts to the most recent snapshot. Pushes the current state onto the
+// redo stack first so redo can bring it back. Returns true on success.
+textarea_undo :: proc(value: ^Text_Area) -> bool {
+	if value.undo_len == 0 {return false}
+	snap := textarea_snapshot(value)
+	textarea_history_push(&value.redo, &value.redo_len, &snap)
+	value.undo_len -= 1
+	textarea_restore(value, &value.undo[value.undo_len])
+	value.last_edit_kind = .None
+	return true
+}
+
+// Replays the most recent undone state. Mirrors textarea_undo.
+textarea_redo :: proc(value: ^Text_Area) -> bool {
+	if value.redo_len == 0 {return false}
+	snap := textarea_snapshot(value)
+	textarea_history_push(&value.undo, &value.undo_len, &snap)
+	value.redo_len -= 1
+	textarea_restore(value, &value.redo[value.redo_len])
+	value.last_edit_kind = .None
+	return true
 }
 
 // Removes the selected byte range (when anchor != caret) by shifting the
@@ -689,6 +805,9 @@ textarea :: proc(
 			c.focused = id
 		} else if hover {
 			c.focused = id
+			// Any click in the text area starts a new edit group so the
+			// next keystroke doesn't coalesce with earlier typing.
+			value.last_edit_kind = .None
 			assert(
 				c.measure_text != nil,
 				"Textarea click positioning requires a text measurement callback",
@@ -755,6 +874,28 @@ textarea :: proc(
 	edited := false
 	navigated := false
 	if focused {
+		// Any non-edit interaction this frame flushes the coalescing kind,
+		// so the next keystroke opens a fresh undo entry.
+		if c.nav_left ||
+		   c.nav_right ||
+		   c.nav_up ||
+		   c.nav_down ||
+		   c.nav_home ||
+		   c.nav_end ||
+		   c.select_all {
+			value.last_edit_kind = .None
+		}
+		// Undo / redo swap the current state with the top of the undo or
+		// redo stack. Reported as navigation so auto-follow brings the
+		// restored caret into view.
+		if c.undo_request && textarea_undo(value) {
+			navigated = true
+			value.goal_sticky = false
+		}
+		if c.redo_request && textarea_redo(value) {
+			navigated = true
+			value.goal_sticky = false
+		}
 		// Horizontal moves clear the sticky goal column; vertical moves
 		// anchor it on first press and reuse it on subsequent presses.
 		// nav_shift extends the selection — the caret moves but the anchor
@@ -858,30 +999,42 @@ textarea :: proc(
 			e := max(value.anchor, value.caret)
 			c.set_clipboard(string(value.data[s:e]))
 		}
-		if c.cut_request && textarea_delete_selection(value) {
-			edited = true
-			value.goal_sticky = false
+		if c.cut_request && value.anchor != value.caret {
+			textarea_begin_edit(value, .Other)
+			if textarea_delete_selection(value) {
+				edited = true
+				value.goal_sticky = false
+			}
 		}
 		// Paste replaces any current selection with the clipboard text.
 		if c.paste_len > 0 {
+			textarea_begin_edit(value, .Other)
 			_ = textarea_delete_selection(value)
 			if textarea_insert(value, c.paste[:c.paste_len]) > 0 {
 				edited = true
 				value.goal_sticky = false
 			}
 		}
-		// Backspace with a selection deletes the selection; otherwise it
-		// removes the rune to the left of the caret.
+		// Backspace with a selection deletes the selection as one
+		// "other" edit; a run of single-rune backspaces coalesces as
+		// .Delete so one Ctrl+Z undoes the whole run.
 		if c.backspace {
-			if textarea_delete_selection(value) {
-				edited = true
-				value.goal_sticky = false
-			} else if textarea_backspace(value) {
-				edited = true
-				value.goal_sticky = false
+			if value.anchor != value.caret {
+				textarea_begin_edit(value, .Other)
+				if textarea_delete_selection(value) {
+					edited = true
+					value.goal_sticky = false
+				}
+			} else if value.caret > 0 {
+				textarea_begin_edit(value, .Delete)
+				if textarea_backspace(value) {
+					edited = true
+					value.goal_sticky = false
+				}
 			}
 		}
 		if c.enter {
+			textarea_begin_edit(value, .Other)
 			_ = textarea_delete_selection(value)
 			nl := [1]u8{'\n'}
 			if textarea_insert(value, nl[:]) > 0 {
@@ -890,6 +1043,8 @@ textarea :: proc(
 			}
 		}
 		if c.typed_len > 0 {
+			kind: Edit_Kind = value.anchor != value.caret ? .Other : .Insert
+			textarea_begin_edit(value, kind)
 			_ = textarea_delete_selection(value)
 			if textarea_insert(value, c.typed[:c.typed_len]) > 0 {
 				edited = true

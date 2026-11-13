@@ -381,6 +381,13 @@ event :: proc "c" (e: ^sapp.Event) {
 		if editor_mod && e.key_code == .A {ctx.select_all = true}
 		if editor_mod && e.key_code == .C {ctx.copy_request = true}
 		if editor_mod && e.key_code == .X {ctx.cut_request = true}
+		// Ctrl/Cmd+Z undoes; Shift adds redo, and Ctrl+Y is the
+		// traditional Windows alias for redo so both habits work.
+		shift_held := (e.modifiers & sapp.MODIFIER_SHIFT) != 0
+		if editor_mod && e.key_code == .Z {
+			if shift_held {ctx.redo_request = true} else {ctx.undo_request = true}
+		}
+		if editor_mod && e.key_code == .Y {ctx.redo_request = true}
 	case .CLIPBOARD_PASTED:
 		raw := sapp.get_clipboard_string()
 		if raw != nil {
