@@ -48,6 +48,24 @@ input_backspace :: proc(value: ^Text_Input) {
 	value.caret = start
 }
 
+// Maps a pixel x (relative to the text origin r.x + 14) to a byte offset.
+// Text mode measures the real prefix; password-bullet mode rounds onto the
+// 14px grid, then walks that many runes forward.
+input_x_to_caret :: proc(c: ^Context, data: []u8, target_x: f32, masked: bool) -> int {
+	if !masked {return textarea_x_to_caret(c, data, 0, len(data), target_x)}
+	rune_count := input_rune_count(data, len(data))
+	target_rune := clamp(int((target_x + 7) / 14), 0, rune_count)
+	byte_pos := 0
+	runes := 0
+	for runes < target_rune && byte_pos < len(data) {
+		_, rs := utf8.decode_rune_in_bytes(data[byte_pos:])
+		if rs == 0 {rs = 1}
+		byte_pos += rs
+		runes += 1
+	}
+	return byte_pos
+}
+
 // Shifts the suffix right and copies bytes into the gap at caret.
 input_insert :: proc(value: ^Text_Input, bytes: []u8) {
 	n := min(len(bytes), len(value.data) - value.len)
@@ -72,8 +90,16 @@ input :: proc(
 	eye_w: f32 = password ? 44 : 0
 	text_hit := Rect{r.x, r.y, r.w - eye_w, r.h}
 	if hover {c.pointer_cursor = true}
+	masked := password && !value.revealed && value.len > 0
 	if c.pressed {
-		if contains(c, text_hit) {c.focused = id} else if c.focused == id && !hover {c.focused = 0}
+		if contains(c, text_hit) {
+			c.focused = id
+			// Position caret at the click. target_x is pixels past the text
+			// origin (r.x + pad_x); input_x_to_caret maps it to a byte offset,
+			// rounding to the nearest rune boundary or bullet column.
+			target_x := c.mx - r.x - 14
+			value.caret = input_x_to_caret(c, value.data[:value.len], target_x, masked)
+		} else if c.focused == id && !hover {c.focused = 0}
 	}
 	focused := c.focused == id
 	// Clamp caret into the valid byte range in case the caller shrank the
@@ -116,8 +142,10 @@ input :: proc(
 		DEFAULT_PALETTE.surface,
 		max(0, corner_radius - 1),
 	)
+	// Edits this frame can toggle masked (typing into an empty password
+	// field, backspacing to empty); recompute now that the buffer is final.
+	masked = password && !value.revealed && value.len > 0
 	shown := placeholder
-	masked := password && !value.revealed && value.len > 0
 	color := DEFAULT_PALETTE.text_muted
 	if value.len > 0 {
 		color = DEFAULT_PALETTE.text
