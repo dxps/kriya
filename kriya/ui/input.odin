@@ -204,6 +204,21 @@ input :: proc(
 	}
 	if value.text_dragging {
 		if c.down {
+			// Auto-scroll while the drag leaves the visible band: the mouse
+			// outside the inner padded rect pulls scroll_x toward it so the
+			// caret can reach content that was clipped off. Delta scales with
+			// how far past the edge the pointer sits, capped so a fast flick
+			// out of the window doesn't jump straight to the end. Clamp to
+			// the content extent — scrolling into empty space serves nothing.
+			left_edge := r.x + pad_x
+			right_edge := r.x + r.w - eye_w - pad_x
+			if c.mx < left_edge {
+				value.scroll_x -= min((left_edge - c.mx) * 0.5, 20)
+			} else if c.mx > right_edge {
+				value.scroll_x += min((c.mx - right_edge) * 0.5, 20)
+			}
+			drag_content_w := input_caret_x(c, value.data[:value.len], value.len, masked)
+			value.scroll_x = clamp(value.scroll_x, 0, max(0, drag_content_w - view_w))
 			target_x := c.mx - r.x - pad_x + value.scroll_x
 			value.caret = input_x_to_caret(c, value.data[:value.len], target_x, masked)
 			activity = true
