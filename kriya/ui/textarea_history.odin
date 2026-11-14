@@ -140,6 +140,24 @@ textarea_backspace :: proc(value: ^Text_Area) -> bool {
 	end := value.caret
 	start := end - 1
 	for start > 0 && (value.data[start] & 0xC0) == 0x80 {start -= 1}
+	return textarea_delete_range(value, start, end)
+}
+
+// Removes the rune to the right of the caret. The caret stays put — the
+// suffix just slides under it — which matches the Delete key on every
+// platform. Returns true when a rune was removed.
+textarea_forward_delete :: proc(value: ^Text_Area) -> bool {
+	if value.caret >= value.len {return false}
+	end := value.caret + 1
+	for end < value.len && (value.data[end] & 0xC0) == 0x80 {end += 1}
+	return textarea_delete_range(value, value.caret, end)
+}
+
+// Removes data[start:end) and places the caret at start. Shared by
+// backspace, forward-delete, and the word / line variants of both.
+// Returns true when anything was removed.
+textarea_delete_range :: proc(value: ^Text_Area, start, end: int) -> bool {
+	if start >= end {return false}
 	shift := end - start
 	for i := end; i < value.len; i += 1 {value.data[i - shift] = value.data[i]}
 	value.len -= shift

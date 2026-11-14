@@ -316,6 +316,35 @@ textarea :: proc(
 	}
 	if value.text_dragging {
 		if c.down {
+			// Auto-scroll while the drag leaves the visible band so the
+			// selection can keep reaching text past the current view. Delta
+			// scales with how far past the edge the pointer sits, capped so a
+			// fast flick doesn't jump straight to buffer end, and clamped to
+			// the content extent — scrolling into empty space serves nothing.
+			// Mouse coords are in screen space; r.y is logical so the outer
+			// scroll offset is added back the same way contains / mouse_to_caret
+			// do it.
+			screen_top := r.y + c.offset_y
+			left_edge := r.x + pad_x
+			right_edge := r.x + view_w - pad_x
+			top_edge := screen_top + pad_y
+			bottom_edge := screen_top + view_h - pad_y
+			if max_scroll_x > 0 {
+				if c.mx < left_edge {
+					value.scroll_x -= min((left_edge - c.mx) * 0.5, 20)
+				} else if c.mx > right_edge {
+					value.scroll_x += min((c.mx - right_edge) * 0.5, 20)
+				}
+				value.scroll_x = clamp(value.scroll_x, 0, max_scroll_x)
+			}
+			if max_scroll > 0 {
+				if c.my < top_edge {
+					value.scroll -= min((top_edge - c.my) * 0.5, 20)
+				} else if c.my > bottom_edge {
+					value.scroll += min((c.my - bottom_edge) * 0.5, 20)
+				}
+				value.scroll = clamp(value.scroll, 0, max_scroll)
+			}
 			value.caret = mouse_to_caret(
 				c,
 				r,
@@ -472,7 +501,11 @@ textarea :: proc(
 		}
 		// Backspace with a selection deletes the selection as one
 		// "other" edit; a run of single-rune backspaces coalesces as
-		// .Delete so one Ctrl+Z undoes the whole run.
+		// .Delete so one Ctrl+Z undoes the whole run. The word / line
+		// modifiers extend the backspace: nav_line clears to the start
+		// of the current line, nav_word clears back to the previous word
+		// boundary. Both land as .Other so each chop is its own undo
+		// entry instead of fusing with single-rune edits.
 		if c.backspace {
 			if value.anchor != value.caret {
 				textarea_begin_edit(value, .Other)
@@ -480,9 +513,63 @@ textarea :: proc(
 					edited = true
 					value.goal_sticky = false
 				}
+			} else if c.nav_line && value.caret > 0 {
+				ls := textarea_line_start(value.data[:value.len], value.caret)
+				if ls < value.caret {
+					textarea_begin_edit(value, .Other)
+					if textarea_delete_range(value, ls, value.caret) {
+						edited = true
+						value.goal_sticky = false
+					}
+				}
+			} else if c.nav_word && value.caret > 0 {
+				start := textarea_prev_word(value.data[:value.len], value.caret)
+				if start < value.caret {
+					textarea_begin_edit(value, .Other)
+					if textarea_delete_range(value, start, value.caret) {
+						edited = true
+						value.goal_sticky = false
+					}
+				}
 			} else if value.caret > 0 {
 				textarea_begin_edit(value, .Delete)
 				if textarea_backspace(value) {
+					edited = true
+					value.goal_sticky = false
+				}
+			}
+		}
+		// Forward Delete mirrors Backspace around the caret. The caret
+		// stays in place; the suffix shrinks. Word / line modifiers reach
+		// to the next word boundary or the end of the current line.
+		if c.forward_delete {
+			if value.anchor != value.caret {
+				textarea_begin_edit(value, .Other)
+				if textarea_delete_selection(value) {
+					edited = true
+					value.goal_sticky = false
+				}
+			} else if c.nav_line && value.caret < value.len {
+				le := textarea_line_end(value.data[:value.len], value.caret)
+				if le > value.caret {
+					textarea_begin_edit(value, .Other)
+					if textarea_delete_range(value, value.caret, le) {
+						edited = true
+						value.goal_sticky = false
+					}
+				}
+			} else if c.nav_word && value.caret < value.len {
+				end := textarea_next_word(value.data[:value.len], value.caret)
+				if end > value.caret {
+					textarea_begin_edit(value, .Other)
+					if textarea_delete_range(value, value.caret, end) {
+						edited = true
+						value.goal_sticky = false
+					}
+				}
+			} else if value.caret < value.len {
+				textarea_begin_edit(value, .Delete)
+				if textarea_forward_delete(value) {
 					edited = true
 					value.goal_sticky = false
 				}
@@ -509,6 +596,7 @@ textarea :: proc(
 		if edited || navigated || c.select_all {activity = true}
 		c.typed_len = 0
 		c.backspace = false
+		c.forward_delete = false
 		c.enter = false
 		c.nav_left = false
 		c.nav_right = false
