@@ -37,6 +37,12 @@ Text_Input :: struct {
 	// alternates 500ms off / 500ms on, so any activity restarts the solid
 	// half-cycle and the caret is always visible right when the user needs it.
 	caret_phase_start: f64,
+	// Seconds since the last scroll-visible activity (wheel, scrollbar hover
+	// or drag, caret-follow). Drives the scrollbar fade so it only appears
+	// while it's useful, matching the textarea and the page scroll.
+	scroll_idle:    f32,
+	dragging_x:     bool,
+	grab_x:         f32,
 }
 
 set_text :: proc(value: ^Text_Input, text: string) {
@@ -169,8 +175,34 @@ input :: proc(
 	// resets the blink phase at the end so the caret is solid right when the
 	// user acts.
 	activity := false
+	value.scroll_idle += c.dt
+	// Horizontal scrollbar geometry. Computed before the press block so a
+	// click on the thumb is handled before text-area clicks. Uses the
+	// pre-edit buffer — an edit this frame updates the draw below from the
+	// final scroll_x so the thumb lands where the caret actually is.
+	pre_content_w := input_caret_x(c, value.data[:value.len], value.len, masked)
+	pre_max_scroll_x := max(0, pre_content_w - view_w)
+	htrack_x: f32 = r.x + 6
+	htrack_w: f32 = r.w - eye_w - 12
+	hthumb_w: f32
+	hthumb_x: f32
+	hthumb_hit: Rect
+	hthumb_hovered: bool
+	if pre_max_scroll_x > 0 {
+		hthumb_w = max(24, htrack_w * view_w / pre_content_w)
+		travel := htrack_w - hthumb_w
+		hthumb_x = htrack_x + (travel > 0 ? travel * value.scroll_x / pre_max_scroll_x : 0)
+		hthumb_hit = Rect{r.x + 4, r.y + r.h - 12, htrack_w + 4, 12}
+		hthumb_hovered = contains(c, hthumb_hit)
+	}
 	if c.pressed {
-		if contains(c, text_hit) {
+		if pre_max_scroll_x > 0 && hthumb_hovered {
+			value.dragging_x = true
+			value.grab_x =
+				c.mx >= hthumb_x && c.mx < hthumb_x + hthumb_w ? c.mx - hthumb_x : hthumb_w / 2
+			c.focused = id
+			value.last_edit_kind = .None
+		} else if contains(c, text_hit) {
 			c.focused = id
 			activity = true
 			// Any click starts a new edit group so the next keystroke
@@ -202,6 +234,20 @@ input :: proc(
 				value.text_dragging = true
 			}
 		} else if c.focused == id && !hover {c.focused = 0}
+	}
+	if value.dragging_x {
+		travel := htrack_w - hthumb_w
+		if travel > 0 {
+			value.scroll_x = clamp(
+				(c.mx - htrack_x - value.grab_x) / travel * pre_max_scroll_x,
+				0,
+				pre_max_scroll_x,
+			)
+		}
+		if !c.down {value.dragging_x = false}
+	}
+	if hover && c.wheel_x != 0 && pre_max_scroll_x > 0 {
+		value.scroll_x = clamp(value.scroll_x + c.wheel_x, 0, pre_max_scroll_x)
 	}
 	if value.text_dragging {
 		if c.down {
@@ -462,6 +508,40 @@ input :: proc(
 	}
 	c.clip = prev_clip
 	c.clipped = prev_clipped
+	// Horizontal scrollbar fade: reset idle on any scroll-visible activity
+	// (wheel, scrollbar hover or drag, any caret movement or edit this
+	// frame — activity is already accumulated for the blink reset). Hold
+	// 0.25s then smoothstep to transparent over 0.5s, same rhythm as the
+	// page scroll and the textarea bars.
+	wheeled := hover && c.wheel_x != 0
+	scroll_hot := hthumb_hovered || value.dragging_x
+	if wheeled || scroll_hot || activity {value.scroll_idle = 0}
+	t := clamp((value.scroll_idle - 0.25) / 0.5, 0, 1)
+	fade := 1 - t * t * (3 - 2 * t)
+	if fade > 0 && max_scroll_x > 0 {
+		// Recompute the thumb against the final scroll_x so caret-follow
+		// moves this frame end up on the drawn thumb.
+		thumb_w := max(24, htrack_w * view_w / content_w)
+		travel := htrack_w - thumb_w
+		thumb_x := htrack_x + (travel > 0 ? travel * value.scroll_x / max_scroll_x : 0)
+		h: f32 = scroll_hot ? 7 : 5
+		alpha: f32 = scroll_hot ? 0.95 : 0.75
+		center_y := r.y + r.h - 6
+		tr := DEFAULT_PALETTE.scroll_track
+		th := DEFAULT_PALETTE.scroll_thumb
+		box(
+			c,
+			{htrack_x, center_y - h / 2, htrack_w, h},
+			{tr[0], tr[1], tr[2], 0.18 * fade},
+			h / 2,
+		)
+		box(
+			c,
+			{thumb_x, center_y - h / 2, thumb_w, h},
+			{th[0], th[1], th[2], alpha * fade},
+			h / 2,
+		)
+	}
 	if password {
 		divider_x := r.x + r.w - eye_w
 		box(c, {divider_x, r.y + 8, 1, r.h - 16}, DEFAULT_PALETTE.divider)
