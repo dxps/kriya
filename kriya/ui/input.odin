@@ -154,6 +154,7 @@ input :: proc(
 	placeholder: string,
 	value: ^Text_Input,
 	password := false,
+	read_only := false,
 	radius: Maybe(f32) = nil,
 ) {
 	corner_radius := resolve_corner_radius(c, radius)
@@ -241,8 +242,8 @@ input :: proc(
 		// Undo / redo swap current state with the top of the matching stack.
 		// Reported as navigation so the caret-follow pass brings the
 		// restored caret into view.
-		if c.undo_request && input_undo(value) {navigated = true; activity = true}
-		if c.redo_request && input_redo(value) {navigated = true; activity = true}
+		if c.undo_request && !read_only && input_undo(value) {navigated = true; activity = true}
+		if c.redo_request && !read_only && input_redo(value) {navigated = true; activity = true}
 		// Select-all stretches the selection across the whole buffer.
 		if c.select_all {
 			value.anchor = 0
@@ -253,7 +254,8 @@ input :: proc(
 		// the backend callback. Masked password mode suppresses both so
 		// the raw password can't leave the field through Ctrl+C / Ctrl+X;
 		// select-all and paste remain available, matching web password
-		// field conventions.
+		// field conventions. Read-only keeps copy but drops cut, since cut
+		// is a content mutation.
 		if (c.copy_request || c.cut_request) &&
 		   value.anchor != value.caret &&
 		   c.set_clipboard != nil &&
@@ -262,7 +264,7 @@ input :: proc(
 			e := max(value.anchor, value.caret)
 			c.set_clipboard(string(value.data[s:e]))
 		}
-		if c.cut_request && value.anchor != value.caret && !masked {
+		if c.cut_request && value.anchor != value.caret && !masked && !read_only {
 			input_begin_edit(value, .Other)
 			_ = input_delete_selection(value)
 			activity = true
@@ -270,7 +272,7 @@ input :: proc(
 		// Paste replaces any current selection with the clipboard text.
 		// Single-line fields clip to the first line of a multi-line paste
 		// so pasted paragraphs don't wedge an unprintable '\n' in.
-		if c.paste_len > 0 {
+		if c.paste_len > 0 && !read_only {
 			input_begin_edit(value, .Other)
 			_ = input_delete_selection(value)
 			paste_end := c.paste_len
@@ -287,7 +289,7 @@ input :: proc(
 		// clears back to the previous word boundary. Both land as .Other so
 		// each chop is its own undo entry instead of fusing with single-rune
 		// edits.
-		if c.backspace {
+		if c.backspace && !read_only {
 			if value.anchor != value.caret {
 				input_begin_edit(value, .Other)
 				_ = input_delete_selection(value)
@@ -310,7 +312,7 @@ input :: proc(
 		// Forward Delete mirrors Backspace around the caret. The caret stays
 		// in place; the suffix shrinks. Word / line modifiers reach to the
 		// next word boundary or the end of the buffer.
-		if c.forward_delete {
+		if c.forward_delete && !read_only {
 			if value.anchor != value.caret {
 				input_begin_edit(value, .Other)
 				_ = input_delete_selection(value)
@@ -330,7 +332,7 @@ input :: proc(
 				activity = true
 			}
 		}
-		if c.typed_len > 0 {
+		if c.typed_len > 0 && !read_only {
 			kind: Edit_Kind = value.anchor != value.caret ? .Other : .Insert
 			input_begin_edit(value, kind)
 			_ = input_delete_selection(value)
@@ -377,14 +379,20 @@ input :: proc(
 		c.nav_end = false
 	}
 	if activity {value.caret_phase_start = c.now}
+	// Read-only skips the hover / focus border accents and uses a raised
+	// inner surface so the field reads as non-editable at a glance while
+	// still letting the user focus it for selection / copy.
 	border := DEFAULT_PALETTE.border
-	if hover {border = DEFAULT_PALETTE.border_hover}
-	if focused {border = DEFAULT_PALETTE.primary_bright}
+	if !read_only {
+		if hover {border = DEFAULT_PALETTE.border_hover}
+		if focused {border = DEFAULT_PALETTE.primary_bright}
+	}
+	surface := read_only ? DEFAULT_PALETTE.surface_raised : DEFAULT_PALETTE.surface
 	box(c, r, border, corner_radius)
 	box(
 		c,
 		{r.x + 1, r.y + 1, r.w - 2, r.h - 2},
-		DEFAULT_PALETTE.surface,
+		surface,
 		max(0, corner_radius - 1),
 	)
 	// Edits this frame can toggle masked (typing into an empty password

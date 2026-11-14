@@ -91,6 +91,7 @@ textarea :: proc(
 	placeholder: string,
 	value: ^Text_Area,
 	wrap: bool = false,
+	read_only: bool = false,
 	radius: Maybe(f32) = nil,
 ) {
 	corner_radius := resolve_corner_radius(c, radius)
@@ -381,11 +382,11 @@ textarea :: proc(
 		// Undo / redo swap the current state with the top of the undo or
 		// redo stack. Reported as navigation so auto-follow brings the
 		// restored caret into view.
-		if c.undo_request && textarea_undo(value) {
+		if c.undo_request && !read_only && textarea_undo(value) {
 			navigated = true
 			value.goal_sticky = false
 		}
-		if c.redo_request && textarea_redo(value) {
+		if c.redo_request && !read_only && textarea_redo(value) {
 			navigated = true
 			value.goal_sticky = false
 		}
@@ -483,7 +484,7 @@ textarea :: proc(
 			e := max(value.anchor, value.caret)
 			c.set_clipboard(string(value.data[s:e]))
 		}
-		if c.cut_request && value.anchor != value.caret {
+		if c.cut_request && value.anchor != value.caret && !read_only {
 			textarea_begin_edit(value, .Other)
 			if textarea_delete_selection(value) {
 				edited = true
@@ -491,7 +492,7 @@ textarea :: proc(
 			}
 		}
 		// Paste replaces any current selection with the clipboard text.
-		if c.paste_len > 0 {
+		if c.paste_len > 0 && !read_only {
 			textarea_begin_edit(value, .Other)
 			_ = textarea_delete_selection(value)
 			if textarea_insert(value, c.paste[:c.paste_len]) > 0 {
@@ -506,7 +507,7 @@ textarea :: proc(
 		// of the current line, nav_word clears back to the previous word
 		// boundary. Both land as .Other so each chop is its own undo
 		// entry instead of fusing with single-rune edits.
-		if c.backspace {
+		if c.backspace && !read_only {
 			if value.anchor != value.caret {
 				textarea_begin_edit(value, .Other)
 				if textarea_delete_selection(value) {
@@ -542,7 +543,7 @@ textarea :: proc(
 		// Forward Delete mirrors Backspace around the caret. The caret
 		// stays in place; the suffix shrinks. Word / line modifiers reach
 		// to the next word boundary or the end of the current line.
-		if c.forward_delete {
+		if c.forward_delete && !read_only {
 			if value.anchor != value.caret {
 				textarea_begin_edit(value, .Other)
 				if textarea_delete_selection(value) {
@@ -575,7 +576,7 @@ textarea :: proc(
 				}
 			}
 		}
-		if c.enter {
+		if c.enter && !read_only {
 			textarea_begin_edit(value, .Other)
 			_ = textarea_delete_selection(value)
 			nl := [1]u8{'\n'}
@@ -584,7 +585,7 @@ textarea :: proc(
 				value.goal_sticky = false
 			}
 		}
-		if c.typed_len > 0 {
+		if c.typed_len > 0 && !read_only {
 			kind: Edit_Kind = value.anchor != value.caret ? .Other : .Insert
 			textarea_begin_edit(value, kind)
 			_ = textarea_delete_selection(value)
@@ -722,14 +723,20 @@ textarea :: proc(
 	}
 	value.scroll = clamp(value.scroll, 0, max_scroll)
 	value.scroll_x = clamp(value.scroll_x, 0, max_scroll_x)
+	// Read-only skips the hover / focus border accents and uses a raised
+	// inner surface so the field reads as non-editable at a glance while
+	// still letting the user focus it for selection / copy.
 	border := DEFAULT_PALETTE.border
-	if hover {border = DEFAULT_PALETTE.border_hover}
-	if focused {border = DEFAULT_PALETTE.primary_bright}
+	if !read_only {
+		if hover {border = DEFAULT_PALETTE.border_hover}
+		if focused {border = DEFAULT_PALETTE.primary_bright}
+	}
+	surface := read_only ? DEFAULT_PALETTE.surface_raised : DEFAULT_PALETTE.surface
 	box(c, r, border, corner_radius)
 	box(
 		c,
 		{r.x + 1, r.y + 1, r.w - 2, r.h - 2},
-		DEFAULT_PALETTE.surface,
+		surface,
 		max(0, corner_radius - 1),
 	)
 	if value.len == 0 && !focused {
