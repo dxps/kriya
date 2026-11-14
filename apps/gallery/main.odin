@@ -53,6 +53,7 @@ frame :: proc "c" () {
 	ui.begin(&ctx)
 	ctx.measure_text = measure_text
 	ctx.set_clipboard = app_set_clipboard
+	ctx.now += f64(sapp.frame_duration())
 	w := sapp.widthf() / sapp.dpi_scale()
 	h := sapp.heightf() / sapp.dpi_scale()
 	draw_sidebar(h)

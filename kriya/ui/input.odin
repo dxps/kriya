@@ -32,6 +32,11 @@ Text_Input :: struct {
 	redo:           [HISTORY_CAP]Input_History_Entry,
 	redo_len:       int,
 	last_edit_kind: Edit_Kind,
+	// Blink phase anchor: c.now at the last caret-moving or content-mutating
+	// event. The caret draws solid for the first 500ms after it, then
+	// alternates 500ms off / 500ms on, so any activity restarts the solid
+	// half-cycle and the caret is always visible right when the user needs it.
+	caret_phase_start: f64,
 }
 
 set_text :: proc(value: ^Text_Input, text: string) {
@@ -42,6 +47,7 @@ set_text :: proc(value: ^Text_Input, text: string) {
 	value.undo_len = 0
 	value.redo_len = 0
 	value.last_edit_kind = .None
+	value.caret_phase_start = 0
 }
 
 // Counts the runes in data[:n]. Used to project a byte offset onto the
@@ -158,9 +164,14 @@ input :: proc(
 	view_w := r.w - eye_w - pad_x * 2
 	if hover {c.pointer_cursor = true}
 	masked := password && !value.revealed && value.len > 0
+	// Caret-moving or content-mutating events this frame. Any true value
+	// resets the blink phase at the end so the caret is solid right when the
+	// user acts.
+	activity := false
 	if c.pressed {
 		if contains(c, text_hit) {
 			c.focused = id
+			activity = true
 			// Any click starts a new edit group so the next keystroke
 			// doesn't coalesce with earlier typing.
 			value.last_edit_kind = .None
@@ -195,6 +206,7 @@ input :: proc(
 		if c.down {
 			target_x := c.mx - r.x - pad_x + value.scroll_x
 			value.caret = input_x_to_caret(c, value.data[:value.len], target_x, masked)
+			activity = true
 		} else {
 			value.text_dragging = false
 		}
@@ -214,12 +226,13 @@ input :: proc(
 		// Undo / redo swap current state with the top of the matching stack.
 		// Reported as navigation so the caret-follow pass brings the
 		// restored caret into view.
-		if c.undo_request && input_undo(value) {navigated = true}
-		if c.redo_request && input_redo(value) {navigated = true}
+		if c.undo_request && input_undo(value) {navigated = true; activity = true}
+		if c.redo_request && input_redo(value) {navigated = true; activity = true}
 		// Select-all stretches the selection across the whole buffer.
 		if c.select_all {
 			value.anchor = 0
 			value.caret = value.len
+			activity = true
 		}
 		// Copy and cut hand the selected bytes to the host clipboard via
 		// the backend callback. Masked password mode suppresses both so
@@ -237,6 +250,7 @@ input :: proc(
 		if c.cut_request && value.anchor != value.caret && !masked {
 			input_begin_edit(value, .Other)
 			_ = input_delete_selection(value)
+			activity = true
 		}
 		// Paste replaces any current selection with the clipboard text.
 		// Single-line fields clip to the first line of a multi-line paste
@@ -249,6 +263,7 @@ input :: proc(
 				if c.paste[i] == '\n' || c.paste[i] == '\r' {paste_end = i; break}
 			}
 			input_insert(value, c.paste[:paste_end])
+			activity = true
 		}
 		// Backspace with a selection deletes the selection as one "other"
 		// edit; a run of single-rune backspaces coalesces as .Delete so one
@@ -261,16 +276,20 @@ input :: proc(
 			if value.anchor != value.caret {
 				input_begin_edit(value, .Other)
 				_ = input_delete_selection(value)
+				activity = true
 			} else if c.nav_line && value.caret > 0 {
 				input_begin_edit(value, .Other)
 				input_delete_range(value, 0, value.caret)
+				activity = true
 			} else if c.nav_word && value.caret > 0 {
 				start := textarea_prev_word(value.data[:value.len], value.caret)
 				input_begin_edit(value, .Other)
 				input_delete_range(value, start, value.caret)
+				activity = true
 			} else if value.caret > 0 {
 				input_begin_edit(value, .Delete)
 				input_backspace(value)
+				activity = true
 			}
 		}
 		// Forward Delete mirrors Backspace around the caret. The caret stays
@@ -280,16 +299,20 @@ input :: proc(
 			if value.anchor != value.caret {
 				input_begin_edit(value, .Other)
 				_ = input_delete_selection(value)
+				activity = true
 			} else if c.nav_line && value.caret < value.len {
 				input_begin_edit(value, .Other)
 				input_delete_range(value, value.caret, value.len)
+				activity = true
 			} else if c.nav_word && value.caret < value.len {
 				end := textarea_next_word(value.data[:value.len], value.caret)
 				input_begin_edit(value, .Other)
 				input_delete_range(value, value.caret, end)
+				activity = true
 			} else if value.caret < value.len {
 				input_begin_edit(value, .Delete)
 				input_forward_delete(value)
+				activity = true
 			}
 		}
 		if c.typed_len > 0 {
@@ -297,6 +320,7 @@ input :: proc(
 			input_begin_edit(value, kind)
 			_ = input_delete_selection(value)
 			input_insert(value, c.typed[:c.typed_len])
+			activity = true
 		}
 		// Horizontal moves only — single-line has no Up / Down. nav_line
 		// (Ctrl / Cmd) collapses Left / Right onto Home / End; nav_word
@@ -328,6 +352,7 @@ input :: proc(
 		// Shift held: selection extends — caret moves but anchor stays.
 		// Otherwise the selection collapses to the caret after the move.
 		if navigated && !c.nav_shift {value.anchor = value.caret}
+		if navigated {activity = true}
 		c.typed_len = 0
 		c.backspace = false
 		c.forward_delete = false
@@ -336,6 +361,7 @@ input :: proc(
 		c.nav_home = false
 		c.nav_end = false
 	}
+	if activity {value.caret_phase_start = c.now}
 	border := DEFAULT_PALETTE.border
 	if hover {border = DEFAULT_PALETTE.border_hover}
 	if focused {border = DEFAULT_PALETTE.primary_bright}
@@ -402,8 +428,14 @@ input :: proc(
 		label(c, text_x_origin, r.y + 29, shown, 17, color)
 	}
 	if focused {
-		caret_x := text_x_origin + caret_content_x
-		box(c, {caret_x, r.y + 11, 1, r.h - 22}, DEFAULT_PALETTE.primary_bright)
+		// 1 Hz blink with a 50 % duty cycle: 500ms on, 500ms off, aligned to
+		// the last activity so the solid half-cycle always starts the moment
+		// the caret moves or the content changes.
+		phase := int((c.now - value.caret_phase_start) * 2) & 1
+		if phase == 0 {
+			caret_x := text_x_origin + caret_content_x
+			box(c, {caret_x, r.y + 11, 1, r.h - 22}, DEFAULT_PALETTE.primary_bright)
+		}
 	}
 	c.clip = prev_clip
 	c.clipped = prev_clipped
