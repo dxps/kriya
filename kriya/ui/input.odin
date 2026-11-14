@@ -67,6 +67,22 @@ input_backspace :: proc(value: ^Text_Input) {
 	if value.caret == 0 {return}
 	end := value.caret
 	start := input_step_back(value.data[:value.len], end)
+	input_delete_range(value, start, end)
+}
+
+// Removes the rune to the right of caret. The caret stays put — the suffix
+// just slides under it — which matches the Delete key on every platform.
+input_forward_delete :: proc(value: ^Text_Input) {
+	if value.caret >= value.len {return}
+	_, rs := utf8.decode_rune_in_bytes(value.data[value.caret:value.len])
+	if rs == 0 {rs = 1}
+	input_delete_range(value, value.caret, value.caret + rs)
+}
+
+// Removes data[start:end) and places the caret at start. Shared by backspace,
+// forward-delete, and the word / line variants of both.
+input_delete_range :: proc(value: ^Text_Input, start, end: int) {
+	if start >= end {return}
 	shift := end - start
 	for i := end; i < value.len; i += 1 {value.data[i - shift] = value.data[i]}
 	value.len -= shift
@@ -236,14 +252,44 @@ input :: proc(
 		}
 		// Backspace with a selection deletes the selection as one "other"
 		// edit; a run of single-rune backspaces coalesces as .Delete so one
-		// undo reverses the whole run.
+		// undo reverses the whole run. The word / line modifiers extend the
+		// backspace: nav_line clears everything left of caret, nav_word
+		// clears back to the previous word boundary. Both land as .Other so
+		// each chop is its own undo entry instead of fusing with single-rune
+		// edits.
 		if c.backspace {
 			if value.anchor != value.caret {
 				input_begin_edit(value, .Other)
 				_ = input_delete_selection(value)
+			} else if c.nav_line && value.caret > 0 {
+				input_begin_edit(value, .Other)
+				input_delete_range(value, 0, value.caret)
+			} else if c.nav_word && value.caret > 0 {
+				start := textarea_prev_word(value.data[:value.len], value.caret)
+				input_begin_edit(value, .Other)
+				input_delete_range(value, start, value.caret)
 			} else if value.caret > 0 {
 				input_begin_edit(value, .Delete)
 				input_backspace(value)
+			}
+		}
+		// Forward Delete mirrors Backspace around the caret. The caret stays
+		// in place; the suffix shrinks. Word / line modifiers reach to the
+		// next word boundary or the end of the buffer.
+		if c.forward_delete {
+			if value.anchor != value.caret {
+				input_begin_edit(value, .Other)
+				_ = input_delete_selection(value)
+			} else if c.nav_line && value.caret < value.len {
+				input_begin_edit(value, .Other)
+				input_delete_range(value, value.caret, value.len)
+			} else if c.nav_word && value.caret < value.len {
+				end := textarea_next_word(value.data[:value.len], value.caret)
+				input_begin_edit(value, .Other)
+				input_delete_range(value, value.caret, end)
+			} else if value.caret < value.len {
+				input_begin_edit(value, .Delete)
+				input_forward_delete(value)
 			}
 		}
 		if c.typed_len > 0 {
@@ -284,6 +330,7 @@ input :: proc(
 		if navigated && !c.nav_shift {value.anchor = value.caret}
 		c.typed_len = 0
 		c.backspace = false
+		c.forward_delete = false
 		c.nav_left = false
 		c.nav_right = false
 		c.nav_home = false

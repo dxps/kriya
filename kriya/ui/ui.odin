@@ -66,6 +66,7 @@ Context :: struct {
 	typed:                   [32]u8,
 	typed_len:               int,
 	backspace:               bool,
+	forward_delete:          bool,
 	enter:                   bool,
 	nav_left:                bool,
 	nav_right:               bool,
@@ -108,6 +109,7 @@ end :: proc(c: ^Context) {c.pressed = false; c.released = false; c.moved = false
 	c.wheel_x = 0
 	c.typed_len = 0
 	c.backspace = false
+	c.forward_delete = false
 	c.enter = false
 	c.nav_left = false
 	c.nav_right = false
