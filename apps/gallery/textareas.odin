@@ -3,6 +3,7 @@ import ui "kriya:ui"
 
 notes: ui.Text_Area
 wrapped_notes: ui.Text_Area
+textareas_read_only: bool
 
 init_textarea_examples :: proc() {
 	ui.set_area_text(
@@ -17,7 +18,23 @@ init_textarea_examples :: proc() {
 
 draw_textareas :: proc(c: ^ui.Context) {
 	ui.label(c, WIDGET_X, 250, "NO WRAP", 11, ui.DEFAULT_PALETTE.text_muted)
-	ui.textarea(c, 30, {WIDGET_X, 266, INPUT_W, 160}, "Jot something down", &notes)
+	ui.textarea(
+		c,
+		30,
+		{WIDGET_X, 266, INPUT_W, 160},
+		"Jot something down",
+		&notes,
+		read_only = textareas_read_only,
+	)
 	ui.label(c, WIDGET_X, 452, "WRAPPED", 11, ui.DEFAULT_PALETTE.text_muted)
-	ui.textarea(c, 31, {WIDGET_X, 468, INPUT_W, 150}, "Paragraph", &wrapped_notes, wrap = true)
+	ui.textarea(
+		c,
+		31,
+		{WIDGET_X, 468, INPUT_W, 150},
+		"Paragraph",
+		&wrapped_notes,
+		wrap = true,
+		read_only = textareas_read_only,
+	)
+	ui.toggle(c, 32, WIDGET_X, 638, "Read-only", &textareas_read_only)
 }
