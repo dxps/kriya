@@ -55,6 +55,10 @@ Text_Area :: struct {
 	// alternates 500ms off / 500ms on, so any activity restarts the solid
 	// half-cycle and the caret is always visible right when the user needs it.
 	caret_phase_start: f64,
+	// Seconds since the last scroll-visible activity (wheel, scrollbar hover
+	// or drag, caret-follow after an edit). Drives the fade so the
+	// scrollbars only appear while they're useful, matching the page scroll.
+	scroll_idle: f32,
 }
 
 set_area_text :: proc(value: ^Text_Area, text: string) {
@@ -251,6 +255,7 @@ textarea :: proc(
 	// resets the blink phase at the end so the caret is solid right when the
 	// user acts.
 	activity := false
+	value.scroll_idle += c.dt
 	if c.pressed {
 		if max_scroll > 0 && thumb_hovered {
 			value.dragging = true
@@ -834,28 +839,60 @@ textarea :: proc(
 	}
 	c.clip = prev_clip
 	c.clipped = prev_clipped
-	if max_scroll > 0 {
+	// Scrollbar fade: reset idle on any activity that should make the
+	// scrollbars visible, then hold 0.25s and smoothstep to transparent
+	// over 0.5s — same rhythm as the page scroll. hot states keep the
+	// idle at 0 so hovering the thumb or dragging it never fades.
+	wheeled := hover && (c.wheel_y != 0 || c.wheel_x != 0)
+	scroll_hot := thumb_hovered || value.dragging || hthumb_hovered || value.dragging_x
+	if wheeled || scroll_hot || edited || navigated ||
+	   (value.text_dragging && c.down) {
+		value.scroll_idle = 0
+	}
+	t := clamp((value.scroll_idle - 0.25) / 0.5, 0, 1)
+	fade := 1 - t * t * (3 - 2 * t)
+	if fade > 0 && max_scroll > 0 {
 		travel := track_h - thumb_h
 		thumb_y_draw := track_y + (travel > 0 ? travel * value.scroll / max_scroll : 0)
 		hot := thumb_hovered || value.dragging
-		w: f32 = hot ? 5 : track_w
+		w: f32 = hot ? 7 : 5
 		alpha: f32 = hot ? 0.95 : 0.75
 		center_x := track_x + track_w / 2
 		tr := DEFAULT_PALETTE.scroll_track
 		th := DEFAULT_PALETTE.scroll_thumb
-		box(c, {track_x, track_y, track_w, track_h}, {tr[0], tr[1], tr[2], 0.18}, 1.5)
-		box(c, {center_x - w / 2, thumb_y_draw, w, thumb_h}, {th[0], th[1], th[2], alpha}, w / 2)
+		box(
+			c,
+			{center_x - w / 2, track_y, w, track_h},
+			{tr[0], tr[1], tr[2], 0.18 * fade},
+			w / 2,
+		)
+		box(
+			c,
+			{center_x - w / 2, thumb_y_draw, w, thumb_h},
+			{th[0], th[1], th[2], alpha * fade},
+			w / 2,
+		)
 	}
-	if max_scroll_x > 0 {
+	if fade > 0 && max_scroll_x > 0 {
 		travel := htrack_w - hthumb_w
 		hthumb_x_draw := htrack_x + (travel > 0 ? travel * value.scroll_x / max_scroll_x : 0)
 		hot := hthumb_hovered || value.dragging_x
-		h: f32 = hot ? 5 : htrack_h
+		h: f32 = hot ? 7 : 5
 		alpha: f32 = hot ? 0.95 : 0.75
 		center_y := htrack_y + htrack_h / 2
 		tr := DEFAULT_PALETTE.scroll_track
 		th := DEFAULT_PALETTE.scroll_thumb
-		box(c, {htrack_x, htrack_y, htrack_w, htrack_h}, {tr[0], tr[1], tr[2], 0.18}, 1.5)
-		box(c, {hthumb_x_draw, center_y - h / 2, hthumb_w, h}, {th[0], th[1], th[2], alpha}, h / 2)
+		box(
+			c,
+			{htrack_x, center_y - h / 2, htrack_w, h},
+			{tr[0], tr[1], tr[2], 0.18 * fade},
+			h / 2,
+		)
+		box(
+			c,
+			{hthumb_x_draw, center_y - h / 2, hthumb_w, h},
+			{th[0], th[1], th[2], alpha * fade},
+			h / 2,
+		)
 	}
 }

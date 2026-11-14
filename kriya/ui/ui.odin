@@ -103,6 +103,9 @@ Context :: struct {
 	// accumulates frame durations into it; widgets read it to drive caret
 	// blink and any other time-based animation. 0 on the first frame is fine.
 	now:                     f64,
+	// Seconds elapsed since the previous frame. The backend sets it from the
+	// host clock; widgets use it to advance per-frame idle timers.
+	dt:                      f32,
 }
 begin :: proc(c: ^Context) {clear(&c.commands); c.pointer_cursor = false; c.offset_y = 0
 	c.clipped = false
