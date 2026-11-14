@@ -50,6 +50,11 @@ Text_Area :: struct {
 	redo:           [HISTORY_CAP]History_Entry,
 	redo_len:       int,
 	last_edit_kind: Edit_Kind,
+	// Blink phase anchor: c.now at the last caret-moving or content-mutating
+	// event. The caret draws solid for the first 500ms after it, then
+	// alternates 500ms off / 500ms on, so any activity restarts the solid
+	// half-cycle and the caret is always visible right when the user needs it.
+	caret_phase_start: f64,
 }
 
 set_area_text :: proc(value: ^Text_Area, text: string) {
@@ -61,6 +66,7 @@ set_area_text :: proc(value: ^Text_Area, text: string) {
 	value.undo_len = 0
 	value.redo_len = 0
 	value.last_edit_kind = .None
+	value.caret_phase_start = 0
 }
 
 // Half-open byte range of one visual row. In no-wrap mode there's one
@@ -240,6 +246,10 @@ textarea :: proc(
 	// a press anywhere else inside r focuses, positions the caret, and
 	// begins a drag-select that runs until mouse-up. Shift extends the
 	// existing selection instead of collapsing it.
+	// Caret-moving or content-mutating events this frame. Any true value
+	// resets the blink phase at the end so the caret is solid right when the
+	// user acts.
+	activity := false
 	if c.pressed {
 		if max_scroll > 0 && thumb_hovered {
 			value.dragging = true
@@ -253,6 +263,7 @@ textarea :: proc(
 			c.focused = id
 		} else if hover {
 			c.focused = id
+			activity = true
 			// Any click in the text area starts a new edit group so the
 			// next keystroke doesn't coalesce with earlier typing.
 			value.last_edit_kind = .None
@@ -316,6 +327,7 @@ textarea :: proc(
 				pad_y,
 				line_height,
 			)
+			activity = true
 		} else {
 			value.text_dragging = false
 		}
@@ -494,6 +506,7 @@ textarea :: proc(
 				value.goal_sticky = false
 			}
 		}
+		if edited || navigated || c.select_all {activity = true}
 		c.typed_len = 0
 		c.backspace = false
 		c.enter = false
@@ -506,6 +519,7 @@ textarea :: proc(
 		c.nav_page_up = false
 		c.nav_page_down = false
 	}
+	if activity {value.caret_phase_start = c.now}
 	// Rebuild the visual layout after an edit so follow-caret math and the
 	// scrollbars reflect just-typed newlines, wrap breaks or deleted runes.
 	// Gutter sizes stay as decided up top; the next frame catches up when
@@ -708,14 +722,20 @@ textarea :: proc(
 		label(c, text_x_origin, baseline, string(value.data[vl.start:vl.end]), 17, DEFAULT_PALETTE.text)
 	}
 	if focused {
-		caret_prefix := string(value.data[caret_line_start:value.caret])
-		caret_x := text_x_origin + c.measure_text(caret_prefix, 17)
-		caret_baseline := first_baseline + f32(caret_line) * line_height
-		box(
-			c,
-			{caret_x, caret_baseline - 14, 1, 18},
-			DEFAULT_PALETTE.primary_bright,
-		)
+		// 1 Hz blink with a 50 % duty cycle: 500ms on, 500ms off, aligned
+		// to the last activity so the solid half-cycle always starts the
+		// moment the caret moves or the content changes.
+		phase := int((c.now - value.caret_phase_start) * 2) & 1
+		if phase == 0 {
+			caret_prefix := string(value.data[caret_line_start:value.caret])
+			caret_x := text_x_origin + c.measure_text(caret_prefix, 17)
+			caret_baseline := first_baseline + f32(caret_line) * line_height
+			box(
+				c,
+				{caret_x, caret_baseline - 14, 1, 18},
+				DEFAULT_PALETTE.primary_bright,
+			)
+		}
 	}
 	c.clip = prev_clip
 	c.clipped = prev_clipped
