@@ -444,15 +444,21 @@ input :: proc(
 	// Edits this frame can toggle masked (typing into an empty password
 	// field, backspacing to empty); recompute now that the buffer is final.
 	masked = password && !value.revealed && value.len > 0
-	// Follow the caret horizontally — pull just enough to keep it inside
-	// the inner padded rect — then clamp so the empty tail doesn't appear.
+	// Follow the caret horizontally when the caret itself moved or the
+	// content changed this frame — not every frame. A wheel-scroll or
+	// scrollbar drag that doesn't move the caret keeps its new offset
+	// instead of being yanked back, and set_text's caret-at-end doesn't
+	// pull the view away from the start of the content. Clamp always so
+	// the empty tail doesn't appear past the content end.
 	caret_content_x := input_caret_x(c, value.data[:value.len], value.caret, masked)
 	content_w := input_caret_x(c, value.data[:value.len], value.len, masked)
 	max_scroll_x := max(0, content_w - view_w)
-	if caret_content_x < value.scroll_x {
-		value.scroll_x = max(0, caret_content_x)
-	} else if caret_content_x > value.scroll_x + view_w {
-		value.scroll_x = caret_content_x - view_w
+	if activity {
+		if caret_content_x < value.scroll_x {
+			value.scroll_x = max(0, caret_content_x)
+		} else if caret_content_x > value.scroll_x + view_w {
+			value.scroll_x = caret_content_x - view_w
+		}
 	}
 	value.scroll_x = clamp(value.scroll_x, 0, max_scroll_x)
 	shown := placeholder
