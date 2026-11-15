@@ -11,24 +11,36 @@ dropdown :: proc(
 	r: Rect,
 	options: []string,
 	value: ^Dropdown,
+	read_only := false,
 	radius: Maybe(f32) = nil,
 ) {
 	corner_radius := resolve_corner_radius(c, radius)
 	assert(len(options) > 0, "Dropdowns require at least one option")
 	value.selected = clamp(value.selected, 0, len(options) - 1)
+	// Read-only: the user can neither open the menu nor pick another
+	// option. Collapse any previously-open menu first in case the flag
+	// was flipped while it was showing.
+	if read_only {value.open = false}
 	menu := Rect{r.x, r.y + r.h, r.w, f32(len(options)) * 40 + 2}
 	if value.open && c.pressed && !contains(c, r) && !contains(c, menu) {
 		value.open = false
 	}
-	hover, clicked := pressable(c, id, r)
-	if clicked {value.open = !value.open}
+	hover: bool
+	if !read_only {
+		clicked: bool
+		hover, clicked = pressable(c, id, r)
+		if clicked {value.open = !value.open}
+	}
+	// Read-only skips the hover / open border accents and uses a raised
+	// inner surface so the field reads as non-interactive at a glance.
 	border := DEFAULT_PALETTE.border
-	if hover || value.open {border = DEFAULT_PALETTE.primary_bright}
+	if !read_only && (hover || value.open) {border = DEFAULT_PALETTE.primary_bright}
+	surface := read_only ? DEFAULT_PALETTE.surface_raised : DEFAULT_PALETTE.surface
 	box(c, r, border, corner_radius)
 	box(
 		c,
 		{r.x + 1, r.y + 1, r.w - 2, r.h - 2},
-		DEFAULT_PALETTE.surface,
+		surface,
 		max(0, corner_radius - 1),
 	)
 	label(c, r.x + 14, r.y + 29, options[value.selected], 17)
