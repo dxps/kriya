@@ -187,6 +187,35 @@ dropdown :: proc(
 		if searchable {
 			search_rect := Rect{menu.x + 1, menu.y + 1, menu.w - 2, search_h - 1}
 			input(c, search_id, search_rect, "Search", &value.query)
+			// Flatten only the bottom corners so the field flows into the
+			// rows below while its top corners still match the panel's top.
+			// Overpaint the bottom corner_radius-tall strip with the input's
+			// own border + surface, tracking its focus/hover state so the
+			// bright focus ring stays consistent along the whole frame.
+			flat_h := resolve_corner_radius(c, nil)
+			search_border := DEFAULT_PALETTE.border
+			if contains(c, search_rect) {search_border = DEFAULT_PALETTE.border_hover}
+			if c.focused == search_id {search_border = DEFAULT_PALETTE.primary_bright}
+			box(
+				c,
+				{
+					search_rect.x,
+					search_rect.y + search_rect.h - flat_h,
+					search_rect.w,
+					flat_h,
+				},
+				search_border,
+			)
+			box(
+				c,
+				{
+					search_rect.x + 1,
+					search_rect.y + search_rect.h - flat_h,
+					search_rect.w - 2,
+					flat_h - 1,
+				},
+				DEFAULT_PALETTE.surface,
+			)
 			// Thin divider between search and options.
 			box(c, {menu.x + 1, menu.y + search_h, menu.w - 2, 1}, DEFAULT_PALETTE.divider)
 		}
