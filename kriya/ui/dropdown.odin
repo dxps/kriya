@@ -73,7 +73,7 @@ dropdown :: proc(
 			if dropdown_match(option, query_bytes) {match_count += 1}
 		}
 	}
-	search_h: f32 = searchable ? 44 : 0
+	search_h: f32 = searchable ? 46 : 0
 	row_h: f32 = 40
 	menu_rows := searchable ? match_count : len(options)
 	// max_visible caps how many rows the popup shows at once. 0 means
@@ -85,7 +85,13 @@ dropdown :: proc(
 	menu_view_h := f32(shown_rows) * row_h
 	menu_content_h := f32(menu_rows) * row_h
 	max_scroll := max(0, menu_content_h - menu_view_h)
-	menu := Rect{r.x, r.y + r.h, r.w, menu_view_h + 2 + search_h}
+	// When the user has typed a query that doesn't match anything, keep a
+	// small empty-state row below the search so the popup still has shape
+	// and rounded bottom corners instead of collapsing to just the search.
+	show_no_match :=
+		searchable && value.query.len > 0 && match_count == 0 && value.open
+	no_match_h: f32 = show_no_match ? row_h : 0
+	menu := Rect{r.x, r.y + r.h, r.w, menu_view_h + 2 + search_h + no_match_h}
 	if value.open && c.pressed && !contains(c, r) && !contains(c, menu) {
 		value.open = false
 		value.scroll = 0
@@ -187,37 +193,44 @@ dropdown :: proc(
 		if searchable {
 			search_rect := Rect{menu.x + 1, menu.y + 1, menu.w - 2, search_h - 1}
 			input(c, search_id, search_rect, "Search", &value.query)
-			// Flatten only the bottom corners so the field flows into the
-			// rows below while its top corners still match the panel's top.
-			// Overpaint the bottom corner_radius-tall strip with the input's
-			// own border + surface, tracking its focus/hover state so the
-			// bright focus ring stays consistent along the whole frame.
-			flat_h := resolve_corner_radius(c, nil)
+			// Flatten only the two bottom corners so the field flows into
+			// the rows below while its top corners still match the panel's.
+			// Overpaint ONLY the corner squares — never a full-width strip
+			// — so neither the caret nor the text in the center is ever
+			// painted over, no matter the corner radius. Border color
+			// tracks the input's focus / hover state so the bright focus
+			// ring stays continuous along the whole frame.
+			flat := resolve_corner_radius(c, nil)
 			search_border := DEFAULT_PALETTE.border
 			if contains(c, search_rect) {search_border = DEFAULT_PALETTE.border_hover}
 			if c.focused == search_id {search_border = DEFAULT_PALETTE.primary_bright}
+			bot_y := search_rect.y + search_rect.h - flat
+			// Bottom-left: border square, then inner surface inset by 1 on
+			// the left and 1 on the bottom to keep the border band.
+			box(c, {search_rect.x, bot_y, flat, flat}, search_border)
+			box(c, {search_rect.x + 1, bot_y, flat - 1, flat - 1}, DEFAULT_PALETTE.surface)
+			// Bottom-right: mirror — border band on right and bottom.
+			box(c, {search_rect.x + search_rect.w - flat, bot_y, flat, flat}, search_border)
 			box(
 				c,
-				{
-					search_rect.x,
-					search_rect.y + search_rect.h - flat_h,
-					search_rect.w,
-					flat_h,
-				},
-				search_border,
-			)
-			box(
-				c,
-				{
-					search_rect.x + 1,
-					search_rect.y + search_rect.h - flat_h,
-					search_rect.w - 2,
-					flat_h - 1,
-				},
+				{search_rect.x + search_rect.w - flat, bot_y, flat - 1, flat - 1},
 				DEFAULT_PALETTE.surface,
 			)
 			// Thin divider between search and options.
 			box(c, {menu.x + 1, menu.y + search_h, menu.w - 2, 1}, DEFAULT_PALETTE.divider)
+		}
+		// Empty-state row when the query has no matches. Draws inside the
+		// menu interior so the popup stays shaped and the panel's rounded
+		// bottom corners still frame it.
+		if show_no_match {
+			label(
+				c,
+				menu.x + 14,
+				menu.y + search_h + 26,
+				"No matches",
+				16,
+				DEFAULT_PALETTE.text_muted,
+			)
 		}
 		// Scrollbar geometry. When the content fits, nothing scrolls and
 		// rows use the full inner width; when it overflows, a 10 px gutter
@@ -301,33 +314,68 @@ dropdown :: proc(
 			item_color := DEFAULT_PALETTE.overlay
 			if i == value.selected {item_color = DEFAULT_PALETTE.item_selected}
 			if item_hover {item_color = DEFAULT_PALETTE.item_hover}
-			// Round panel-edge corners only when nothing scrolls, so the
-			// rounded corners stay anchored to the panel; a scrolling menu
-			// draws square rows and lets the panel's own rounding show.
-			item_radius: f32 = 0
-			if max_scroll == 0 {
-				first_slot := visible_i == 0 && !searchable
-				last_slot := visible_i == menu_rows - 1
-				if first_slot || last_slot {item_radius = max(0, corner_radius - 1)}
-				box(c, item, item_color, item_radius)
-				if item_radius > 0 && first_slot && menu_rows > 1 {
-					box(
-						c,
-						{item.x, item.y + item.h - item_radius, item.w, item_radius},
-						item_color,
-					)
-				}
-				if item_radius > 0 && last_slot && menu_rows > 1 {
-					box(c, {item.x, item.y, item.w, item_radius}, item_color)
-				}
-			} else {
-				box(c, item, item_color, 0)
-			}
+			// Rows always draw as squares; the panel's rounded corners are
+			// restored afterwards by clipping a redraw of the panel to each
+			// corner area, so rows at any scroll offset (aligned or not)
+			// can't break the curve.
+			box(c, item, item_color, 0)
 			label(c, item.x + 14, item.y + 26, option, 16)
 			visible_i += 1
 		}
 		c.clip = rows_clip_prev
 		c.clipped = rows_clipped_prev
+		// Restore the panel's rounded corners on top of the rows. Each
+		// corner redraws the full panel border + inner, clipped to just
+		// a corner_radius+1 square so only the rounded shape at that
+		// corner is actually painted. This works at any scroll offset —
+		// aligned or not — and never touches row text, which starts
+		// pad_x away from the panel edge. Skip the top corners when a
+		// search field occupies the top of the menu; the input's own
+		// rounded corners already cover them.
+		corner_sz := corner_radius + 1
+		corner_clip_prev := c.clip
+		corner_clipped_prev := c.clipped
+		corner_restore :: proc(
+			c: ^Context,
+			menu: Rect,
+			corner_radius: f32,
+			cx, cy, csz: f32,
+		) {
+			c.clip = {cx, cy, csz, csz}
+			c.clipped = true
+			box(c, menu, DEFAULT_PALETTE.overlay_border, corner_radius)
+			box(
+				c,
+				{menu.x + 1, menu.y + 1, menu.w - 2, menu.h - 2},
+				DEFAULT_PALETTE.overlay,
+				max(0, corner_radius - 1),
+			)
+		}
+		// Bottom-left and bottom-right always need restoring — rows sit there.
+		corner_restore(c, menu, corner_radius,
+			menu.x,
+			menu.y + menu.h - corner_sz + c.offset_y,
+			corner_sz,
+		)
+		corner_restore(c, menu, corner_radius,
+			menu.x + menu.w - corner_sz,
+			menu.y + menu.h - corner_sz + c.offset_y,
+			corner_sz,
+		)
+		if !searchable {
+			corner_restore(c, menu, corner_radius,
+				menu.x,
+				menu.y + c.offset_y,
+				corner_sz,
+			)
+			corner_restore(c, menu, corner_radius,
+				menu.x + menu.w - corner_sz,
+				menu.y + c.offset_y,
+				corner_sz,
+			)
+		}
+		c.clip = corner_clip_prev
+		c.clipped = corner_clipped_prev
 		// Scrollbar paint goes on top of the restored clip so it isn't
 		// itself clipped by the row interior.
 		if max_scroll > 0 {
