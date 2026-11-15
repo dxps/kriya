@@ -20,6 +20,7 @@ views := [?]View {
 	{draw_toggles, "apps/gallery/toggles.odin", 0},
 	{draw_typography, "apps/gallery/typography.odin", 0},
 	{draw_composition, "apps/gallery/composition.odin", 0},
+	{draw_setup, "apps/gallery/setup.odin", 0},
 }
 view_scroll: [len(views)]ui.Scroll_State
 #assert(len(views) == len(routes.SECTIONS))

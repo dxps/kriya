@@ -14,6 +14,7 @@ SECTIONS :: [?]Section {
 	{"Toggles", "/toggles"},
 	{"Typography", "/typography"},
 	{"Composition", "/composition"},
+	{"Setup", "/setup"},
 }
 
 index :: proc(path: string) -> (int, bool) {
