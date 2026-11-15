@@ -12,6 +12,7 @@ SECTIONS :: [?]Section {
 	{"Dropdowns", "/dropdowns"},
 	{"Checkboxes", "/checkboxes"},
 	{"Toggles", "/toggles"},
+	{"Sliders", "/sliders"},
 	{"Typography", "/typography"},
 	{"Composition", "/composition"},
 	{"Setup", "/setup"},
