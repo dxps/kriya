@@ -8,6 +8,9 @@ volume_slider := ui.Slider {
 opacity_slider := ui.Slider {
 	value = 0.6,
 }
+level_slider := ui.Slider {
+	value = 7,
+}
 
 draw_sliders :: proc(c: ^ui.Context) {
 	ui.label(c, WIDGET_X, 250, "VOLUME", 11, ui.DEFAULT_PALETTE.text_muted)
@@ -31,5 +34,16 @@ draw_sliders :: proc(c: ^ui.Context) {
 		step = 0.05,
 		precision = 2,
 	)
-	ui.label(c, WIDGET_X, 452, "Drag the thumb or click anywhere on the track.", 17)
+	ui.label(c, WIDGET_X, 452, "LEVEL", 11, ui.DEFAULT_PALETTE.text_muted)
+	ui.slider(
+		c,
+		42,
+		{WIDGET_X, 468, 50, 220},
+		&level_slider,
+		min_val = 0,
+		max_val = 10,
+		step = 1,
+		orientation = .Vertical,
+	)
+	ui.label(c, WIDGET_X + 80, 490, "Drag the thumb or click anywhere on the track.", 17)
 }
