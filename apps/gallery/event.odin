@@ -73,6 +73,7 @@ event :: proc "c" (e: ^sapp.Event) {
 		if e.key_code == .BACKSPACE {ctx.backspace = true}
 		if e.key_code == .DELETE {ctx.forward_delete = true}
 		if e.key_code == .ENTER || e.key_code == .KP_ENTER {ctx.enter = true}
+		if e.key_code == .ESCAPE {ctx.cancel = true}
 		if e.key_code == .LEFT {ctx.nav_left = true}
 		if e.key_code == .RIGHT {ctx.nav_right = true}
 		if e.key_code == .UP {ctx.nav_up = true}

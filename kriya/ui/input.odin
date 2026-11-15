@@ -475,7 +475,9 @@ input :: proc(
 	// and restored so an outer scroll clip is left untouched.
 	prev_clip := c.clip
 	prev_clipped := c.clipped
-	c.clip = {r.x + 1, r.y + 1, r.w - 2 - eye_w, r.h - 2}
+	// c.clip is used as a screen-space scissor by the renderer, so translate
+	// the logical r.y by c.offset_y before storing.
+	c.clip = {r.x + 1, r.y + 1 + c.offset_y, r.w - 2 - eye_w, r.h - 2}
 	c.clipped = true
 	text_x_origin := r.x + pad_x - value.scroll_x
 	// Selection band — draw first so text / bullets paint over it.

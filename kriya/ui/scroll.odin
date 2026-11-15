@@ -19,8 +19,13 @@ begin_scroll :: proc(c: ^Context, s: ^Scroll_State, viewport: Rect, dt: f32) {
 	s.offset = clamp(s.offset, 0, maximum)
 	s.idle += dt
 	inside := point_in_rect(c.mx, c.my, viewport)
-	if inside && (c.moved || c.wheel_y != 0 || c.pressed) {s.idle = 0}
-	if inside {s.offset = clamp(s.offset + c.wheel_y, 0, maximum)}
+	// An overlay may have claimed the mouse wheel (dropdown popup): if the
+	// cursor sits inside that claim this frame, let the overlay handle the
+	// wheel instead of scrolling the page below.
+	claimed :=
+		c.scroll_claim_id != 0 && point_in_rect(c.mx, c.my, c.scroll_claim)
+	if inside && !claimed && (c.moved || c.wheel_y != 0 || c.pressed) {s.idle = 0}
+	if inside && !claimed {s.offset = clamp(s.offset + c.wheel_y, 0, maximum)}
 	if maximum > 0 && viewport.h > 28 && viewport.w > 20 {
 		track := Rect{viewport.x + viewport.w - 20, viewport.y + 14, 16, viewport.h - 28}
 		thumb_h := min(track.h, max(32, track.h * viewport.h / s.content_height))

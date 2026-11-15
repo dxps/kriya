@@ -762,7 +762,14 @@ textarea :: proc(
 	// its own page-scroll clip around this call.
 	prev_clip := c.clip
 	prev_clipped := c.clipped
-	c.clip = {r.x + 1, r.y + 1, r.w - 1 - right_gutter, r.h - 1 - bottom_gutter}
+	// c.clip is used as a screen-space scissor by the renderer, so translate
+	// the logical r.y by c.offset_y before storing.
+	c.clip = {
+		r.x + 1,
+		r.y + 1 + c.offset_y,
+		r.w - 1 - right_gutter,
+		r.h - 1 - bottom_gutter,
+	}
 	c.clipped = true
 	text_x_origin := r.x + pad_x - value.scroll_x
 	first_baseline := r.y + pad_y + 17 - value.scroll

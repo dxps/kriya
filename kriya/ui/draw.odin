@@ -6,7 +6,11 @@ package ui
 // know how far their content extends.
 
 box :: proc(c: ^Context, r: Rect, color: Color, radius: f32 = 0) {
-	c.content_bottom = max(c.content_bottom, r.y + r.h)
+	// Overlay draws (dropdown popups, tooltips) sit on top of the base
+	// content and must not grow the scrollable area underneath them —
+	// otherwise opening a popup lengthens the page scroll by its own
+	// height.
+	if c.layer != .Overlay {c.content_bottom = max(c.content_bottom, r.y + r.h)}
 	translated := r; translated.y += c.offset_y
 	append(
 		&c.commands,
@@ -19,7 +23,9 @@ box :: proc(c: ^Context, r: Rect, color: Color, radius: f32 = 0) {
 	)
 }
 line :: proc(c: ^Context, x1, y1, x2, y2, width: f32, color: Color) {
-	c.content_bottom = max(c.content_bottom, max(y1, y2) + width * 0.5)
+	if c.layer != .Overlay {
+		c.content_bottom = max(c.content_bottom, max(y1, y2) + width * 0.5)
+	}
 	append(
 		&c.commands,
 		Command {
@@ -38,7 +44,9 @@ line :: proc(c: ^Context, x1, y1, x2, y2, width: f32, color: Color) {
 	)
 }
 triangle :: proc(c: ^Context, x1, y1, x2, y2, x3, y3: f32, color: Color) {
-	c.content_bottom = max(c.content_bottom, max(y1, max(y2, y3)))
+	if c.layer != .Overlay {
+		c.content_bottom = max(c.content_bottom, max(y1, max(y2, y3)))
+	}
 	append(
 		&c.commands,
 		Command {
@@ -66,7 +74,7 @@ label :: proc(
 	font: Font = .Body,
 ) {
 	// y is the baseline; add a modest descender allowance for content measurement.
-	c.content_bottom = max(c.content_bottom, y + size * 0.3)
+	if c.layer != .Overlay {c.content_bottom = max(c.content_bottom, y + size * 0.3)}
 	append(
 		&c.commands,
 		Command {

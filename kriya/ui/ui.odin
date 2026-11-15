@@ -68,6 +68,7 @@ Context :: struct {
 	backspace:               bool,
 	forward_delete:          bool,
 	enter:                   bool,
+	cancel:                  bool,
 	nav_left:                bool,
 	nav_right:               bool,
 	nav_up:                  bool,
@@ -106,6 +107,14 @@ Context :: struct {
 	// Seconds elapsed since the previous frame. The backend sets it from the
 	// host clock; widgets use it to advance per-frame idle timers.
 	dt:                      f32,
+	// Overlay region that holds first claim on the mouse wheel: when the
+	// cursor is inside it, begin_scroll skips its own wheel handling so the
+	// overlay (dropdown popup) scrolls instead of the page below. Claimed
+	// by widget id so multiple overlays don't fight; the claimer clears it
+	// when it closes. Persists across frames so this frame's begin_scroll
+	// can see last frame's claim — a one-frame lag on opening is fine.
+	scroll_claim_id:         u64,
+	scroll_claim:            Rect,
 }
 begin :: proc(c: ^Context) {clear(&c.commands); c.pointer_cursor = false; c.offset_y = 0
 	c.clipped = false
@@ -118,6 +127,7 @@ end :: proc(c: ^Context) {c.pressed = false; c.released = false; c.moved = false
 	c.backspace = false
 	c.forward_delete = false
 	c.enter = false
+	c.cancel = false
 	c.nav_left = false
 	c.nav_right = false
 	c.nav_up = false
