@@ -179,7 +179,12 @@ input :: proc(
 	text_baseline := r.y + pad_y + 15
 	caret_top := r.y + pad_y - 3
 	caret_h: f32 = 24
-	eye_w: f32 = password ? 44 : 0
+	// Password gutter mirrors the horizontal padding: pad_x between the
+	// divider and the eye glyph, and pad_x between the eye and the field's
+	// right edge, with the 20 px eye glyph sitting between them. Keeps the
+	// eye the same visual distance from the border as the text is on its
+	// left side at every padding.
+	eye_w: f32 = password ? 2 * pad_x + 20 : 0
 	text_hit := Rect{r.x, r.y, r.w - eye_w, r.h}
 	view_w := r.w - eye_w - pad_x * 2
 	if hover {c.pointer_cursor = true}
@@ -568,7 +573,9 @@ input :: proc(
 	if password {
 		divider_x := r.x + r.w - eye_w
 		box(c, {divider_x, r.y + 8, 1, r.h - 16}, DEFAULT_PALETTE.divider)
-		eye := Rect{divider_x + 12, r.y + 16, 20, 12}
+		// Eye centered vertically in the field and inset by pad_x from the
+		// right edge, so its margin tracks the text's left-edge inset.
+		eye := Rect{r.x + r.w - pad_x - 20, r.y + (r.h - 12) / 2, 20, 12}
 		eye_hover, eye_clicked := pressable(c, sub_id(id, 1), {divider_x, r.y, eye_w, r.h})
 		if eye_clicked {value.revealed = !value.revealed}
 		eye_color := eye_hover ? DEFAULT_PALETTE.primary_bright : DEFAULT_PALETTE.text_subtle

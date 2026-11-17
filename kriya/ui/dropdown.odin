@@ -153,7 +153,10 @@ dropdown :: proc(
 			DEFAULT_PALETTE.text_muted,
 		)
 	}
-	arrow_x := r.x + r.w - 22
+	// Arrow sits with its right tip one pad_x inside the field's right edge,
+	// so it mirrors the text's left-edge inset. The 5 subtracts the arrow's
+	// own half-width so pad_x really is the gap to the border.
+	arrow_x := r.x + r.w - pad_x - 5
 	arrow_y := r.y + r.h / 2
 	arrow_color := DEFAULT_PALETTE.text_subtle
 	if value.open {
