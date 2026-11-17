@@ -80,8 +80,13 @@ dropdown :: proc(
 			if dropdown_match(option, query_bytes) {match_count += 1}
 		}
 	}
-	search_h: f32 = searchable ? 46 : 0
-	row_h: f32 = 40
+	// Search field and option rows both scale with pad_y so the popup stays
+	// proportional to the trigger. search_h matches the trigger field height
+	// (2*pad + 18, 17pt glyph); row_h holds the 16pt row ascent (pad + 12)
+	// above its baseline and the same amount below, hitting 40 at the
+	// default pad of 14.
+	search_h: f32 = searchable ? 2 * pad_y + 18 : 0
+	row_h: f32 = 2 * pad_y + 12
 	menu_rows := searchable ? match_count : len(options)
 	// max_visible caps how many rows the popup shows at once. 0 means
 	// show every row; anything higher than the row count collapses back
