@@ -97,12 +97,15 @@ textarea :: proc(
 	wrap: bool = false,
 	read_only: bool = false,
 	radius: Maybe(f32) = nil,
+	padding: Maybe(f32) = nil,
 ) {
 	corner_radius := resolve_corner_radius(c, radius)
 	hover := contains(c, r)
 	if hover {c.pointer_cursor = true}
-	pad_x: f32 = 14
-	pad_y: f32 = 10
+	// One padding value drives both axes here; single-line input / dropdown
+	// inset only horizontally since their vertical layout is a fixed height.
+	pad_x := resolve_padding(c, padding)
+	pad_y := pad_x
 	line_height: f32 = 22
 	assert(
 		c.measure_text != nil,

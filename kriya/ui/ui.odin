@@ -6,6 +6,7 @@ Font :: enum {
 	Mono,
 }
 DEFAULT_CORNER_RADIUS :: 6.0
+DEFAULT_PADDING :: 14.0
 Rect :: struct {
 	x, y, w, h: f32,
 }
@@ -98,6 +99,11 @@ Context :: struct {
 	paste_len:               int,
 	set_clipboard:           proc(text: string),
 	corner_radius:           Maybe(f32),
+	// Inner padding between a field's edges and its text, applied on both
+	// axes. input, dropdown and textarea read it through resolve_padding so
+	// a per-widget argument always wins over the context default. Single-
+	// line fields only inset horizontally; textareas inset on both axes.
+	padding:                 Maybe(f32),
 	layer:                   Command_Layer,
 	content_bottom:          f32,
 	// Monotonic seconds since the host began delivering frames. The backend
@@ -153,6 +159,12 @@ resolve_corner_radius :: proc(c: ^Context, radius: Maybe(f32)) -> f32 {
 	if r, ok := radius.?; ok {return r}
 	if r, ok := c.corner_radius.?; ok {return r}
 	return DEFAULT_CORNER_RADIUS
+}
+set_padding :: proc(c: ^Context, padding: f32) {c.padding = max(0, padding)}
+resolve_padding :: proc(c: ^Context, padding: Maybe(f32)) -> f32 {
+	if p, ok := padding.?; ok {return p}
+	if p, ok := c.padding.?; ok {return p}
+	return DEFAULT_PADDING
 }
 // Derives a unique auxiliary id for a secondary hit region inside a widget
 // (dropdown items, password-reveal eye). The golden-ratio stride spreads

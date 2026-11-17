@@ -55,9 +55,10 @@ frame :: proc "c" () {
 	ctx.set_clipboard = app_set_clipboard
 	ctx.dt = f32(sapp.frame_duration())
 	ctx.now += f64(ctx.dt)
-	// Apply the live corner radius chosen in the Setup view so every widget
-	// drawn this frame sees it.
+	// Apply the live corner radius and padding chosen in the Setup view so
+	// every widget drawn this frame sees them.
 	ui.set_corner_radius(&ctx, configured_radius())
+	ui.set_padding(&ctx, configured_padding())
 	w := sapp.widthf() / sapp.dpi_scale()
 	h := sapp.heightf() / sapp.dpi_scale()
 	draw_sidebar(h)

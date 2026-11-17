@@ -15,7 +15,7 @@ draw_inputs :: proc(c: ^ui.Context) {
 	ui.input(
 		c,
 		20,
-		{WIDGET_X, 266, INPUT_W, CONTROL_H},
+		{WIDGET_X, 266, INPUT_W, field_h()},
 		"Enter a name",
 		&name_input,
 		read_only = inputs_read_only,
@@ -24,7 +24,7 @@ draw_inputs :: proc(c: ^ui.Context) {
 	ui.input(
 		c,
 		21,
-		{WIDGET_X, 362, INPUT_W, CONTROL_H},
+		{WIDGET_X, 362, INPUT_W, field_h()},
 		"Enter a password",
 		&password_input,
 		password = true,

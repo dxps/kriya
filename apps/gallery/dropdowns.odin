@@ -36,7 +36,7 @@ draw_dropdowns :: proc(c: ^ui.Context) {
 	ui.dropdown(
 		c,
 		30,
-		{WIDGET_X, 266, INPUT_W, CONTROL_H},
+		{WIDGET_X, 266, INPUT_W, field_h()},
 		framework_options,
 		&framework_dropdown,
 		read_only = dropdowns_read_only,
@@ -52,7 +52,7 @@ draw_dropdowns :: proc(c: ^ui.Context) {
 	ui.dropdown(
 		c,
 		32,
-		{WIDGET_X, 416, INPUT_W, CONTROL_H},
+		{WIDGET_X, 416, INPUT_W, field_h()},
 		country_options,
 		&country_dropdown,
 		placeholder = "Pick a country",

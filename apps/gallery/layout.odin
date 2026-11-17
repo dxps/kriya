@@ -36,3 +36,9 @@ SOURCE_HINT_GAP :: f32(26)
 CONTROL_H :: f32(46)
 BUTTON_W  :: f32(162)
 INPUT_W   :: f32(360)
+
+// Field height for text widgets (input, dropdown, textarea trigger) grows
+// with the live padding so the box stays proportional. 2 * pad for top /
+// bottom insets plus ~18 px for a 17pt glyph; equals CONTROL_H at the
+// default padding of 14.
+field_h :: proc() -> f32 {return 2 * configured_padding() + 18}

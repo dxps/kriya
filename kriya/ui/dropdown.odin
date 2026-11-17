@@ -48,8 +48,15 @@ dropdown :: proc(
 	searchable := false,
 	max_visible: int = 0,
 	radius: Maybe(f32) = nil,
+	padding: Maybe(f32) = nil,
 ) {
 	corner_radius := resolve_corner_radius(c, radius)
+	// One padding drives both axes: pad_x insets the trigger / row text and
+	// pad_y shifts the baselines. The +15 / +12 are the ascent slices for
+	// 17pt trigger text and 16pt row text — they keep the defaults unchanged
+	// when pad = DEFAULT_PADDING.
+	pad_x := resolve_padding(c, padding)
+	pad_y := pad_x
 	assert(len(options) > 0, "Dropdowns require at least one option")
 	// selected < 0 means "no value picked yet"; the trigger shows the
 	// placeholder instead of an option, and no row is highlighted in the
@@ -135,9 +142,16 @@ dropdown :: proc(
 		max(0, corner_radius - 1),
 	)
 	if value.selected >= 0 {
-		label(c, r.x + 14, r.y + 29, options[value.selected], 17)
+		label(c, r.x + pad_x, r.y + pad_y + 15, options[value.selected], 17)
 	} else {
-		label(c, r.x + 14, r.y + 29, placeholder, 17, DEFAULT_PALETTE.text_muted)
+		label(
+			c,
+			r.x + pad_x,
+			r.y + pad_y + 15,
+			placeholder,
+			17,
+			DEFAULT_PALETTE.text_muted,
+		)
 	}
 	arrow_x := r.x + r.w - 22
 	arrow_y := r.y + r.h / 2
@@ -225,8 +239,8 @@ dropdown :: proc(
 		if show_no_match {
 			label(
 				c,
-				menu.x + 14,
-				menu.y + search_h + 26,
+				menu.x + pad_x,
+				menu.y + search_h + pad_y + 12,
 				"No matches",
 				16,
 				DEFAULT_PALETTE.text_muted,
@@ -346,7 +360,7 @@ dropdown :: proc(
 			} else {
 				box(c, item, item_color, 0)
 			}
-			label(c, item.x + 14, item.y + 26, option, 16)
+			label(c, item.x + pad_x, item.y + pad_y + 12, option, 16)
 			visible_i += 1
 		}
 		c.clip = rows_clip_prev

@@ -162,10 +162,23 @@ input :: proc(
 	password := false,
 	read_only := false,
 	radius: Maybe(f32) = nil,
+	padding: Maybe(f32) = nil,
 ) {
 	corner_radius := resolve_corner_radius(c, radius)
 	hover := contains(c, r)
-	pad_x: f32 = 14
+	// One padding drives both axes. Horizontal insets the text and placeholder;
+	// vertical shifts the baseline (and the caret / selection band that hugs
+	// it) so the text rises or falls with the setting. Caller sizes the field
+	// tall enough to accommodate 2*pad + the text's visual height.
+	pad_x := resolve_padding(c, padding)
+	pad_y := pad_x
+	// text_baseline lands at r.y + 29 when pad_y defaults to 14, matching the
+	// pre-existing fixed value. The +15 is the 17pt ascent slice that sits
+	// above the baseline. caret_top keeps the same +3 overshoot above the
+	// baseline-anchored text so caret / selection align with the glyph body.
+	text_baseline := r.y + pad_y + 15
+	caret_top := r.y + pad_y - 3
+	caret_h: f32 = 24
 	eye_w: f32 = password ? 44 : 0
 	text_hit := Rect{r.x, r.y, r.w - eye_w, r.h}
 	view_w := r.w - eye_w - pad_x * 2
@@ -487,22 +500,24 @@ input :: proc(
 		start_x := text_x_origin + input_caret_x(c, value.data[:value.len], s_sel, masked)
 		end_x := text_x_origin + input_caret_x(c, value.data[:value.len], e_sel, masked)
 		hi := DEFAULT_PALETTE.primary
-		box(c, {start_x, r.y + 11, end_x - start_x, r.h - 22}, {hi[0], hi[1], hi[2], 0.35}, 2)
+		box(c, {start_x, caret_top, end_x - start_x, caret_h}, {hi[0], hi[1], hi[2], 0.35}, 2)
 	}
 	if value.len == 0 {
 		// Placeholder isn't scrollable — it stays at the pad origin.
-		label(c, r.x + pad_x, r.y + 29, shown, 17, color)
+		label(c, r.x + pad_x, text_baseline, shown, 17, color)
 	} else if masked {
 		// Draw round password bullets independently of the text font so their
 		// shape remains circular at every display scale. One bullet per rune,
-		// not per UTF-8 byte.
+		// not per UTF-8 byte. Bullets ride on the text baseline so vertical
+		// padding carries them the same way it carries letters.
+		bullet_y := text_baseline - 11
 		bullet_x := text_x_origin
 		for _ in 0 ..< rune_count {
-			box(c, {bullet_x, r.y + r.h / 2 - 4, 8, 8}, color, 4)
+			box(c, {bullet_x, bullet_y, 8, 8}, color, 4)
 			bullet_x += 14
 		}
 	} else {
-		label(c, text_x_origin, r.y + 29, shown, 17, color)
+		label(c, text_x_origin, text_baseline, shown, 17, color)
 	}
 	if focused {
 		// 1 Hz blink with a 50 % duty cycle: 500ms on, 500ms off, aligned to
@@ -511,7 +526,7 @@ input :: proc(
 		phase := int((c.now - value.caret_phase_start) * 2) & 1
 		if phase == 0 {
 			caret_x := text_x_origin + caret_content_x
-			box(c, {caret_x, r.y + 11, 1, r.h - 22}, DEFAULT_PALETTE.primary_bright)
+			box(c, {caret_x, caret_top, 1, caret_h}, DEFAULT_PALETTE.primary_bright)
 		}
 	}
 	c.clip = prev_clip
