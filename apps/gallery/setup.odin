@@ -6,8 +6,8 @@ import ui "kriya:ui"
 // Live corner-radius setting applied globally via ui.set_corner_radius in
 // the frame loop. Default lands on "6", matching ui.DEFAULT_CORNER_RADIUS,
 // so the gallery starts out looking the same as before.
-radius_options := []string{"0", "2", "4", "6", "8", "12", "16"}
-radius_values := []f32{0, 2, 4, 6, 8, 12, 16}
+radius_options := []string{"0", "2", "4", "6", "8", "10", "12", "14", "16"}
+radius_values := []f32{0, 2, 4, 6, 8, 10, 12, 14, 16}
 radius_dropdown := ui.Dropdown {
 	selected = 3,
 }
