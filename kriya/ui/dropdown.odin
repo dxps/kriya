@@ -295,6 +295,16 @@ dropdown :: proc(
 		// matches, numbering them by visible slot so item rects stay packed.
 		// Rows offset by value.scroll; clipped rows still consume a slot so
 		// their indices stay stable across frames.
+		//
+		// The first / last visible row round the bottom (or top) corners to
+		// match the panel's inner curve, so the row color never spills into
+		// the area beyond the curve — otherwise a hover highlight at the
+		// edge reads as square against the panel's rounded corner. Only the
+		// non-scrolling case: when the content fits, these rows sit exactly
+		// at the panel edges; with scrolling the alignment drifts and the
+		// corner_restore pass further down handles the shape instead.
+		row_radius := max(0, corner_radius - 1)
+		edge_rows_rounded := max_scroll == 0 && menu_rows > 0 && row_radius > 0
 		visible_i := 0
 		for option, i in options {
 			if searchable && !dropdown_match(option, query_bytes) {continue}
@@ -314,11 +324,28 @@ dropdown :: proc(
 			item_color := DEFAULT_PALETTE.overlay
 			if i == value.selected {item_color = DEFAULT_PALETTE.item_selected}
 			if item_hover {item_color = DEFAULT_PALETTE.item_hover}
-			// Rows always draw as squares; the panel's rounded corners are
-			// restored afterwards by clipping a redraw of the panel to each
-			// corner area, so rows at any scroll offset (aligned or not)
-			// can't break the curve.
-			box(c, item, item_color, 0)
+			round_top := edge_rows_rounded && !searchable && visible_i == 0
+			round_bot := edge_rows_rounded && visible_i == menu_rows - 1
+			if round_top || round_bot {
+				// Paint the row as a rounded box, then overpaint the side
+				// that should stay square with a flat strip of the same
+				// color. The strip fills the "outside the curve" area at
+				// that side so it reads as square against neighbouring rows.
+				box(c, item, item_color, row_radius)
+				if !round_top {
+					box(c, {item.x, item.y, item.w, row_radius}, item_color, 0)
+				}
+				if !round_bot {
+					box(
+						c,
+						{item.x, item.y + item.h - row_radius, item.w, row_radius},
+						item_color,
+						0,
+					)
+				}
+			} else {
+				box(c, item, item_color, 0)
+			}
 			label(c, item.x + 14, item.y + 26, option, 16)
 			visible_i += 1
 		}
@@ -351,28 +378,32 @@ dropdown :: proc(
 				max(0, corner_radius - 1),
 			)
 		}
-		// Bottom-left and bottom-right always need restoring — rows sit there.
-		corner_restore(c, menu, corner_radius,
-			menu.x,
-			menu.y + menu.h - corner_sz + c.offset_y,
-			corner_sz,
-		)
-		corner_restore(c, menu, corner_radius,
-			menu.x + menu.w - corner_sz,
-			menu.y + menu.h - corner_sz + c.offset_y,
-			corner_sz,
-		)
-		if !searchable {
+		// Skip the sides where a rounded edge row already carries the panel
+		// curve: repainting there would overwrite the row color (e.g. a
+		// hover highlight) with the panel background.
+		if !edge_rows_rounded {
 			corner_restore(c, menu, corner_radius,
 				menu.x,
-				menu.y + c.offset_y,
+				menu.y + menu.h - corner_sz + c.offset_y,
 				corner_sz,
 			)
 			corner_restore(c, menu, corner_radius,
 				menu.x + menu.w - corner_sz,
-				menu.y + c.offset_y,
+				menu.y + menu.h - corner_sz + c.offset_y,
 				corner_sz,
 			)
+			if !searchable {
+				corner_restore(c, menu, corner_radius,
+					menu.x,
+					menu.y + c.offset_y,
+					corner_sz,
+				)
+				corner_restore(c, menu, corner_radius,
+					menu.x + menu.w - corner_sz,
+					menu.y + c.offset_y,
+					corner_sz,
+				)
+			}
 		}
 		c.clip = corner_clip_prev
 		c.clipped = corner_clipped_prev
