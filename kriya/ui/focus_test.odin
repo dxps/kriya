@@ -151,3 +151,142 @@ disabled_button_does_not_register_for_focus :: proc(t: ^testing.T) {
 	testing.expect(t, c.focus_count == 0)
 	end(&c)
 }
+
+@(test)
+input_registers_in_tab_order_when_editable :: proc(t: ^testing.T) {
+	c: Context
+	c.measure_text = test_text_width
+	defer delete(c.commands)
+	v: Text_Input
+	begin(&c)
+	input(&c, 1, {0, 0, 200, 44}, "Name", &v)
+	testing.expect(t, c.focus_count == 1)
+	testing.expect(t, c.focus_ids[0] == 1)
+	end(&c)
+
+	// Read-only stays out of the Tab chain.
+	begin(&c)
+	input(&c, 2, {0, 0, 200, 44}, "Name", &v, read_only = true)
+	testing.expect(t, c.focus_count == 0)
+	end(&c)
+}
+
+@(test)
+textarea_registers_in_tab_order_when_editable :: proc(t: ^testing.T) {
+	c: Context
+	c.measure_text = test_text_width
+	defer delete(c.commands)
+	v: Text_Area
+	begin(&c)
+	textarea(&c, 1, {0, 0, 200, 120}, "Notes", &v)
+	testing.expect(t, c.focus_count == 1)
+	end(&c)
+
+	begin(&c)
+	textarea(&c, 2, {0, 0, 200, 120}, "Notes", &v, read_only = true)
+	testing.expect(t, c.focus_count == 0)
+	end(&c)
+}
+
+@(test)
+dropdown_trigger_registers_and_enter_opens :: proc(t: ^testing.T) {
+	c: Context
+	c.measure_text = test_text_width
+	defer delete(c.commands)
+	dd: Dropdown
+	opts := []string{"Odin", "C"}
+
+	// Frame 1: registers.
+	begin(&c)
+	dropdown(&c, 1, {0, 0, 200, 44}, opts, &dd)
+	testing.expect(t, c.focus_count == 1)
+	end(&c)
+
+	// Frame 2: Tab → trigger focused.
+	c.nav_tab = true
+	begin(&c)
+	dropdown(&c, 1, {0, 0, 200, 44}, opts, &dd)
+	testing.expect(t, c.focused == 1)
+	end(&c)
+
+	// Frame 3: Enter → menu opens.
+	c.enter = true
+	begin(&c)
+	dropdown(&c, 1, {0, 0, 200, 44}, opts, &dd)
+	testing.expect(t, dd.open)
+	end(&c)
+}
+
+@(test)
+slider_arrow_keys_adjust_focused_value :: proc(t: ^testing.T) {
+	c: Context
+	c.measure_text = test_text_width
+	defer delete(c.commands)
+	v := Slider{value = 10}
+
+	// Frame 1: registers.
+	begin(&c)
+	slider(&c, 1, {0, 0, 200, 46}, &v, min_val = 0, max_val = 100, step = 5)
+	testing.expect(t, c.focus_count == 1)
+	end(&c)
+
+	// Frame 2: Tab → focused.
+	c.nav_tab = true
+	begin(&c)
+	slider(&c, 1, {0, 0, 200, 46}, &v, min_val = 0, max_val = 100, step = 5)
+	testing.expect(t, c.focused == 1)
+	end(&c)
+
+	// Frame 3: nav_right increments by step.
+	c.nav_right = true
+	begin(&c)
+	slider(&c, 1, {0, 0, 200, 46}, &v, min_val = 0, max_val = 100, step = 5)
+	testing.expect(t, v.value == 15)
+	end(&c)
+
+	// Frame 4: nav_left decrements by step.
+	c.nav_left = true
+	begin(&c)
+	slider(&c, 1, {0, 0, 200, 46}, &v, min_val = 0, max_val = 100, step = 5)
+	testing.expect(t, v.value == 10)
+	end(&c)
+}
+
+@(test)
+slider_vertical_up_increments_down_decrements :: proc(t: ^testing.T) {
+	c: Context
+	c.measure_text = test_text_width
+	defer delete(c.commands)
+	v := Slider{value = 5}
+
+	begin(&c)
+	slider(&c, 1, {0, 0, 50, 200}, &v, min_val = 0, max_val = 10, step = 1, orientation = .Vertical)
+	end(&c)
+	c.focused = 1
+
+	c.nav_up = true
+	begin(&c)
+	slider(&c, 1, {0, 0, 50, 200}, &v, min_val = 0, max_val = 10, step = 1, orientation = .Vertical)
+	testing.expect(t, v.value == 6)
+	end(&c)
+
+	c.nav_down = true
+	begin(&c)
+	slider(&c, 1, {0, 0, 50, 200}, &v, min_val = 0, max_val = 10, step = 1, orientation = .Vertical)
+	testing.expect(t, v.value == 5)
+	end(&c)
+}
+
+@(test)
+slider_arrows_ignored_when_not_focused :: proc(t: ^testing.T) {
+	c: Context
+	c.measure_text = test_text_width
+	defer delete(c.commands)
+	v := Slider{value = 10}
+
+	c.nav_right = true
+	begin(&c)
+	slider(&c, 1, {0, 0, 200, 46}, &v, min_val = 0, max_val = 100, step = 5)
+	testing.expect(t, v.value == 10)
+	end(&c)
+}

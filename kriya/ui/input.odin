@@ -165,6 +165,11 @@ input :: proc(
 	padding: Maybe(f32) = nil,
 ) {
 	corner_radius := resolve_corner_radius(c, radius)
+	// Joins the Tab order and handles click-to-focus. Read-only inputs
+	// stay out of the Tab chain — their value is not editable, so there
+	// is no caret to receive. The widget's own border already highlights
+	// in primary_bright when c.focused == id, so no separate ring here.
+	if !read_only {_ = focusable(c, id, r)}
 	hover := contains(c, r)
 	// One padding drives both axes. Horizontal insets the text and placeholder;
 	// vertical shifts the baseline (and the caret / selection band that hugs

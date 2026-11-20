@@ -118,9 +118,16 @@ dropdown :: proc(
 		c.cancel = false
 	}
 	hover: bool
+	trigger_focused: bool
 	if !read_only {
 		clicked: bool
 		hover, clicked = pressable(c, id, r)
+		trigger_focused = focusable(c, id, r)
+		// Enter on a focused closed trigger opens the menu — same effect
+		// as clicking. An open menu stays owned by its search field (if
+		// searchable) or by keyboard navigation inside the list, so this
+		// branch is gated on !value.open.
+		if trigger_focused && c.enter && !value.open {clicked = true}
 		if clicked {
 			value.open = !value.open
 			value.scroll = 0
@@ -134,10 +141,12 @@ dropdown :: proc(
 		}
 	}
 	value.scroll = clamp(value.scroll, 0, max_scroll)
-	// Read-only skips the hover / open border accents and uses a raised
-	// inner surface so the field reads as non-interactive at a glance.
+	// Read-only skips the hover / open / focus border accents and uses a
+	// raised inner surface so the field reads as non-interactive at a glance.
 	border := DEFAULT_PALETTE.border
-	if !read_only && (hover || value.open) {border = DEFAULT_PALETTE.primary_bright}
+	if !read_only && (hover || value.open || trigger_focused) {
+		border = DEFAULT_PALETTE.primary_bright
+	}
 	surface := read_only ? DEFAULT_PALETTE.surface_raised : DEFAULT_PALETTE.surface
 	box(c, r, border, corner_radius)
 	box(

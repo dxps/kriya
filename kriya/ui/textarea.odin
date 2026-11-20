@@ -100,6 +100,10 @@ textarea :: proc(
 	padding: Maybe(f32) = nil,
 ) {
 	corner_radius := resolve_corner_radius(c, radius)
+	// Joins the Tab order and handles click-to-focus. Read-only textareas
+	// stay out of the Tab chain. The widget's own border already
+	// highlights in primary_bright when c.focused == id, so no ring.
+	if !read_only {_ = focusable(c, id, r)}
 	hover := contains(c, r)
 	if hover {c.pointer_cursor = true}
 	// One padding value drives both axes here; single-line input / dropdown

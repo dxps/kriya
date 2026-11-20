@@ -83,6 +83,23 @@ slider :: proc(
 	hover := contains(c, hit_rect)
 	if hover || value.dragging {c.pointer_cursor = true}
 
+	// Registers for Tab order and handles click-to-focus. Arrow keys when
+	// focused nudge the value by one step on the matching axis: left /
+	// right for horizontal, down / up for vertical (fader convention —
+	// up increases, down decreases).
+	focused := focusable(c, id, hit_rect)
+	if focused && step > 0 {
+		delta: f32 = 0
+		if vertical {
+			if c.nav_up {delta = step}
+			if c.nav_down {delta = -step}
+		} else {
+			if c.nav_left {delta = -step}
+			if c.nav_right {delta = step}
+		}
+		if delta != 0 {value.value = clamp(value.value + delta, min_val, max_val)}
+	}
+
 	if c.pressed && hover {
 		value.dragging = true
 		c.active = id
@@ -111,7 +128,7 @@ slider :: proc(
 
 	norm := (value.value - min_val) / (max_val - min_val)
 	thumb_color := DEFAULT_PALETTE.text
-	if hover || value.dragging {thumb_color = DEFAULT_PALETTE.primary_bright}
+	if hover || value.dragging || focused {thumb_color = DEFAULT_PALETTE.primary_bright}
 	display := format(value.value, precision)
 
 	if vertical {
