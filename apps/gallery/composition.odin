@@ -13,8 +13,7 @@ draw_composition :: proc(c: ^ui.Context) {
 
 	ui.label_in(c, ui.next(&s, 28), "Project settings", 28, v = .Start)
 
-	r := ui.next(&s, 18)
-	ui.checkbox(c, 5, r.x, r.y, "Publish preview", &publish_preview)
+	ui.checkbox(c, 5, ui.next(&s, 18), "Publish preview", &publish_preview)
 
 	if ui.button(c, 6, ui.next(&s, CONTROL_H, BUTTON_W), "Save settings") {
 		save_count += 1

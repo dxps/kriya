@@ -38,6 +38,5 @@ draw_inputs :: proc(c: ^ui.Context) {
 	ui.label_in(c, ui.next(&s, 17), "Click the eye to reveal or hide the password.", 17)
 	ui.skip(&s, 32)
 
-	r := ui.next(&s, 18)
-	ui.toggle(c, 22, r.x, r.y, "Read-only", &inputs_read_only)
+	ui.toggle(c, 22, ui.next(&s, 18), "Read-only", &inputs_read_only)
 }

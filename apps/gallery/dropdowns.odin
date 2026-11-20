@@ -72,6 +72,5 @@ draw_dropdowns :: proc(c: ^ui.Context) {
 	)
 	ui.skip(&s, 39)
 
-	r := ui.next(&s, 18)
-	ui.toggle(c, 31, r.x, r.y, "Read-only", &dropdowns_read_only)
+	ui.toggle(c, 31, ui.next(&s, 18), "Read-only", &dropdowns_read_only)
 }

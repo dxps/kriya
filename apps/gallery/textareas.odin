@@ -48,6 +48,5 @@ draw_textareas :: proc(c: ^ui.Context) {
 	)
 	ui.skip(&s, 25)
 
-	r := ui.next(&s, 18)
-	ui.toggle(c, 32, r.x, r.y, "Read-only", &textareas_read_only)
+	ui.toggle(c, 32, ui.next(&s, 18), "Read-only", &textareas_read_only)
 }

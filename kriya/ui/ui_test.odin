@@ -43,17 +43,17 @@ checkbox_label_toggles_and_requests_pointer :: proc(t: ^testing.T) {
 	value := false
 	begin(&c)
 	c.pressed = true; c.down = true
-	checkbox(&c, 1, 0, 0, "Enable notifications", &value)
+	checkbox(&c, 1, {0, 0, 0, 0}, "Enable notifications", &value)
 	testing.expect(t, c.pointer_cursor)
 	testing.expect(t, !value)
 	end(&c); begin(&c)
 	c.released = true; c.down = false
-	checkbox(&c, 1, 0, 0, "Enable notifications", &value)
+	checkbox(&c, 1, {0, 0, 0, 0}, "Enable notifications", &value)
 	testing.expect(t, value)
 	testing.expect(t, c.active == 0)
 	end(&c); begin(&c)
 	c.mx = 180
-	checkbox(&c, 1, 0, 0, "Enable notifications", &value)
+	checkbox(&c, 1, {0, 0, 0, 0}, "Enable notifications", &value)
 	testing.expect(t, !c.pointer_cursor)
 }
 
@@ -68,10 +68,10 @@ checkbox_release_outside_label_does_not_toggle :: proc(t: ^testing.T) {
 	}
 	defer delete(c.commands)
 	value := false
-	checkbox(&c, 1, 0, 0, "Enable notifications", &value)
+	checkbox(&c, 1, {0, 0, 0, 0}, "Enable notifications", &value)
 	end(&c); begin(&c)
 	c.mx = 180; c.down = false; c.released = true
-	checkbox(&c, 1, 0, 0, "Enable notifications", &value)
+	checkbox(&c, 1, {0, 0, 0, 0}, "Enable notifications", &value)
 	testing.expect(t, !value)
 	testing.expect(t, c.active == 0)
 	testing.expect(t, !c.pointer_cursor)
@@ -216,7 +216,7 @@ widgets_support_default_context_and_per_instance_radii :: proc(t: ^testing.T) {
 
 	set_corner_radius(&c, 10)
 	checked := true
-	checkbox(&c, 2, 0, 0, "Enabled", &checked)
+	checkbox(&c, 2, {0, 0, 0, 0}, "Enabled", &checked)
 	testing.expect(t, c.commands[0].variant.(Box_Command).radius == 10)
 	clear(&c.commands)
 
