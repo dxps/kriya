@@ -92,6 +92,52 @@ label :: proc(
 		},
 	)
 }
+
+// Rect-anchored label: aligns text inside r on both axes. v defaults to
+// Center because that matches what a widget slot wants most of the time
+// (a label sitting inside a row slot centered vertically). Only Center
+// and End horizontal alignment need measure_text — Start skips the call
+// so a context without a measurement callback can still emit Start text.
+//
+// Baseline model: cap height + descender ≈ size, with the baseline a bit
+// below the em top. The 0.75 ascender / 0.25 descender split matches what
+// the hand-placed labels in the gallery have been using (button text at
+// r.y + 28 for size 18 in a 46 px tall button is Center; 28 ≈ 46/2 + 18/4).
+label_in :: proc(
+	c: ^Context,
+	r: Rect,
+	text: string,
+	size: f32 = 18,
+	h: Align = .Start,
+	v: Align = .Center,
+	color: Color = DEFAULT_PALETTE.text,
+	font: Font = .Body,
+) {
+	ASCENDER :: f32(0.75)
+	DESCENDER :: f32(0.25)
+	x: f32 = r.x
+	if h != .Start {
+		assert(c.measure_text != nil, "label_in non-start alignment requires measure_text")
+		w := c.measure_text(text, size)
+		switch h {
+		case .Start:
+		case .Center:
+			x = r.x + (r.w - w) / 2
+		case .End:
+			x = r.x + r.w - w
+		}
+	}
+	y: f32
+	switch v {
+	case .Start:
+		y = r.y + size * ASCENDER
+	case .Center:
+		y = r.y + r.h / 2 + size * DESCENDER
+	case .End:
+		y = r.y + r.h - size * DESCENDER
+	}
+	label(c, x, y, text, size, color, font)
+}
 point_in_rect :: proc(x, y: f32, r: Rect) -> bool {return(
 		x >= r.x &&
 		x < r.x + r.w &&

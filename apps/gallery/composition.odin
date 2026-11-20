@@ -5,9 +5,23 @@ import ui "kriya:ui"
 publish_preview := true
 save_count: int
 
+// Rect y=253 matches the previous hand-tuned top of the "Project settings"
+// label (baseline 274 with size-28 ascender ≈ 253). Subsequent slots then
+// drop the raw y arithmetic entirely; only the gap sizes carry over.
 draw_composition :: proc(c: ^ui.Context) {
-	ui.label(c, WIDGET_X, 274, "Project settings", 28)
-	ui.checkbox(c, 5, WIDGET_X, 310, "Publish preview", &publish_preview)
-	if ui.button(c, 6, {WIDGET_X, 378, BUTTON_W, CONTROL_H}, "Save settings") {save_count += 1}
-	ui.label(c, WIDGET_X, 474, fmt.tprintf("Saved %d times", save_count), 17)
+	s := ui.col({WIDGET_X, 253, INPUT_W, 260}, gap = 29)
+
+	ui.label_in(c, ui.next(&s, 28), "Project settings", 28, v = .Start)
+
+	r := ui.next(&s, 18)
+	ui.checkbox(c, 5, r.x, r.y, "Publish preview", &publish_preview)
+
+	if ui.button(c, 6, ui.next(&s, CONTROL_H, BUTTON_W), "Save settings") {
+		save_count += 1
+	}
+
+	// Extra breathing room between the button and the status text, so the
+	// counter doesn't crowd the control row.
+	ui.skip(&s, 8)
+	ui.label_in(c, ui.next(&s, 17), fmt.tprintf("Saved %d times", save_count), 17, v = .Start)
 }

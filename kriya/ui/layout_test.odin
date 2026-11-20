@@ -115,3 +115,47 @@ align_in_places_fixed_child_inside_bounds :: proc(t: ^testing.T) {
 	r = align_in({0, 0, 200, 40}, {50, 30}, .Start, .End)
 	testing.expect(t, r == Rect{0, 10, 50, 30})
 }
+
+label_in_test_measure :: proc(text: string, size: f32) -> f32 {return 120}
+
+@(test)
+label_in_computes_baseline_from_alignment :: proc(t: ^testing.T) {
+	c: Context
+	c.measure_text = label_in_test_measure
+	defer delete(c.commands)
+
+	// Vertical Center in a 46-tall rect with 18pt text: 0 + 23 + 18*0.25 = 27.5
+	label_in(&c, {0, 0, 200, 46}, "Hi", 18, .Start, .Center)
+	cmd := c.commands[0].variant.(Text_Command)
+	testing.expect(t, cmd.x == 0)
+	testing.expect(t, cmd.y == 27.5)
+
+	// Vertical Start: baseline sits size*0.75 below rect top.
+	clear(&c.commands)
+	label_in(&c, {10, 10, 200, 46}, "Hi", 20, .Start, .Start)
+	cmd = c.commands[0].variant.(Text_Command)
+	testing.expect(t, cmd.y == 10 + 20 * 0.75)
+
+	// Vertical End: baseline sits size*0.25 above rect bottom.
+	clear(&c.commands)
+	label_in(&c, {0, 0, 200, 46}, "Hi", 20, .Start, .End)
+	cmd = c.commands[0].variant.(Text_Command)
+	testing.expect(t, cmd.y == 46 - 20 * 0.25)
+}
+
+@(test)
+label_in_horizontal_alignment_uses_measure_text :: proc(t: ^testing.T) {
+	c: Context
+	c.measure_text = label_in_test_measure // returns 120 for anything
+	defer delete(c.commands)
+
+	// Center in a 200-wide rect with 120-wide text: (200 - 120)/2 = 40.
+	label_in(&c, {0, 0, 200, 46}, "Hello", 18, .Center, .Center)
+	cmd := c.commands[0].variant.(Text_Command)
+	testing.expect(t, cmd.x == 40)
+
+	clear(&c.commands)
+	label_in(&c, {10, 0, 200, 46}, "Hello", 18, .End, .Center)
+	cmd = c.commands[0].variant.(Text_Command)
+	testing.expect(t, cmd.x == 10 + 200 - 120)
+}
