@@ -226,7 +226,7 @@ widgets_support_default_context_and_per_instance_radii :: proc(t: ^testing.T) {
 	clear(&c.commands)
 
 	dropdown_value: Dropdown
-	dropdown(&c, 4, {0, 0, 200, 44}, []string{"Odin"}, &dropdown_value, 2)
+	dropdown(&c, 4, {0, 0, 200, 44}, []string{"Odin"}, &dropdown_value, radius = 2)
 	testing.expect(t, c.commands[0].variant.(Box_Command).radius == 2)
 
 	clear(&c.commands)
