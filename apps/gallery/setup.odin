@@ -35,15 +35,26 @@ configured_padding :: proc() -> f32 {
 	return padding_values[i]
 }
 
+// Container y=242 lifts the first label's baseline (size-11 Start = y + 8.25)
+// onto the original 250. Each slot is sized to the glyph height so label_in's
+// default Center alignment coincides with Start — skips below carry the
+// visual spacing between the two field groups and the status block.
 draw_setup :: proc(c: ^ui.Context) {
-	ui.label(c, WIDGET_X, 250, "CORNER RADIUS", 11, ui.DEFAULT_PALETTE.text_muted)
-	ui.dropdown(c, 50, {WIDGET_X, 266, INPUT_W, field_h()}, radius_options, &radius_dropdown)
-	ui.label(c, WIDGET_X, 346, "PADDING", 11, ui.DEFAULT_PALETTE.text_muted)
-	ui.dropdown(c, 51, {WIDGET_X, 362, INPUT_W, field_h()}, padding_options, &padding_dropdown)
-	ui.label(
+	s := ui.col({WIDGET_X, 242, INPUT_W, 300}, gap = 0)
+
+	ui.label_in(c, ui.next(&s, 11), "CORNER RADIUS", 11, color = ui.DEFAULT_PALETTE.text_muted)
+	ui.skip(&s, 8)
+	ui.dropdown(c, 50, ui.next(&s, field_h()), radius_options, &radius_dropdown)
+	ui.skip(&s, 32)
+
+	ui.label_in(c, ui.next(&s, 11), "PADDING", 11, color = ui.DEFAULT_PALETTE.text_muted)
+	ui.skip(&s, 8)
+	ui.dropdown(c, 51, ui.next(&s, field_h()), padding_options, &padding_dropdown)
+	ui.skip(&s, 32)
+
+	ui.label_in(
 		c,
-		WIDGET_X,
-		442,
+		ui.next(&s, 17),
 		fmt.tprintf(
 			"Applied globally. Radius: %.0f px. Padding: %.0f px.",
 			configured_radius(),
@@ -51,10 +62,10 @@ draw_setup :: proc(c: ^ui.Context) {
 		),
 		17,
 	)
-	ui.label(
+	ui.skip(&s, 13)
+	ui.label_in(
 		c,
-		WIDGET_X,
-		472,
+		ui.next(&s, 17),
 		"Padding insets text in inputs, dropdowns and textareas. Switch views to see it.",
 		17,
 	)
