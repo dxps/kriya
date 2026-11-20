@@ -28,18 +28,18 @@ toggle :: proc(c: ^Context, id: u64, r: Rect, text: string, value: ^bool, read_o
 		if focused && c.enter {clicked = true}
 		if clicked {value^ = !value^}
 	}
-	track_color := DEFAULT_PALETTE.border
+	track_color := palette(c).border
 	if value^ {
-		track_color = read_only ? DEFAULT_PALETTE.disabled : DEFAULT_PALETTE.primary
-		if !read_only && hover {track_color = DEFAULT_PALETTE.primary_hover}
-		if !read_only && c.active == id && c.down {track_color = DEFAULT_PALETTE.primary_pressed}
+		track_color = read_only ? palette(c).disabled : palette(c).primary
+		if !read_only && hover {track_color = palette(c).primary_hover}
+		if !read_only && c.active == id && c.down {track_color = palette(c).primary_pressed}
 	} else if hover {
-		track_color = DEFAULT_PALETTE.border_hover
+		track_color = palette(c).border_hover
 	}
 	if focused {focus_ring(c, track, 9)}
 	box(c, track, track_color, 9)
 	thumb_x := value^ ? r.x + 17 : r.x + 3
-	thumb_color := read_only ? DEFAULT_PALETTE.text_subtle : DEFAULT_PALETTE.text
+	thumb_color := read_only ? palette(c).text_subtle : palette(c).text
 	box(c, {thumb_x, r.y + 3, 12, 12}, thumb_color, 6)
 	label(c, r.x + 42, r.y + 14, text)
 }

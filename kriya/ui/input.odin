@@ -451,12 +451,12 @@ input :: proc(
 	// Read-only skips the hover / focus border accents and uses a raised
 	// inner surface so the field reads as non-editable at a glance while
 	// still letting the user focus it for selection / copy.
-	border := DEFAULT_PALETTE.border
+	border := palette(c).border
 	if !read_only {
-		if hover {border = DEFAULT_PALETTE.border_hover}
-		if focused {border = DEFAULT_PALETTE.primary_bright}
+		if hover {border = palette(c).border_hover}
+		if focused {border = palette(c).primary_bright}
 	}
-	surface := read_only ? DEFAULT_PALETTE.surface_raised : DEFAULT_PALETTE.surface
+	surface := read_only ? palette(c).surface_raised : palette(c).surface
 	box(c, r, border, corner_radius)
 	box(
 		c,
@@ -485,9 +485,9 @@ input :: proc(
 	}
 	value.scroll_x = clamp(value.scroll_x, 0, max_scroll_x)
 	shown := placeholder
-	color := DEFAULT_PALETTE.text_muted
+	color := palette(c).text_muted
 	if value.len > 0 {
-		color = DEFAULT_PALETTE.text
+		color = palette(c).text
 		if !masked {
 			shown = string(value.data[:value.len])
 		}
@@ -509,7 +509,7 @@ input :: proc(
 		e_sel := max(value.anchor, value.caret)
 		start_x := text_x_origin + input_caret_x(c, value.data[:value.len], s_sel, masked)
 		end_x := text_x_origin + input_caret_x(c, value.data[:value.len], e_sel, masked)
-		hi := DEFAULT_PALETTE.primary
+		hi := palette(c).primary
 		box(c, {start_x, caret_top, end_x - start_x, caret_h}, {hi[0], hi[1], hi[2], 0.35}, 2)
 	}
 	if value.len == 0 {
@@ -536,7 +536,7 @@ input :: proc(
 		phase := int((c.now - value.caret_phase_start) * 2) & 1
 		if phase == 0 {
 			caret_x := text_x_origin + caret_content_x
-			box(c, {caret_x, caret_top, 1, caret_h}, DEFAULT_PALETTE.primary_bright)
+			box(c, {caret_x, caret_top, 1, caret_h}, palette(c).primary_bright)
 		}
 	}
 	c.clip = prev_clip
@@ -560,8 +560,8 @@ input :: proc(
 		h: f32 = scroll_hot ? 7 : 5
 		alpha: f32 = scroll_hot ? 0.95 : 0.75
 		center_y := r.y + r.h - 6
-		tr := DEFAULT_PALETTE.scroll_track
-		th := DEFAULT_PALETTE.scroll_thumb
+		tr := palette(c).scroll_track
+		th := palette(c).scroll_thumb
 		box(
 			c,
 			{htrack_x, center_y - h / 2, htrack_w, h},
@@ -577,13 +577,13 @@ input :: proc(
 	}
 	if password {
 		divider_x := r.x + r.w - eye_w
-		box(c, {divider_x, r.y + 8, 1, r.h - 16}, DEFAULT_PALETTE.divider)
+		box(c, {divider_x, r.y + 8, 1, r.h - 16}, palette(c).divider)
 		// Eye centered vertically in the field and inset by pad_x from the
 		// right edge, so its margin tracks the text's left-edge inset.
 		eye := Rect{r.x + r.w - pad_x - 20, r.y + (r.h - 12) / 2, 20, 12}
 		eye_hover, eye_clicked := pressable(c, sub_id(id, 1), {divider_x, r.y, eye_w, r.h})
 		if eye_clicked {value.revealed = !value.revealed}
-		eye_color := eye_hover ? DEFAULT_PALETTE.primary_bright : DEFAULT_PALETTE.text_subtle
+		eye_color := eye_hover ? palette(c).primary_bright : palette(c).text_subtle
 		// Four short segments per lid retain a gentle curve while keeping the
 		// left and right corners pointed like a conventional eye glyph.
 		line(c, eye.x, eye.y + 6, eye.x + 5, eye.y + 2, 1.4, eye_color)
@@ -604,7 +604,7 @@ input :: proc(
 				eye.x + eye.w + 2,
 				eye.y - 3,
 				2.5,
-				DEFAULT_PALETTE.surface,
+				palette(c).surface,
 			)
 			line(c, eye.x - 2, eye.y + eye.h + 3, eye.x + eye.w + 2, eye.y - 3, 1.25, eye_color)
 		}

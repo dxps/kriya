@@ -69,8 +69,8 @@ end_scroll :: proc(c: ^Context, s: ^Scroll_State) {
 	thumb_y := track.y + (track.h - thumb_h) * s.offset / (content_height - viewport.h)
 	hover := point_in_rect(c.mx, c.my, track) || s.dragging
 	width: f32 = hover ? 7 : 5
-	tr := DEFAULT_PALETTE.scroll_track
-	th := DEFAULT_PALETTE.scroll_thumb
+	tr := palette(c).scroll_track
+	th := palette(c).scroll_thumb
 	box(
 		c,
 		{track.x + 8 - width / 2, track.y, width, track.h},

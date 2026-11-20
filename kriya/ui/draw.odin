@@ -70,11 +70,15 @@ label :: proc(
 	x, y: f32,
 	text: string,
 	size: f32 = 18,
-	color: Color = DEFAULT_PALETTE.text,
+	color: Maybe(Color) = nil,
 	font: Font = .Body,
 ) {
 	// y is the baseline; add a modest descender allowance for content measurement.
 	if c.layer != .Overlay {c.content_bottom = max(c.content_bottom, y + size * 0.3)}
+	// nil color resolves to the active theme's primary text color so
+	// label output follows a theme switch without every caller passing
+	// an explicit color.
+	resolved := color.? or_else palette(c).text
 	append(
 		&c.commands,
 		Command {
@@ -87,7 +91,7 @@ label :: proc(
 				text = text,
 				size = size,
 				font = font,
-				color = color,
+				color = resolved,
 			},
 		},
 	)
@@ -110,7 +114,7 @@ label_in :: proc(
 	size: f32 = 18,
 	h: Align = .Start,
 	v: Align = .Center,
-	color: Color = DEFAULT_PALETTE.text,
+	color: Maybe(Color) = nil,
 	font: Font = .Body,
 ) {
 	ASCENDER :: f32(0.75)

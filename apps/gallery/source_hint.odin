@@ -2,8 +2,9 @@ package main
 import ui "kriya:ui"
 
 draw_source_hint :: proc(c: ^ui.Context, source: string, y: f32) {
-	color := GALLERY_SOURCE_HINT_TEXT
-	path_color := GALLERY_SOURCE_HINT_PATH
+	pal := ui.palette(c)
+	color := pal.text_muted
+	path_color := pal.primary_bright
 	size: f32 = 16
 	// Hasklig has taller vertical metrics; 17px matches Work Sans's 16px cap height.
 	mono_size: f32 = 17

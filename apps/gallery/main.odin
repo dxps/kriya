@@ -55,10 +55,11 @@ frame :: proc "c" () {
 	ctx.set_clipboard = app_set_clipboard
 	ctx.dt = f32(sapp.frame_duration())
 	ctx.now += f64(ctx.dt)
-	// Apply the live corner radius and padding chosen in the Setup view so
-	// every widget drawn this frame sees them.
+	// Apply the live corner radius, padding and theme chosen in the Setup
+	// view so every widget drawn this frame sees them.
 	ui.set_corner_radius(&ctx, configured_radius())
 	ui.set_padding(&ctx, configured_padding())
+	ui.set_theme(&ctx, configured_theme())
 	w := sapp.widthf() / sapp.dpi_scale()
 	h := sapp.heightf() / sapp.dpi_scale()
 	draw_sidebar(h)
@@ -70,16 +71,16 @@ frame :: proc "c" () {
 		{SIDEBAR_W, 0, max(0, w - SIDEBAR_W), max(0, h - 28)},
 		f32(sapp.frame_duration()),
 	)
-	ui.label(&ctx, CONTENT_X, PAGE_EYEBROW_Y, "LIBRARY / EXPLORER", 13, ui.DEFAULT_PALETTE.text_muted)
+	ui.label(&ctx, CONTENT_X, PAGE_EYEBROW_Y, "LIBRARY / EXPLORER", 13, ui.palette(&ctx).text_muted)
 	ui.label(&ctx, CONTENT_X, PAGE_TITLE_Y, sections[selected].title, 40)
 	ui.label(&ctx, CONTENT_X, PAGE_SUB_Y, "Small primitives. Shared behavior. Built in Odin.", 18)
 	preview_h := view.preview_h > 0 ? view.preview_h : PREVIEW_H
 	ui.box(
 		&ctx,
 		{PREVIEW_X, PREVIEW_Y, max(PREVIEW_MIN_W, w - PREVIEW_X - PREVIEW_MARGIN_RIGHT), preview_h},
-		ui.DEFAULT_PALETTE.surface_raised,
+		ui.palette(&ctx).surface_raised,
 	)
-	ui.label(&ctx, WIDGET_X, PREVIEW_HEADER_Y, "INTERACTIVE PREVIEW", 12, ui.DEFAULT_PALETTE.text_muted)
+	ui.label(&ctx, WIDGET_X, PREVIEW_HEADER_Y, "INTERACTIVE PREVIEW", 12, ui.palette(&ctx).text_muted)
 	view.draw(&ctx)
 	draw_source_hint(&ctx, view.source, PREVIEW_Y + preview_h + SOURCE_HINT_GAP)
 	ui.end_scroll(&ctx, scroll)

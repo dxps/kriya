@@ -738,12 +738,12 @@ textarea :: proc(
 	// Read-only skips the hover / focus border accents and uses a raised
 	// inner surface so the field reads as non-editable at a glance while
 	// still letting the user focus it for selection / copy.
-	border := DEFAULT_PALETTE.border
+	border := palette(c).border
 	if !read_only {
-		if hover {border = DEFAULT_PALETTE.border_hover}
-		if focused {border = DEFAULT_PALETTE.primary_bright}
+		if hover {border = palette(c).border_hover}
+		if focused {border = palette(c).primary_bright}
 	}
-	surface := read_only ? DEFAULT_PALETTE.surface_raised : DEFAULT_PALETTE.surface
+	surface := read_only ? palette(c).surface_raised : palette(c).surface
 	box(c, r, border, corner_radius)
 	box(
 		c,
@@ -758,7 +758,7 @@ textarea :: proc(
 			r.y + pad_y + 17,
 			placeholder,
 			17,
-			DEFAULT_PALETTE.text_muted,
+			palette(c).text_muted,
 		)
 		return
 	}
@@ -803,7 +803,7 @@ textarea :: proc(
 		rect_x := left_x + x0
 		rect_w := min((x1 - x0) + extend, right_max - rect_x)
 		if rect_w <= 0 {return}
-		hi := DEFAULT_PALETTE.primary
+		hi := palette(c).primary
 		box(
 			c,
 			{rect_x, baseline - 15, rect_w, line_height - 2},
@@ -833,7 +833,7 @@ textarea :: proc(
 				sel_right_max,
 			)
 		}
-		label(c, text_x_origin, baseline, string(value.data[vl.start:vl.end]), 17, DEFAULT_PALETTE.text)
+		label(c, text_x_origin, baseline, string(value.data[vl.start:vl.end]), 17, palette(c).text)
 	}
 	if focused {
 		// 1 Hz blink with a 50 % duty cycle: 500ms on, 500ms off, aligned
@@ -847,7 +847,7 @@ textarea :: proc(
 			box(
 				c,
 				{caret_x, caret_baseline - 14, 1, 18},
-				DEFAULT_PALETTE.primary_bright,
+				palette(c).primary_bright,
 			)
 		}
 	}
@@ -872,8 +872,8 @@ textarea :: proc(
 		w: f32 = hot ? 7 : 5
 		alpha: f32 = hot ? 0.95 : 0.75
 		center_x := track_x + track_w / 2
-		tr := DEFAULT_PALETTE.scroll_track
-		th := DEFAULT_PALETTE.scroll_thumb
+		tr := palette(c).scroll_track
+		th := palette(c).scroll_thumb
 		box(
 			c,
 			{center_x - w / 2, track_y, w, track_h},
@@ -894,8 +894,8 @@ textarea :: proc(
 		h: f32 = hot ? 7 : 5
 		alpha: f32 = hot ? 0.95 : 0.75
 		center_y := htrack_y + htrack_h / 2
-		tr := DEFAULT_PALETTE.scroll_track
-		th := DEFAULT_PALETTE.scroll_thumb
+		tr := palette(c).scroll_track
+		th := palette(c).scroll_thumb
 		box(
 			c,
 			{htrack_x, center_y - h / 2, htrack_w, h},

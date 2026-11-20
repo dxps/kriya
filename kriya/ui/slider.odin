@@ -127,8 +127,8 @@ slider :: proc(
 	}
 
 	norm := (value.value - min_val) / (max_val - min_val)
-	thumb_color := DEFAULT_PALETTE.text
-	if hover || value.dragging || focused {thumb_color = DEFAULT_PALETTE.primary_bright}
+	thumb_color := palette(c).text
+	if hover || value.dragging || focused {thumb_color = palette(c).primary_bright}
 	display := format(value.value, precision)
 
 	if vertical {
@@ -139,7 +139,7 @@ slider :: proc(
 		box(
 			c,
 			{track_x, track_start, track_thickness, track_len},
-			DEFAULT_PALETTE.border,
+			palette(c).border,
 			track_thickness / 2,
 		)
 		thumb_y := track_start + (1 - norm) * track_len
@@ -149,7 +149,7 @@ slider :: proc(
 			box(
 				c,
 				{track_x, fill_top, track_thickness, fill_h},
-				DEFAULT_PALETTE.primary,
+				palette(c).primary,
 				track_thickness / 2,
 			)
 		}
@@ -162,13 +162,13 @@ slider :: proc(
 		// Label centered below the track area.
 		display_w := c.measure_text(display, 17)
 		label_y := r.y + r.h - 6
-		label(c, cross_center - display_w / 2, label_y, display, 17, DEFAULT_PALETTE.text)
+		label(c, cross_center - display_w / 2, label_y, display, 17, palette(c).text)
 	} else {
 		track_y := cross_center - track_thickness / 2
 		box(
 			c,
 			{track_start, track_y, track_len, track_thickness},
-			DEFAULT_PALETTE.border,
+			palette(c).border,
 			track_thickness / 2,
 		)
 		thumb_x := track_start + norm * track_len
@@ -177,7 +177,7 @@ slider :: proc(
 			box(
 				c,
 				{track_start, track_y, fill_w, track_thickness},
-				DEFAULT_PALETTE.primary,
+				palette(c).primary,
 				track_thickness / 2,
 			)
 		}
@@ -189,6 +189,6 @@ slider :: proc(
 		)
 		// Label right-aligned against r.x + r.w.
 		display_w := c.measure_text(display, 17)
-		label(c, r.x + r.w - display_w, cross_center + 6, display, 17, DEFAULT_PALETTE.text)
+		label(c, r.x + r.w - display_w, cross_center + 6, display, 17, palette(c).text)
 	}
 }

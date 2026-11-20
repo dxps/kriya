@@ -34,17 +34,17 @@ checkbox :: proc(
 		if focused && c.enter {clicked = true}
 		if clicked {value^ = !value^}
 	}
-	border := DEFAULT_PALETTE.primary
+	border := palette(c).primary
 	if read_only {
-		border = DEFAULT_PALETTE.disabled
+		border = palette(c).disabled
 	} else {
-		if hover {border = DEFAULT_PALETTE.primary_hover}
-		if c.active == id && c.down {border = DEFAULT_PALETTE.primary_pressed}
+		if hover {border = palette(c).primary_hover}
+		if c.active == id && c.down {border = palette(c).primary_pressed}
 	}
 	if focused {focus_ring(c, box_r, corner_radius)}
 	box(c, box_r, border, corner_radius)
 	// One logical pixel of border, independent of the checked indicator.
-	box(c, {r.x + 1, r.y + 1, 16, 16}, DEFAULT_PALETTE.surface_raised, max(0, corner_radius - 1))
+	box(c, {r.x + 1, r.y + 1, 16, 16}, palette(c).surface_raised, max(0, corner_radius - 1))
 	if value^ {box(c, {r.x + 3, r.y + 3, 12, 12}, border, max(0, corner_radius - 3))}
 	label(c, r.x + 28, r.y + 14, text)
 }

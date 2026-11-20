@@ -20,7 +20,7 @@ level_slider := ui.Slider {
 draw_sliders :: proc(c: ^ui.Context) {
 	s := ui.col({WIDGET_X, 242, INPUT_W, 500}, gap = 0)
 
-	ui.label_in(c, ui.next(&s, 11), "VOLUME", 11, color = ui.DEFAULT_PALETTE.text_muted)
+	ui.label_in(c, ui.next(&s, 11), "VOLUME", 11, color = ui.palette(c).text_muted)
 	ui.skip(&s, 8)
 	ui.slider(
 		c,
@@ -33,7 +33,7 @@ draw_sliders :: proc(c: ^ui.Context) {
 	)
 	ui.skip(&s, 31)
 
-	ui.label_in(c, ui.next(&s, 11), "OPACITY", 11, color = ui.DEFAULT_PALETTE.text_muted)
+	ui.label_in(c, ui.next(&s, 11), "OPACITY", 11, color = ui.palette(c).text_muted)
 	ui.skip(&s, 8)
 	ui.slider(
 		c,
@@ -47,7 +47,7 @@ draw_sliders :: proc(c: ^ui.Context) {
 	)
 	ui.skip(&s, 41)
 
-	ui.label_in(c, ui.next(&s, 11), "LEVEL", 11, color = ui.DEFAULT_PALETTE.text_muted)
+	ui.label_in(c, ui.next(&s, 11), "LEVEL", 11, color = ui.palette(c).text_muted)
 	ui.skip(&s, 8)
 
 	row := ui.row(ui.next(&s, 220), gap = 30)

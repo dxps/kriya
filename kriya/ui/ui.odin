@@ -131,6 +131,10 @@ Context :: struct {
 	focus_count:             int,
 	focus_ids_prev:          [MAX_FOCUSABLE]u64,
 	focus_count_prev:        int,
+	// Active theme; nil resolves to DARK_THEME in the palette() helper.
+	// Set via set_theme once at startup, or re-set each frame to swap
+	// at runtime.
+	theme:                   ^Theme,
 }
 begin :: proc(c: ^Context) {clear(&c.commands); c.pointer_cursor = false; c.offset_y = 0
 	c.clipped = false

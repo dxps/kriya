@@ -29,7 +29,7 @@ focus_ring :: proc(c: ^Context, r: Rect, radius: f32 = 0) {
 	box(
 		c,
 		{r.x - pad, r.y - pad, r.w + 2 * pad, r.h + 2 * pad},
-		DEFAULT_PALETTE.focus_ring,
+		palette(c).focus_ring,
 		radius + pad,
 	)
 }

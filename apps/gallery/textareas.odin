@@ -23,7 +23,7 @@ init_textarea_examples :: proc() {
 draw_textareas :: proc(c: ^ui.Context) {
 	s := ui.col({WIDGET_X, 242, INPUT_W, 450}, gap = 0)
 
-	ui.label_in(c, ui.next(&s, 11), "NO WRAP", 11, color = ui.DEFAULT_PALETTE.text_muted)
+	ui.label_in(c, ui.next(&s, 11), "NO WRAP", 11, color = ui.palette(c).text_muted)
 	ui.skip(&s, 8)
 	ui.textarea(
 		c,
@@ -35,7 +35,7 @@ draw_textareas :: proc(c: ^ui.Context) {
 	)
 	ui.skip(&s, 23)
 
-	ui.label_in(c, ui.next(&s, 11), "WRAPPED", 11, color = ui.DEFAULT_PALETTE.text_muted)
+	ui.label_in(c, ui.next(&s, 11), "WRAPPED", 11, color = ui.palette(c).text_muted)
 	ui.skip(&s, 8)
 	ui.textarea(
 		c,

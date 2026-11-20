@@ -16,16 +16,16 @@ button :: proc(
 		focused = focusable(c, id, r)
 		if focused && c.enter {clicked = true}
 	}
-	color := DEFAULT_PALETTE.primary
-	if hover {color = DEFAULT_PALETTE.primary_hover}
-	if c.active == id && c.down {color = DEFAULT_PALETTE.primary_pressed}
-	if disabled {color = DEFAULT_PALETTE.disabled}
+	color := palette(c).primary
+	if hover {color = palette(c).primary_hover}
+	if c.active == id && c.down {color = palette(c).primary_pressed}
+	if disabled {color = palette(c).disabled}
 	if focused {focus_ring(c, r, corner_radius)}
 	box(
 		c,
 		r,
 		color,
 		corner_radius,
-	); label(c, r.x + 18, r.y + 28, text, 18, DEFAULT_PALETTE.text_on_primary)
+	); label(c, r.x + 18, r.y + 28, text, 18, palette(c).text_on_primary)
 	return clicked
 }

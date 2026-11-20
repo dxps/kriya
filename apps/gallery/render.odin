@@ -121,11 +121,13 @@ render :: proc() {
 				colors = {
 					0 = {
 						load_action = .CLEAR,
+						// Clear to the theme's surface so a light-mode switch
+						// doesn't leave a dark halo at the edges.
 						clear_value = {
-							GALLERY_BACKGROUND[0],
-							GALLERY_BACKGROUND[1],
-							GALLERY_BACKGROUND[2],
-							GALLERY_BACKGROUND[3],
+							ui.palette(&ctx).surface[0],
+							ui.palette(&ctx).surface[1],
+							ui.palette(&ctx).surface[2],
+							ui.palette(&ctx).surface[3],
 						},
 					},
 				},

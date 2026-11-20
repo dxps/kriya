@@ -143,11 +143,11 @@ dropdown :: proc(
 	value.scroll = clamp(value.scroll, 0, max_scroll)
 	// Read-only skips the hover / open / focus border accents and uses a
 	// raised inner surface so the field reads as non-interactive at a glance.
-	border := DEFAULT_PALETTE.border
+	border := palette(c).border
 	if !read_only && (hover || value.open || trigger_focused) {
-		border = DEFAULT_PALETTE.primary_bright
+		border = palette(c).primary_bright
 	}
-	surface := read_only ? DEFAULT_PALETTE.surface_raised : DEFAULT_PALETTE.surface
+	surface := read_only ? palette(c).surface_raised : palette(c).surface
 	box(c, r, border, corner_radius)
 	box(
 		c,
@@ -164,7 +164,7 @@ dropdown :: proc(
 			r.y + pad_y + 15,
 			placeholder,
 			17,
-			DEFAULT_PALETTE.text_muted,
+			palette(c).text_muted,
 		)
 	}
 	// Arrow sits with its right tip one pad_x inside the field's right edge,
@@ -172,7 +172,7 @@ dropdown :: proc(
 	// own half-width so pad_x really is the gap to the border.
 	arrow_x := r.x + r.w - pad_x - 5
 	arrow_y := r.y + r.h / 2
-	arrow_color := DEFAULT_PALETTE.text_subtle
+	arrow_color := palette(c).text_subtle
 	if value.open {
 		triangle(
 			c,
@@ -214,11 +214,11 @@ dropdown :: proc(
 		prev_layer := c.layer
 		c.layer = .Overlay
 		defer c.layer = prev_layer
-		box(c, menu, DEFAULT_PALETTE.overlay_border, corner_radius)
+		box(c, menu, palette(c).overlay_border, corner_radius)
 		box(
 			c,
 			{menu.x + 1, menu.y + 1, menu.w - 2, menu.h - 2},
-			DEFAULT_PALETTE.overlay,
+			palette(c).overlay,
 			max(0, corner_radius - 1),
 		)
 		if searchable {
@@ -232,23 +232,23 @@ dropdown :: proc(
 			// tracks the input's focus / hover state so the bright focus
 			// ring stays continuous along the whole frame.
 			flat := resolve_corner_radius(c, nil)
-			search_border := DEFAULT_PALETTE.border
-			if contains(c, search_rect) {search_border = DEFAULT_PALETTE.border_hover}
-			if c.focused == search_id {search_border = DEFAULT_PALETTE.primary_bright}
+			search_border := palette(c).border
+			if contains(c, search_rect) {search_border = palette(c).border_hover}
+			if c.focused == search_id {search_border = palette(c).primary_bright}
 			bot_y := search_rect.y + search_rect.h - flat
 			// Bottom-left: border square, then inner surface inset by 1 on
 			// the left and 1 on the bottom to keep the border band.
 			box(c, {search_rect.x, bot_y, flat, flat}, search_border)
-			box(c, {search_rect.x + 1, bot_y, flat - 1, flat - 1}, DEFAULT_PALETTE.surface)
+			box(c, {search_rect.x + 1, bot_y, flat - 1, flat - 1}, palette(c).surface)
 			// Bottom-right: mirror — border band on right and bottom.
 			box(c, {search_rect.x + search_rect.w - flat, bot_y, flat, flat}, search_border)
 			box(
 				c,
 				{search_rect.x + search_rect.w - flat, bot_y, flat - 1, flat - 1},
-				DEFAULT_PALETTE.surface,
+				palette(c).surface,
 			)
 			// Thin divider between search and options.
-			box(c, {menu.x + 1, menu.y + search_h, menu.w - 2, 1}, DEFAULT_PALETTE.divider)
+			box(c, {menu.x + 1, menu.y + search_h, menu.w - 2, 1}, palette(c).divider)
 		}
 		// Empty-state row when the query has no matches. Draws inside the
 		// menu interior so the popup stays shaped and the panel's rounded
@@ -260,7 +260,7 @@ dropdown :: proc(
 				menu.y + search_h + pad_y + 12,
 				"No matches",
 				16,
-				DEFAULT_PALETTE.text_muted,
+				palette(c).text_muted,
 			)
 		}
 		// Scrollbar geometry. When the content fits, nothing scrolls and
@@ -352,9 +352,9 @@ dropdown :: proc(
 				value.scroll = 0
 				if searchable {set_text(&value.query, "")}
 			}
-			item_color := DEFAULT_PALETTE.overlay
-			if i == value.selected {item_color = DEFAULT_PALETTE.item_selected}
-			if item_hover {item_color = DEFAULT_PALETTE.item_hover}
+			item_color := palette(c).overlay
+			if i == value.selected {item_color = palette(c).item_selected}
+			if item_hover {item_color = palette(c).item_hover}
 			round_top := edge_rows_rounded && !searchable && visible_i == 0
 			round_bot := edge_rows_rounded && visible_i == menu_rows - 1
 			if round_top || round_bot {
@@ -401,11 +401,11 @@ dropdown :: proc(
 		) {
 			c.clip = {cx, cy, csz, csz}
 			c.clipped = true
-			box(c, menu, DEFAULT_PALETTE.overlay_border, corner_radius)
+			box(c, menu, palette(c).overlay_border, corner_radius)
 			box(
 				c,
 				{menu.x + 1, menu.y + 1, menu.w - 2, menu.h - 2},
-				DEFAULT_PALETTE.overlay,
+				palette(c).overlay,
 				max(0, corner_radius - 1),
 			)
 		}
@@ -445,8 +445,8 @@ dropdown :: proc(
 			w: f32 = hot ? 7 : 5
 			alpha: f32 = hot ? 0.95 : 0.75
 			center_x := track_x + 2
-			tr := DEFAULT_PALETTE.scroll_track
-			th := DEFAULT_PALETTE.scroll_thumb
+			tr := palette(c).scroll_track
+			th := palette(c).scroll_thumb
 			box(
 				c,
 				{center_x - w / 2, track_y, w, track_h},
