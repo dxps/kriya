@@ -1,5 +1,7 @@
 package main
 
+import ui "kriya:ui"
+
 // Sidebar column (left rail).
 SIDEBAR_W           :: f32(230)
 SIDEBAR_TEXT_X      :: f32(28)
@@ -42,3 +44,16 @@ INPUT_W   :: f32(360)
 // bottom insets plus ~18 px for a 17pt glyph; equals CONTROL_H at the
 // default padding of 14.
 field_h :: proc() -> f32 {return 2 * configured_padding() + 18}
+
+// Opens a captioned-field group inside a column stack: emits an 11 pt
+// muted caption slot, skips 8 px, then returns the field_h()-tall slot
+// for the widget. The caller plugs the returned rect into whichever
+// field they're drawing — dropdown, input, something else — which keeps
+// the widget's own options (searchable, password, read_only) out of the
+// helper. The post-field skip stays at the call site since each group
+// tunes it differently.
+field_group :: proc(c: ^ui.Context, s: ^ui.Stack, caption: string) -> ui.Rect {
+	ui.label_in(c, ui.next(s, 11), caption, 11, color = ui.DEFAULT_PALETTE.text_muted)
+	ui.skip(s, 8)
+	return ui.next(s, field_h())
+}

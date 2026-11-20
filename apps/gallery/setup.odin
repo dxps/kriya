@@ -36,20 +36,15 @@ configured_padding :: proc() -> f32 {
 }
 
 // Container y=242 lifts the first label's baseline (size-11 Start = y + 8.25)
-// onto the original 250. Each slot is sized to the glyph height so label_in's
-// default Center alignment coincides with Start — skips below carry the
-// visual spacing between the two field groups and the status block.
+// onto the original 250. field_group emits the caption + 8 px skip and
+// hands back the field_h() slot; the trailing skip stays per-group.
 draw_setup :: proc(c: ^ui.Context) {
 	s := ui.col({WIDGET_X, 242, INPUT_W, 300}, gap = 0)
 
-	ui.label_in(c, ui.next(&s, 11), "CORNER RADIUS", 11, color = ui.DEFAULT_PALETTE.text_muted)
-	ui.skip(&s, 8)
-	ui.dropdown(c, 50, ui.next(&s, field_h()), radius_options, &radius_dropdown)
+	ui.dropdown(c, 50, field_group(c, &s, "CORNER RADIUS"), radius_options, &radius_dropdown)
 	ui.skip(&s, 32)
 
-	ui.label_in(c, ui.next(&s, 11), "PADDING", 11, color = ui.DEFAULT_PALETTE.text_muted)
-	ui.skip(&s, 8)
-	ui.dropdown(c, 51, ui.next(&s, field_h()), padding_options, &padding_dropdown)
+	ui.dropdown(c, 51, field_group(c, &s, "PADDING"), padding_options, &padding_dropdown)
 	ui.skip(&s, 32)
 
 	ui.label_in(

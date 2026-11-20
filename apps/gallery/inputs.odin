@@ -10,24 +10,19 @@ init_input_examples :: proc() {
 	ui.set_text(&password_input, "analytical-engine")
 }
 
-// Two field groups (caption + input) share the setup.odin spacing idiom:
-// caption slot = font height, skip 8 to the field, skip 31/36 between
-// groups and before the help line. Container y=242 places the first
-// caption baseline on the original 250.
+// Two field groups (caption + input) share the setup.odin spacing idiom
+// via field_group; the per-group trailing skip (31 / 36) stays here so
+// each group can tune its own pre-footer spacing.
 draw_inputs :: proc(c: ^ui.Context) {
 	s := ui.col({WIDGET_X, 242, INPUT_W, 300}, gap = 0)
 
-	ui.label_in(c, ui.next(&s, 11), "STANDARD", 11, color = ui.DEFAULT_PALETTE.text_muted)
-	ui.skip(&s, 8)
-	ui.input(c, 20, ui.next(&s, field_h()), "Enter a name", &name_input, read_only = inputs_read_only)
+	ui.input(c, 20, field_group(c, &s, "STANDARD"), "Enter a name", &name_input, read_only = inputs_read_only)
 	ui.skip(&s, 31)
 
-	ui.label_in(c, ui.next(&s, 11), "PASSWORD", 11, color = ui.DEFAULT_PALETTE.text_muted)
-	ui.skip(&s, 8)
 	ui.input(
 		c,
 		21,
-		ui.next(&s, field_h()),
+		field_group(c, &s, "PASSWORD"),
 		"Enter a password",
 		&password_input,
 		password = true,
