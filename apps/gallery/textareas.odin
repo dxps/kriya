@@ -16,25 +16,38 @@ init_textarea_examples :: proc() {
 	)
 }
 
+// Two textareas (160 and 150 tall) with captions, then a read-only
+// toggle. Container y=242 puts the first caption baseline on the
+// original 250; textarea heights stay literal because they're a design
+// choice, not a derived size.
 draw_textareas :: proc(c: ^ui.Context) {
-	ui.label(c, WIDGET_X, 250, "NO WRAP", 11, ui.DEFAULT_PALETTE.text_muted)
+	s := ui.col({WIDGET_X, 242, INPUT_W, 450}, gap = 0)
+
+	ui.label_in(c, ui.next(&s, 11), "NO WRAP", 11, color = ui.DEFAULT_PALETTE.text_muted)
+	ui.skip(&s, 8)
 	ui.textarea(
 		c,
 		30,
-		{WIDGET_X, 266, INPUT_W, 160},
+		ui.next(&s, 160),
 		"Jot something down",
 		&notes,
 		read_only = textareas_read_only,
 	)
-	ui.label(c, WIDGET_X, 452, "WRAPPED", 11, ui.DEFAULT_PALETTE.text_muted)
+	ui.skip(&s, 23)
+
+	ui.label_in(c, ui.next(&s, 11), "WRAPPED", 11, color = ui.DEFAULT_PALETTE.text_muted)
+	ui.skip(&s, 8)
 	ui.textarea(
 		c,
 		31,
-		{WIDGET_X, 468, INPUT_W, 150},
+		ui.next(&s, 150),
 		"Paragraph",
 		&wrapped_notes,
 		wrap = true,
 		read_only = textareas_read_only,
 	)
-	ui.toggle(c, 32, WIDGET_X, 638, "Read-only", &textareas_read_only)
+	ui.skip(&s, 25)
+
+	r := ui.next(&s, 18)
+	ui.toggle(c, 32, r.x, r.y, "Read-only", &textareas_read_only)
 }

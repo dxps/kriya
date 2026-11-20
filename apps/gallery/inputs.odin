@@ -10,26 +10,34 @@ init_input_examples :: proc() {
 	ui.set_text(&password_input, "analytical-engine")
 }
 
+// Two field groups (caption + input) share the setup.odin spacing idiom:
+// caption slot = font height, skip 8 to the field, skip 31/36 between
+// groups and before the help line. Container y=242 places the first
+// caption baseline on the original 250.
 draw_inputs :: proc(c: ^ui.Context) {
-	ui.label(c, WIDGET_X, 250, "STANDARD", 11, ui.DEFAULT_PALETTE.text_muted)
-	ui.input(
-		c,
-		20,
-		{WIDGET_X, 266, INPUT_W, field_h()},
-		"Enter a name",
-		&name_input,
-		read_only = inputs_read_only,
-	)
-	ui.label(c, WIDGET_X, 346, "PASSWORD", 11, ui.DEFAULT_PALETTE.text_muted)
+	s := ui.col({WIDGET_X, 242, INPUT_W, 300}, gap = 0)
+
+	ui.label_in(c, ui.next(&s, 11), "STANDARD", 11, color = ui.DEFAULT_PALETTE.text_muted)
+	ui.skip(&s, 8)
+	ui.input(c, 20, ui.next(&s, field_h()), "Enter a name", &name_input, read_only = inputs_read_only)
+	ui.skip(&s, 31)
+
+	ui.label_in(c, ui.next(&s, 11), "PASSWORD", 11, color = ui.DEFAULT_PALETTE.text_muted)
+	ui.skip(&s, 8)
 	ui.input(
 		c,
 		21,
-		{WIDGET_X, 362, INPUT_W, field_h()},
+		ui.next(&s, field_h()),
 		"Enter a password",
 		&password_input,
 		password = true,
 		read_only = inputs_read_only,
 	)
-	ui.label(c, WIDGET_X, 452, "Click the eye to reveal or hide the password.", 17)
-	ui.toggle(c, 22, WIDGET_X, 488, "Read-only", &inputs_read_only)
+	ui.skip(&s, 36)
+
+	ui.label_in(c, ui.next(&s, 17), "Click the eye to reveal or hide the password.", 17)
+	ui.skip(&s, 32)
+
+	r := ui.next(&s, 18)
+	ui.toggle(c, 22, r.x, r.y, "Read-only", &inputs_read_only)
 }

@@ -31,28 +31,38 @@ country_dropdown := ui.Dropdown {
 }
 dropdowns_read_only: bool
 
+// Two dropdown groups separated by a selected-value readout, then a
+// read-only toggle. Container y=242 puts the first caption baseline on
+// the original 250; the four skips carry the original visual gaps.
 draw_dropdowns :: proc(c: ^ui.Context) {
-	ui.label(c, WIDGET_X, 250, "LANGUAGE", 11, ui.DEFAULT_PALETTE.text_muted)
+	s := ui.col({WIDGET_X, 242, INPUT_W, 300}, gap = 0)
+
+	ui.label_in(c, ui.next(&s, 11), "LANGUAGE", 11, color = ui.DEFAULT_PALETTE.text_muted)
+	ui.skip(&s, 8)
 	ui.dropdown(
 		c,
 		30,
-		{WIDGET_X, 266, INPUT_W, field_h()},
+		ui.next(&s, field_h()),
 		framework_options,
 		&framework_dropdown,
 		read_only = dropdowns_read_only,
 	)
-	ui.label(
+	ui.skip(&s, 26)
+
+	ui.label_in(
 		c,
-		WIDGET_X,
-		346,
+		ui.next(&s, 17),
 		fmt.tprintf("Selected value: %s", framework_options[framework_dropdown.selected]),
 		17,
 	)
-	ui.label(c, WIDGET_X, 400, "COUNTRY (SEARCHABLE)", 11, ui.DEFAULT_PALETTE.text_muted)
+	ui.skip(&s, 42)
+
+	ui.label_in(c, ui.next(&s, 11), "COUNTRY (SEARCHABLE)", 11, color = ui.DEFAULT_PALETTE.text_muted)
+	ui.skip(&s, 8)
 	ui.dropdown(
 		c,
 		32,
-		{WIDGET_X, 416, INPUT_W, field_h()},
+		ui.next(&s, field_h()),
 		country_options,
 		&country_dropdown,
 		placeholder = "Pick a country",
@@ -60,5 +70,8 @@ draw_dropdowns :: proc(c: ^ui.Context) {
 		searchable = true,
 		max_visible = 6,
 	)
-	ui.toggle(c, 31, WIDGET_X, 496, "Read-only", &dropdowns_read_only)
+	ui.skip(&s, 39)
+
+	r := ui.next(&s, 18)
+	ui.toggle(c, 31, r.x, r.y, "Read-only", &dropdowns_read_only)
 }
