@@ -20,9 +20,12 @@ toggle :: proc(c: ^Context, id: u64, r: Rect, text: string, value: ^bool, read_o
 	// muted palette tones. The thumb still slides to the current side so
 	// the state stays readable as a non-interactive display.
 	hover: bool
+	focused: bool
 	if !read_only {
 		clicked: bool
 		hover, clicked = pressable(c, id, hit)
+		focused = focusable(c, id, hit)
+		if focused && c.enter {clicked = true}
 		if clicked {value^ = !value^}
 	}
 	track_color := DEFAULT_PALETTE.border
@@ -33,6 +36,7 @@ toggle :: proc(c: ^Context, id: u64, r: Rect, text: string, value: ^bool, read_o
 	} else if hover {
 		track_color = DEFAULT_PALETTE.border_hover
 	}
+	if focused {focus_ring(c, track, 9)}
 	box(c, track, track_color, 9)
 	thumb_x := value^ ? r.x + 17 : r.x + 3
 	thumb_color := read_only ? DEFAULT_PALETTE.text_subtle : DEFAULT_PALETTE.text

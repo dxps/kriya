@@ -121,12 +121,44 @@ Context :: struct {
 	// can see last frame's claim — a one-frame lag on opening is fine.
 	scroll_claim_id:         u64,
 	scroll_claim:            Rect,
+	// Focus traversal. nav_tab is a one-frame flag like the other nav_*
+	// keys; the backend sets it on Tab (with nav_shift for Shift-Tab).
+	// focus_ids captures the ids widgets register via 'focusable' this
+	// frame, in draw order; end() rotates it into focus_ids_prev so the
+	// next begin() can walk a complete list before any widget has drawn.
+	nav_tab:                 bool,
+	focus_ids:               [MAX_FOCUSABLE]u64,
+	focus_count:             int,
+	focus_ids_prev:          [MAX_FOCUSABLE]u64,
+	focus_count_prev:        int,
 }
 begin :: proc(c: ^Context) {clear(&c.commands); c.pointer_cursor = false; c.offset_y = 0
 	c.clipped = false
 	c.input_blocked = false
 	c.layer = .Base
-	c.content_bottom = 0}
+	c.content_bottom = 0
+	// Tab handling runs against LAST frame's focus registry (filled by
+	// end), so the whole list is available before any widget has drawn
+	// this frame. A focused id that's no longer registered (widget
+	// disappeared, focus was cleared) tabs to the first widget, and
+	// shift-tabs to the last.
+	if c.nav_tab && c.focus_count_prev > 0 {
+		current := -1
+		for i in 0 ..< c.focus_count_prev {
+			if c.focus_ids_prev[i] == c.focused {current = i; break}
+		}
+		n := c.focus_count_prev
+		if c.nav_shift {
+			idx := current - 1
+			if idx < 0 {idx = n - 1}
+			c.focused = c.focus_ids_prev[idx]
+		} else {
+			idx := current + 1
+			if idx >= n {idx = 0}
+			c.focused = c.focus_ids_prev[idx]
+		}
+	}
+	c.focus_count = 0}
 end :: proc(c: ^Context) {c.pressed = false; c.released = false; c.moved = false; c.wheel_y = 0
 	c.wheel_x = 0
 	c.typed_len = 0
@@ -153,7 +185,12 @@ end :: proc(c: ^Context) {c.pressed = false; c.released = false; c.moved = false
 	c.cut_request = false
 	c.undo_request = false
 	c.redo_request = false
-	c.paste_len = 0}
+	c.paste_len = 0
+	c.nav_tab = false
+	// Rotate this frame's focus registry into _prev for next frame's
+	// Tab handling. Fixed-size arrays copy by assignment in Odin.
+	c.focus_ids_prev = c.focus_ids
+	c.focus_count_prev = c.focus_count}
 set_corner_radius :: proc(c: ^Context, radius: f32) {c.corner_radius = max(0, radius)}
 resolve_corner_radius :: proc(c: ^Context, radius: Maybe(f32)) -> f32 {
 	if r, ok := radius.?; ok {return r}

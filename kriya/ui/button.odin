@@ -10,11 +10,17 @@ button :: proc(
 ) -> bool {
 	corner_radius := resolve_corner_radius(c, radius)
 	hover, clicked: bool
-	if !disabled {hover, clicked = pressable(c, id, r)}
+	focused: bool
+	if !disabled {
+		hover, clicked = pressable(c, id, r)
+		focused = focusable(c, id, r)
+		if focused && c.enter {clicked = true}
+	}
 	color := DEFAULT_PALETTE.primary
 	if hover {color = DEFAULT_PALETTE.primary_hover}
 	if c.active == id && c.down {color = DEFAULT_PALETTE.primary_pressed}
 	if disabled {color = DEFAULT_PALETTE.disabled}
+	if focused {focus_ring(c, r, corner_radius)}
 	box(
 		c,
 		r,

@@ -8,6 +8,7 @@ Palette :: struct {
 	item_selected, item_hover:                               Color,
 	disabled:                                                Color,
 	scroll_track, scroll_thumb:                              Color,
+	focus_ring:                                              Color,
 }
 
 DEFAULT_PALETTE :: Palette {
@@ -31,4 +32,5 @@ DEFAULT_PALETTE :: Palette {
 	disabled        = {0.20, 0.25, 0.28, 1},
 	scroll_track    = {0.26, 0.34, 0.37, 1},
 	scroll_thumb    = {0.42, 0.69, 0.64, 1},
+	focus_ring      = {0.46, 0.92, 0.80, 1},
 }

@@ -26,9 +26,12 @@ checkbox :: proc(
 	// pressed) are suppressed. The box still shows the current state —
 	// drawn in the palette's disabled tone — so the value stays readable.
 	hover: bool
+	focused: bool
 	if !read_only {
 		clicked: bool
 		hover, clicked = pressable(c, id, hit)
+		focused = focusable(c, id, hit)
+		if focused && c.enter {clicked = true}
 		if clicked {value^ = !value^}
 	}
 	border := DEFAULT_PALETTE.primary
@@ -38,6 +41,7 @@ checkbox :: proc(
 		if hover {border = DEFAULT_PALETTE.primary_hover}
 		if c.active == id && c.down {border = DEFAULT_PALETTE.primary_pressed}
 	}
+	if focused {focus_ring(c, box_r, corner_radius)}
 	box(c, box_r, border, corner_radius)
 	// One logical pixel of border, independent of the checked indicator.
 	box(c, {r.x + 1, r.y + 1, 16, 16}, DEFAULT_PALETTE.surface_raised, max(0, corner_radius - 1))
