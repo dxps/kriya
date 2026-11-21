@@ -13,6 +13,7 @@ SECTIONS :: [?]Section {
 	{"Checkboxes", "/checkboxes"},
 	{"Radios", "/radios"},
 	{"Segmented", "/segmented"},
+	{"Tabs", "/tabs"},
 	{"Toggles", "/toggles"},
 	{"Sliders", "/sliders"},
 	{"Typography", "/typography"},
