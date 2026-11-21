@@ -147,6 +147,11 @@ Context :: struct {
 	// tooltip_hover_time > its own delay; the widget draws at that point.
 	tooltip_id:              u64,
 	tooltip_hover_time:      f32,
+	// Full window rect in current coord space. Host sets each frame so
+	// modal() can center its dialog against the actual window regardless
+	// of what the view is drawing inside. Defaults to {0, 0, 0, 0}, in
+	// which case modal falls back to {0, 0, 1024, 720}.
+	viewport:                Rect,
 }
 
 MAX_SCROLL_DEPTH :: 8

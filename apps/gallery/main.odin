@@ -62,6 +62,7 @@ frame :: proc "c" () {
 	ui.set_theme(&ctx, configured_theme())
 	w := sapp.widthf() / sapp.dpi_scale()
 	h := sapp.heightf() / sapp.dpi_scale()
+	ctx.viewport = ui.Rect{0, 0, w, h}
 	draw_sidebar(h)
 	view := views[selected]
 	scroll := &view_scroll[selected]
