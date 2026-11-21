@@ -53,7 +53,9 @@ field_h :: proc() -> f32 {return 2 * configured_padding() + 18}
 // helper. The post-field skip stays at the call site since each group
 // tunes it differently.
 field_group :: proc(c: ^ui.Context, s: ^ui.Stack, caption: string) -> ui.Rect {
-	ui.label_in(c, ui.next(s, 11), caption, 11, color = ui.palette(c).text_muted)
-	ui.skip(s, 8)
+	ts := ui.type_scale(c)
+	sp := ui.spacing(c)
+	ui.label_in(c, ui.next(s, ts.caption), caption, ts.caption, color = ui.palette(c).text_muted)
+	ui.skip(s, sp.sm)
 	return ui.next(s, field_h())
 }

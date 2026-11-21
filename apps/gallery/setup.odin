@@ -62,21 +62,22 @@ draw_setup :: proc(c: ^ui.Context) {
 	ui.dropdown(c, 52, field_group(c, &s, "THEME"), theme_options, &theme_dropdown)
 	ui.skip(&s, 32)
 
+	body := ui.type_scale(c).body
 	ui.label_in(
 		c,
-		ui.next(&s, 17),
+		ui.next(&s, body),
 		fmt.tprintf(
 			"Applied globally. Radius: %.0f px. Padding: %.0f px.",
 			configured_radius(),
 			configured_padding(),
 		),
-		17,
+		body,
 	)
 	ui.skip(&s, 13)
 	ui.label_in(
 		c,
-		ui.next(&s, 17),
+		ui.next(&s, body),
 		"Padding insets text in inputs, dropdowns and textareas. Switch views to see it.",
-		17,
+		body,
 	)
 }
