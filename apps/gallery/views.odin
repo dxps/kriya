@@ -11,17 +11,22 @@ View :: struct {
 	preview_h: f32,
 }
 
+// Order must match routes.SECTIONS so views[selected] addresses the
+// right gallery view. Comments mirror the group boundaries in routes.
 views := [?]View {
+	// Foundations
 	{draw_buttons, "apps/gallery/buttons.odin", 0},
 	{draw_inputs, "apps/gallery/inputs.odin", 0},
 	{draw_textareas, "apps/gallery/textareas.odin", 500},
 	{draw_dropdowns, "apps/gallery/dropdowns.odin", 0},
 	{draw_checkboxes, "apps/gallery/checkboxes.odin", 0},
+	{draw_toggles, "apps/gallery/toggles.odin", 0},
+	{draw_sliders, "apps/gallery/sliders.odin", 540},
+	// Choice
 	{draw_radios, "apps/gallery/radios.odin", 0},
 	{draw_segmented, "apps/gallery/segmented.odin", 0},
 	{draw_tabs, "apps/gallery/tabs.odin", 0},
-	{draw_toggles, "apps/gallery/toggles.odin", 0},
-	{draw_sliders, "apps/gallery/sliders.odin", 540},
+	// System
 	{draw_typography, "apps/gallery/typography.odin", 0},
 	{draw_composition, "apps/gallery/composition.odin", 0},
 	{draw_setup, "apps/gallery/setup.odin", 420},

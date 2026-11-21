@@ -5,20 +5,39 @@ Section :: struct {
 	path:  cstring,
 }
 
+// Sections are stored in group order so an index into SECTIONS is also
+// an index into the gallery's parallel views array. GROUPS below slices
+// into this flat list by (start, count) ranges rather than carrying
+// nested slices — simpler layout, no pointer soup.
 SECTIONS :: [?]Section {
+	// Foundations
 	{"Buttons", "/buttons"},
 	{"Inputs", "/inputs"},
 	{"Text areas", "/textareas"},
 	{"Dropdowns", "/dropdowns"},
 	{"Checkboxes", "/checkboxes"},
+	{"Toggles", "/toggles"},
+	{"Sliders", "/sliders"},
+	// Choice
 	{"Radios", "/radios"},
 	{"Segmented", "/segmented"},
 	{"Tabs", "/tabs"},
-	{"Toggles", "/toggles"},
-	{"Sliders", "/sliders"},
+	// System
 	{"Typography", "/typography"},
 	{"Composition", "/composition"},
 	{"Setup", "/setup"},
+}
+
+Section_Group :: struct {
+	title: string,
+	start: int, // first index in SECTIONS belonging to this group
+	count: int, // number of sections in the group
+}
+
+GROUPS :: [?]Section_Group {
+	{"FOUNDATIONS / 01", 0, 7},
+	{"CHOICE / 02", 7, 3},
+	{"SYSTEM / 03", 10, 3},
 }
 
 index :: proc(path: string) -> (int, bool) {

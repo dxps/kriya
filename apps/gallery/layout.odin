@@ -3,16 +3,19 @@ package main
 import ui "kriya:ui"
 
 // Sidebar column (left rail).
-SIDEBAR_W           :: f32(230)
-SIDEBAR_TEXT_X      :: f32(28)
-SIDEBAR_BRAND_Y     :: f32(52)
-SIDEBAR_KICKER_Y    :: f32(82) // "COMPONENT WORKSHOP"
-SIDEBAR_GROUP_Y     :: f32(140) // "FOUNDATIONS / 01"
-SIDEBAR_LINKS_Y     :: f32(164)
-SIDEBAR_LINK_X      :: f32(24)
-SIDEBAR_LINK_W      :: f32(182)
-SIDEBAR_LINK_H      :: f32(36)
-SIDEBAR_LINK_STRIDE :: f32(44)
+SIDEBAR_W                  :: f32(230)
+SIDEBAR_TEXT_X             :: f32(28)
+SIDEBAR_BRAND_Y            :: f32(52)
+SIDEBAR_KICKER_Y           :: f32(82) // "COMPONENT WORKSHOP"
+// First group's kicker baseline. Later groups advance from the previous
+// group's last-link bottom plus SIDEBAR_GROUP_GAP.
+SIDEBAR_GROUPS_Y           :: f32(140)
+SIDEBAR_KICKER_TO_LINK     :: f32(24) // kicker baseline → first link top
+SIDEBAR_GROUP_GAP          :: f32(20) // last-link bottom → next kicker baseline
+SIDEBAR_LINK_X             :: f32(24)
+SIDEBAR_LINK_W             :: f32(182)
+SIDEBAR_LINK_H             :: f32(36)
+SIDEBAR_LINK_STRIDE        :: f32(36) // compressed from 44 so 13 links + 3 kickers fit in 760 px
 
 // Right pane (page column), anchored at CONTENT_X with the preview card inside.
 CONTENT_X     :: f32(274)
