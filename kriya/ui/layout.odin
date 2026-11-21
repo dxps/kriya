@@ -180,6 +180,18 @@ inset :: proc(r: Rect, pad: f32) -> Rect {
 	return Rect{r.x + pad, r.y + pad, max(0, r.w - 2 * pad), max(0, r.h - 2 * pad)}
 }
 
+// Overlap of a and b. Empty when they don't touch — returns the zero
+// Rect, so callers can test Rect's w / h for a visible intersection.
+// Used by begin_scroll to clip a nested viewport against the outer one.
+intersect :: proc(a, b: Rect) -> Rect {
+	left := max(a.x, b.x)
+	top := max(a.y, b.y)
+	right := min(a.x + a.w, b.x + b.w)
+	bottom := min(a.y + a.h, b.y + b.h)
+	if right <= left || bottom <= top {return Rect{}}
+	return Rect{left, top, right - left, bottom - top}
+}
+
 // Split cuts 'r' along 'axis' at 'amount' pixels from the leading edge.
 // Returns (leading, trailing). Useful for simple "icon + rest" rows
 // without opening a full stack.

@@ -135,6 +135,26 @@ Context :: struct {
 	// Set via set_theme once at startup, or re-set each frame to swap
 	// at runtime.
 	theme:                   ^Theme,
+	// Nested scroll stack. begin_scroll pushes the outer clip / offset /
+	// content_bottom / input_blocked state and the current scroll's
+	// screen-space viewport; end_scroll pops and restores. Depth-bounded
+	// so the frame array can live on the Context without an allocator.
+	scroll_stack:            [MAX_SCROLL_DEPTH]Scroll_Frame,
+	scroll_depth:            int,
+}
+
+MAX_SCROLL_DEPTH :: 8
+
+Scroll_Frame :: struct {
+	outer_clip:           Rect,
+	outer_clipped:        bool,
+	outer_offset_y:       f32,
+	outer_content_bottom: f32,
+	outer_input_blocked:  bool,
+	// Current scroll's viewport in screen coordinates. Saved so
+	// end_scroll can draw its scrollbar without having to re-derive
+	// the screen position from c.offset_y, which it just restored.
+	screen_viewport:      Rect,
 }
 begin :: proc(c: ^Context) {clear(&c.commands); c.pointer_cursor = false; c.offset_y = 0
 	c.clipped = false

@@ -99,3 +99,99 @@ scrollbar_track_click_and_drag_capture_input :: proc(t: ^testing.T) {
 	testing.expect(t, !s.dragging && s.offset == 200)
 	end_scroll(&c, &s)
 }
+
+@(test)
+nested_scroll_accumulates_offset_and_restores_outer :: proc(t: ^testing.T) {
+	c: Context
+	defer delete(c.commands)
+	outer := Scroll_State{offset = 100, content_height = 1000}
+	inner := Scroll_State{offset = 30, content_height = 300}
+
+	// Outer scroll at screen viewport {0, 0, 400, 400}, offset 100 →
+	// c.offset_y = -100 while outer is open.
+	begin_scroll(&c, &outer, {0, 0, 400, 400}, 0.016)
+	testing.expect(t, c.offset_y == -100)
+	testing.expect(t, c.clipped)
+
+	// Inner scroll at content y=200 (parent coords), offset 30 → c.offset_y
+	// = -100 + -30 = -130 while inner is open. Nested scrolls stack.
+	begin_scroll(&c, &inner, {0, 200, 400, 150}, 0.016)
+	testing.expect(t, c.offset_y == -130)
+	testing.expect(t, c.scroll_depth == 2)
+
+	end_scroll(&c, &inner)
+	// After popping, outer's offset is restored.
+	testing.expect(t, c.offset_y == -100)
+	testing.expect(t, c.clipped)
+	testing.expect(t, c.scroll_depth == 1)
+
+	end_scroll(&c, &outer)
+	testing.expect(t, c.offset_y == 0)
+	testing.expect(t, !c.clipped)
+	testing.expect(t, c.scroll_depth == 0)
+}
+
+@(test)
+nested_scroll_intersects_inner_clip_with_outer :: proc(t: ^testing.T) {
+	c: Context
+	defer delete(c.commands)
+	outer := Scroll_State{content_height = 1000}
+	inner := Scroll_State{content_height = 500}
+
+	// Outer viewport {0, 0, 400, 300}. Inner at content y=100, extending
+	// below the outer viewport — inner height 400 crosses outer's bottom.
+	// The intersected clip should be bounded by the outer viewport.
+	begin_scroll(&c, &outer, {0, 0, 400, 300}, 0.016)
+	begin_scroll(&c, &inner, {0, 100, 400, 400}, 0.016)
+
+	// Inner viewport in screen coords is {0, 100, 400, 400}. Intersected
+	// with outer {0, 0, 400, 300} it becomes {0, 100, 400, 200} — the
+	// inner's bottom half is clipped away.
+	testing.expect(t, c.clip == Rect{0, 100, 400, 200})
+	end_scroll(&c, &inner)
+	end_scroll(&c, &outer)
+}
+
+@(test)
+nested_scroll_propagates_inner_extent_to_outer_content_bottom :: proc(t: ^testing.T) {
+	c: Context
+	defer delete(c.commands)
+	outer := Scroll_State{content_height = 1000}
+	inner := Scroll_State{content_height = 100}
+
+	begin_scroll(&c, &outer, {0, 0, 400, 400}, 0.016)
+	// A content widget drawn above the inner scroll contributes to the
+	// outer's content_bottom first.
+	box(&c, {0, 50, 10, 10}, {1, 1, 1, 1})
+	testing.expect(t, c.content_bottom == 60)
+
+	// Inner scroll lives at parent content y=200..300. After ending, the
+	// outer's content_bottom should reflect at least the inner viewport's
+	// bottom (300), so the outer scrollbar knows to scroll past it.
+	begin_scroll(&c, &inner, {0, 200, 400, 100}, 0.016)
+	end_scroll(&c, &inner)
+	testing.expect(t, c.content_bottom == 300)
+	end_scroll(&c, &outer)
+}
+
+@(test)
+nested_scroll_wheel_claimed_by_inner :: proc(t: ^testing.T) {
+	c := Context{mx = 50, my = 250, wheel_y = 40}
+	defer delete(c.commands)
+	outer := Scroll_State{offset = 0, content_height = 1000}
+	inner := Scroll_State{offset = 0, content_height = 400}
+
+	// Cursor sits inside the inner viewport (screen {0, 200, 400, 100}).
+	// The outer's wheel-handling block runs first — it also sees the
+	// cursor inside its own viewport — then the inner's.
+	//
+	// Current behavior: both consume the wheel. A follow-up could make
+	// the inner claim and prevent the outer. For now the test documents
+	// what happens.
+	begin_scroll(&c, &outer, {0, 0, 400, 400}, 0.016)
+	testing.expect(t, outer.offset == 40)
+	begin_scroll(&c, &inner, {0, 200, 400, 100}, 0.016)
+	testing.expect(t, inner.offset == 40)
+	end_scroll(&c, &inner)
+	end_scroll(&c, &outer)
+}
