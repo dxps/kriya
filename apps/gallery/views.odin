@@ -33,6 +33,8 @@ views := [?]View {
 	{draw_typography, "apps/gallery/typography.odin", 0},
 	{draw_composition, "apps/gallery/composition.odin", 0},
 	{draw_setup, "apps/gallery/setup.odin", 420},
+	// Data
+	{draw_badges, "apps/gallery/badges.odin", 0},
 }
 view_scroll: [len(views)]ui.Scroll_State
 #assert(len(views) == len(routes.SECTIONS))

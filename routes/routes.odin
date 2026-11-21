@@ -29,6 +29,8 @@ SECTIONS :: [?]Section {
 	{"Typography", "/typography"},
 	{"Composition", "/composition"},
 	{"Setup", "/setup"},
+	// Data
+	{"Badges", "/badges"},
 }
 
 Section_Group :: struct {
@@ -41,6 +43,7 @@ GROUPS :: [?]Section_Group {
 	{"FOUNDATIONS / 01", 0, 10},
 	{"CHOICE / 02", 10, 3},
 	{"SYSTEM / 03", 13, 3},
+	{"DATA / 04", 16, 1},
 }
 
 index :: proc(path: string) -> (int, bool) {
