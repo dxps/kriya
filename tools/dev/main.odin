@@ -1,6 +1,5 @@
 package main
 
-import "../../routes"
 import "core:fmt"
 import "core:net"
 import "core:os"
@@ -28,7 +27,7 @@ snapshot :: proc() -> Build_State {
 }
 fingerprint :: proc() -> u64 {
 	h: u64 = 14695981039346656037
-	for root in ([]string{"apps", "kriya", "backends", "gallery", "web/fonts", "scripts"}) {
+	for root in ([]string{"apps", "kriya", "backends", "routes", "gallery", "web/fonts", "scripts"}) {
 		walker := os.walker_create(root)
 		for info in os.walker_walk(&walker) {
 			if info.type == .Directory {continue}
@@ -146,26 +145,33 @@ serve :: proc(client: net.TCP_Socket) {
 		return
 	}
 	file, mime: string
-	if _, ok := routes.index(path); ok {
-		file = "web/index.html"; mime = "text/html; charset=utf-8"
-	} else {
-		switch path {
-		case "/app.js":
-			file = "web/app.js"; mime = "text/javascript"
-		case "/app.wasm":
-			file = "web/app.wasm"; mime = "application/wasm"
-		case "/fonts/WorkSans.ttf":
-			file = "web/fonts/WorkSans.ttf"; mime = "font/ttf"
-		case "/fonts/Hasklig-Regular.ttf":
-			file = "web/fonts/Hasklig-Regular.ttf"; mime = "font/ttf"
-		case "/favicon.svg":
-			file = "web/favicon.svg"; mime = "image/svg+xml"
-		case "/favicon.ico":
-			file = "web/favicon.ico"; mime = "image/x-icon"
-		case:
+	switch path {
+	case "/app.js":
+		file = "web/app.js"; mime = "text/javascript"
+	case "/app.wasm":
+		file = "web/app.wasm"; mime = "application/wasm"
+	case "/fonts/WorkSans.ttf":
+		file = "web/fonts/WorkSans.ttf"; mime = "font/ttf"
+	case "/fonts/Hasklig-Regular.ttf":
+		file = "web/fonts/Hasklig-Regular.ttf"; mime = "font/ttf"
+	case "/favicon.svg":
+		file = "web/favicon.svg"; mime = "image/svg+xml"
+	case "/favicon.ico":
+		file = "web/favicon.ico"; mime = "image/x-icon"
+	case:
+		// SPA fallback: a path without a file extension is treated as
+		// a gallery route and served index.html so the WASM picks the
+		// view. A path with an extension (favicon.png, etc.) is a
+		// genuine asset request and gets a 404. This decouples the
+		// server from routes.SECTIONS so adding a section doesn't
+		// require restarting the dev server for direct URLs to work.
+		has_ext := false
+		for b in path {if b == '.' {has_ext = true; break}}
+		if has_ext {
 			respond(client, "404 Not Found", "text/plain", transmute([]u8)string("Not found"))
 			return
 		}
+		file = "web/index.html"; mime = "text/html; charset=utf-8"
 	}
 	sync.mutex_lock(&assets_mutex)
 	data, e := os.read_entire_file(file, context.temp_allocator)
