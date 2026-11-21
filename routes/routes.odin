@@ -11,6 +11,7 @@ SECTIONS :: [?]Section {
 	{"Text areas", "/textareas"},
 	{"Dropdowns", "/dropdowns"},
 	{"Checkboxes", "/checkboxes"},
+	{"Radios", "/radios"},
 	{"Toggles", "/toggles"},
 	{"Sliders", "/sliders"},
 	{"Typography", "/typography"},

@@ -17,6 +17,7 @@ views := [?]View {
 	{draw_textareas, "apps/gallery/textareas.odin", 500},
 	{draw_dropdowns, "apps/gallery/dropdowns.odin", 0},
 	{draw_checkboxes, "apps/gallery/checkboxes.odin", 0},
+	{draw_radios, "apps/gallery/radios.odin", 0},
 	{draw_toggles, "apps/gallery/toggles.odin", 0},
 	{draw_sliders, "apps/gallery/sliders.odin", 540},
 	{draw_typography, "apps/gallery/typography.odin", 0},
