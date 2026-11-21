@@ -18,6 +18,7 @@ SECTIONS :: [?]Section {
 	{"Checkboxes", "/checkboxes"},
 	{"Toggles", "/toggles"},
 	{"Sliders", "/sliders"},
+	{"Progress", "/progress"},
 	// Choice
 	{"Radios", "/radios"},
 	{"Segmented", "/segmented"},
@@ -35,9 +36,9 @@ Section_Group :: struct {
 }
 
 GROUPS :: [?]Section_Group {
-	{"FOUNDATIONS / 01", 0, 7},
-	{"CHOICE / 02", 7, 3},
-	{"SYSTEM / 03", 10, 3},
+	{"FOUNDATIONS / 01", 0, 8},
+	{"CHOICE / 02", 8, 3},
+	{"SYSTEM / 03", 11, 3},
 }
 
 index :: proc(path: string) -> (int, bool) {
