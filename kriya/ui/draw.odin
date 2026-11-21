@@ -116,13 +116,19 @@ label_in :: proc(
 	v: Align = .Center,
 	color: Maybe(Color) = nil,
 	font: Font = .Body,
+	truncate: bool = false,
 ) {
 	ASCENDER :: f32(0.75)
 	DESCENDER :: f32(0.25)
+	// When truncate is on, shorten text to fit r.w with a trailing "…"
+	// before measuring for alignment, so horizontal centering / end-
+	// alignment work on the post-truncation width.
+	display := text
+	if truncate {display = truncate_fit(c, text, r.w, size, font)}
 	x: f32 = r.x
 	if h != .Start {
 		assert(c.measure_text != nil, "label_in non-start alignment requires measure_text")
-		w := c.measure_text(text, size)
+		w := c.measure_text(display, size)
 		switch h {
 		case .Start:
 		case .Center:
@@ -140,7 +146,7 @@ label_in :: proc(
 	case .End:
 		y = r.y + r.h - size * DESCENDER
 	}
-	label(c, x, y, text, size, color, font)
+	label(c, x, y, display, size, color, font)
 }
 point_in_rect :: proc(x, y: f32, r: Rect) -> bool {return(
 		x >= r.x &&
