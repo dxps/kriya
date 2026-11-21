@@ -23,6 +23,7 @@ views := [?]View {
 	{draw_toggles, "apps/gallery/toggles.odin", 0},
 	{draw_sliders, "apps/gallery/sliders.odin", 540},
 	{draw_progress, "apps/gallery/progress.odin", 0},
+	{draw_tooltips, "apps/gallery/tooltips.odin", 0},
 	// Choice
 	{draw_radios, "apps/gallery/radios.odin", 0},
 	{draw_segmented, "apps/gallery/segmented.odin", 0},

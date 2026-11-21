@@ -7,6 +7,10 @@ SIDEBAR_W                  :: f32(230)
 SIDEBAR_TEXT_X             :: f32(28)
 SIDEBAR_BRAND_Y            :: f32(52)
 SIDEBAR_KICKER_Y           :: f32(82) // "COMPONENT WORKSHOP"
+// Top of the scrolled groups region. Brand and workshop label stay as
+// fixed header above this y; everything below scrolls when the groups
+// don't fit the window.
+SIDEBAR_SCROLL_Y           :: f32(108)
 // First group's kicker baseline. Later groups advance from the previous
 // group's last-link bottom plus SIDEBAR_GROUP_GAP.
 SIDEBAR_GROUPS_Y           :: f32(140)
@@ -15,7 +19,7 @@ SIDEBAR_GROUP_GAP          :: f32(20) // last-link bottom → next kicker baseli
 SIDEBAR_LINK_X             :: f32(24)
 SIDEBAR_LINK_W             :: f32(182)
 SIDEBAR_LINK_H             :: f32(36)
-SIDEBAR_LINK_STRIDE        :: f32(36) // compressed from 44 so 13 links + 3 kickers fit in 760 px
+SIDEBAR_LINK_STRIDE        :: f32(36)
 
 // Right pane (page column), anchored at CONTENT_X with the preview card inside.
 CONTENT_X     :: f32(274)

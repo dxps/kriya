@@ -141,6 +141,12 @@ Context :: struct {
 	// so the frame array can live on the Context without an allocator.
 	scroll_stack:            [MAX_SCROLL_DEPTH]Scroll_Frame,
 	scroll_depth:            int,
+	// Tooltip hover timer. One active hover at a time; tooltip_id is
+	// the widget id currently accumulating hover duration, cleared when
+	// the cursor leaves. A tooltip's delay is reached when
+	// tooltip_hover_time > its own delay; the widget draws at that point.
+	tooltip_id:              u64,
+	tooltip_hover_time:      f32,
 }
 
 MAX_SCROLL_DEPTH :: 8

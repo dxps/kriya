@@ -21,17 +21,27 @@ sidebar_link :: proc(c: ^ui.Context, id: u64, r: ui.Rect, text: string, active: 
 	return clicked
 }
 
-// Walks routes.GROUPS, emitting a kicker label per group followed by
-// its sections' links. 'y' tracks the next kicker baseline between
-// groups and the current link top inside them; the arithmetic at the
-// group boundary converts the last link's top into its bottom so the
-// group-to-group gap is measured from where the strip actually ends,
-// not where the loop happened to park the cursor.
+// The groups region scrolls independently of the brand header, so the
+// sidebar scales with the number of sections. One ui.Scroll_State lives
+// here to remember the sidebar's own offset across frames, separate
+// from the main view's scroll.
+sidebar_scroll: ui.Scroll_State
+
+// Walks routes.GROUPS inside a dedicated scroll viewport, emitting a
+// kicker label per group followed by its sections' links. 'y' tracks
+// the next kicker baseline between groups and the current link top
+// inside them; the arithmetic at the group boundary converts the last
+// link's top into its bottom so the group-to-group gap is measured from
+// where the strip actually ends, not where the loop happened to park
+// the cursor.
 draw_sidebar :: proc(h: f32) {
 	pal := ui.palette(&ctx)
 	ui.box(&ctx, {0, 0, SIDEBAR_W, h}, pal.surface_raised)
 	ui.label(&ctx, SIDEBAR_TEXT_X, SIDEBAR_BRAND_Y, "kriya", 36, pal.primary_bright)
 	ui.label(&ctx, SIDEBAR_TEXT_X, SIDEBAR_KICKER_Y, "COMPONENT WORKSHOP", 12)
+
+	viewport := ui.Rect{0, SIDEBAR_SCROLL_Y, SIDEBAR_W, max(0, h - SIDEBAR_SCROLL_Y)}
+	ui.begin_scroll(&ctx, &sidebar_scroll, viewport, ctx.dt)
 
 	sections := routes.SECTIONS
 	y: f32 = SIDEBAR_GROUPS_Y
@@ -58,4 +68,6 @@ draw_sidebar :: proc(h: f32) {
 		// SIDEBAR_GROUP_GAP is measured from a visually meaningful edge.
 		y = links_top + f32(group.count - 1) * SIDEBAR_LINK_STRIDE + SIDEBAR_LINK_H
 	}
+
+	ui.end_scroll(&ctx, &sidebar_scroll)
 }
