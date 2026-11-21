@@ -14,7 +14,7 @@ View :: struct {
 // Order must match routes.SECTIONS so views[selected] addresses the
 // right gallery view. Comments mirror the group boundaries in routes.
 views := [?]View {
-	// Foundations
+	// Widgets
 	{draw_buttons, "apps/gallery/buttons.odin", 0},
 	{draw_inputs, "apps/gallery/inputs.odin", 0},
 	{draw_textareas, "apps/gallery/textareas.odin", 500},
@@ -25,16 +25,14 @@ views := [?]View {
 	{draw_progress, "apps/gallery/progress.odin", 0},
 	{draw_tooltips, "apps/gallery/tooltips.odin", 0},
 	{draw_modals, "apps/gallery/modals.odin", 0},
-	// Choice
 	{draw_radios, "apps/gallery/radios.odin", 0},
 	{draw_segmented, "apps/gallery/segmented.odin", 0},
 	{draw_tabs, "apps/gallery/tabs.odin", 0},
+	{draw_badges, "apps/gallery/badges.odin", 0},
 	// System
 	{draw_typography, "apps/gallery/typography.odin", 0},
 	{draw_composition, "apps/gallery/composition.odin", 0},
 	{draw_setup, "apps/gallery/setup.odin", 420},
-	// Data
-	{draw_badges, "apps/gallery/badges.odin", 0},
 }
 view_scroll: [len(views)]ui.Scroll_State
 #assert(len(views) == len(routes.SECTIONS))

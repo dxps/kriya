@@ -10,7 +10,7 @@ Section :: struct {
 // into this flat list by (start, count) ranges rather than carrying
 // nested slices — simpler layout, no pointer soup.
 SECTIONS :: [?]Section {
-	// Foundations
+	// Widgets
 	{"Buttons", "/buttons"},
 	{"Inputs", "/inputs"},
 	{"Text areas", "/textareas"},
@@ -21,16 +21,14 @@ SECTIONS :: [?]Section {
 	{"Progress", "/progress"},
 	{"Tooltips", "/tooltips"},
 	{"Modals", "/modals"},
-	// Choice
 	{"Radios", "/radios"},
 	{"Segmented", "/segmented"},
 	{"Tabs", "/tabs"},
+	{"Badges", "/badges"},
 	// System
 	{"Typography", "/typography"},
 	{"Composition", "/composition"},
 	{"Setup", "/setup"},
-	// Data
-	{"Badges", "/badges"},
 }
 
 Section_Group :: struct {
@@ -40,10 +38,8 @@ Section_Group :: struct {
 }
 
 GROUPS :: [?]Section_Group {
-	{"FOUNDATIONS / 01", 0, 10},
-	{"CHOICE / 02", 10, 3},
-	{"SYSTEM / 03", 13, 3},
-	{"DATA / 04", 16, 1},
+	{"WIDGETS / 01", 0, 14},
+	{"SYSTEM / 02", 14, 3},
 }
 
 index :: proc(path: string) -> (int, bool) {
