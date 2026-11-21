@@ -17,8 +17,16 @@ package ui
 // propagate last-frame modal state via Context at frame begin to
 // pre-block input.
 
+// offset_x / offset_y persist across frames so the dialog stays where
+// the user left it when they drag; closing and reopening preserves the
+// last position. Reset by writing zeros if the caller wants to recenter.
 Modal :: struct {
-	open: bool,
+	open:     bool,
+	offset_x: f32,
+	offset_y: f32,
+	dragging: bool,
+	grab_x:   f32, // mouse x at press, relative to dialog origin
+	grab_y:   f32, // mouse y at press, relative to dialog origin
 }
 
 MODAL_PAD_X :: f32(24)
@@ -68,18 +76,44 @@ modal :: proc(
 	viewport := c.viewport
 	if viewport.w <= 0 || viewport.h <= 0 {viewport = Rect{0, 0, 1024, 720}}
 
-	dialog := Rect {
-		viewport.x + (viewport.w - width) / 2,
-		viewport.y + (viewport.h - height) / 2,
-		width,
-		height,
-	}
+	// Centered baseline — the drag offset nudges the dialog away from
+	// this position. Clamp applies against (center + offset) so the
+	// dialog can't be dragged off the viewport's edges.
+	center_x := viewport.x + (viewport.w - width) / 2
+	center_y := viewport.y + (viewport.h - height) / 2
+	dialog := Rect{center_x + value.offset_x, center_y + value.offset_y, width, height}
 
 	// Esc closes without picking an action.
 	if c.cancel {
 		value.open = false
+		value.dragging = false
 		return -1
 	}
+
+	// Drag region = title bar: top band covering padding + title height.
+	// Buttons sit at the bottom so they don't overlap this region.
+	drag_region := Rect{dialog.x, dialog.y, dialog.w, MODAL_PAD_Y + MODAL_TITLE_H}
+	if !value.dragging && c.pressed && point_in_rect(c.mx, c.my, drag_region) {
+		value.dragging = true
+		value.grab_x = c.mx - dialog.x
+		value.grab_y = c.my - dialog.y
+	}
+	if value.dragging {
+		if c.down {
+			new_off_x := (c.mx - value.grab_x) - center_x
+			new_off_y := (c.my - value.grab_y) - center_y
+			// Clamp so the dialog stays fully inside the viewport.
+			new_off_x = clamp(new_off_x, viewport.x - center_x, viewport.x + viewport.w - width - center_x)
+			new_off_y = clamp(new_off_y, viewport.y - center_y, viewport.y + viewport.h - height - center_y)
+			value.offset_x = new_off_x
+			value.offset_y = new_off_y
+			dialog.x = center_x + value.offset_x
+			dialog.y = center_y + value.offset_y
+		} else {
+			value.dragging = false
+		}
+	}
+	if value.dragging || point_in_rect(c.mx, c.my, drag_region) {c.pointer_cursor = true}
 
 	// Paint on the overlay layer so the dialog sits above everything
 	// the main view drew on Base.

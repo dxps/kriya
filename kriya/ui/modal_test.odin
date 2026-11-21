@@ -48,6 +48,70 @@ modal_esc_closes_without_picking_action :: proc(t: ^testing.T) {
 }
 
 @(test)
+modal_drag_in_title_bar_moves_dialog :: proc(t: ^testing.T) {
+	c: Context
+	c.measure_text = test_text_width
+	c.viewport = Rect{0, 0, 1000, 700}
+	defer delete(c.commands)
+	m := Modal{open = true}
+
+	// Frame 1: press inside the title bar — top band of the centered
+	// dialog. Width 400 centers at x=300..700; y=~247..~; title band
+	// starts at y and is ~52 px tall. Press near the title's left.
+	c.mx = 320; c.my = 260
+	c.pressed = true; c.down = true
+	_ = modal(&c, 1, "Title", "Body", []string{"OK"}, &m)
+	testing.expect(t, m.dragging)
+
+	// Frame 2: move mouse 80 px right, 50 px down while held.
+	end(&c); begin(&c)
+	c.viewport = Rect{0, 0, 1000, 700}
+	c.measure_text = test_text_width
+	c.mx = 400; c.my = 310
+	c.down = true
+	_ = modal(&c, 1, "Title", "Body", []string{"OK"}, &m)
+	testing.expect(t, m.offset_x == 80)
+	testing.expect(t, m.offset_y == 50)
+
+	// Frame 3: release — drag ends but offset persists.
+	end(&c); begin(&c)
+	c.viewport = Rect{0, 0, 1000, 700}
+	c.measure_text = test_text_width
+	c.mx = 400; c.my = 310
+	c.down = false; c.released = true
+	_ = modal(&c, 1, "Title", "Body", []string{"OK"}, &m)
+	testing.expect(t, !m.dragging)
+	testing.expect(t, m.offset_x == 80)
+	testing.expect(t, m.offset_y == 50)
+}
+
+@(test)
+modal_drag_clamps_at_viewport_edges :: proc(t: ^testing.T) {
+	c: Context
+	c.measure_text = test_text_width
+	c.viewport = Rect{0, 0, 1000, 700}
+	defer delete(c.commands)
+	m := Modal{open = true}
+
+	// Start a drag.
+	c.mx = 320; c.my = 260
+	c.pressed = true; c.down = true
+	_ = modal(&c, 1, "T", "B", []string{"OK"}, &m)
+	testing.expect(t, m.dragging)
+
+	// Try to drag way past the left edge; offset should clamp so dialog.x
+	// does not go negative. With width 400 the maximum leftward offset
+	// is -(1000 - 400)/2 = -300.
+	end(&c); begin(&c)
+	c.viewport = Rect{0, 0, 1000, 700}
+	c.measure_text = test_text_width
+	c.mx = -2000; c.my = 260
+	c.down = true
+	_ = modal(&c, 1, "T", "B", []string{"OK"}, &m)
+	testing.expect(t, m.offset_x == -300)
+}
+
+@(test)
 modal_clicking_action_closes_and_returns_index :: proc(t: ^testing.T) {
 	c: Context
 	c.measure_text = test_text_width
