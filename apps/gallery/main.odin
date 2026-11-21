@@ -110,6 +110,7 @@ kriya_start :: proc "c" () {
 	app_context = context
 	init_input_examples()
 	init_textarea_examples()
+	init_sidebar_state()
 	kriya_route_changed()
 	sapp.run(
 		{

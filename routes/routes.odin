@@ -38,8 +38,8 @@ Section_Group :: struct {
 }
 
 GROUPS :: [?]Section_Group {
-	{"WIDGETS / 01", 0, 14},
-	{"SYSTEM / 02", 14, 3},
+	{"WIDGETS", 0, 14},
+	{"SYSTEM", 14, 3},
 }
 
 index :: proc(path: string) -> (int, bool) {
