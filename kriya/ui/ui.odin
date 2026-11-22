@@ -152,6 +152,11 @@ Context :: struct {
 	// of what the view is drawing inside. Defaults to {0, 0, 0, 0}, in
 	// which case modal falls back to {0, 0, 1024, 720}.
 	viewport:                Rect,
+	// Global toast defaults: nil resolves to Bottom_Right / TOAST_DURATION.
+	// Set via set_toast_corner / set_toast_duration once at startup, or
+	// re-set each frame to swap at runtime (the Setup view does this).
+	toast_corner:            Maybe(Toast_Corner),
+	toast_duration:          Maybe(f32),
 }
 
 MAX_SCROLL_DEPTH :: 8
