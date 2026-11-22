@@ -29,6 +29,7 @@ views := [?]View {
 	{draw_segmented, "apps/gallery/segmented.odin", 0},
 	{draw_tabs, "apps/gallery/tabs.odin", 0},
 	{draw_badges, "apps/gallery/badges.odin", 0},
+	{draw_avatars, "apps/gallery/avatars.odin", 0},
 	// System
 	{draw_typography, "apps/gallery/typography.odin", 0},
 	{draw_composition, "apps/gallery/composition.odin", 0},
