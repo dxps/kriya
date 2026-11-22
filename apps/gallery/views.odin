@@ -35,6 +35,7 @@ views := [?]View {
 	{draw_accordions, "apps/gallery/accordions.odin", 500},
 	{draw_breadcrumbs, "apps/gallery/breadcrumbs.odin", 0},
 	{draw_toasts, "apps/gallery/toasts.odin", 0},
+	{draw_steppers, "apps/gallery/steppers.odin", 0},
 	// System
 	{draw_typography, "apps/gallery/typography.odin", 0},
 	{draw_composition, "apps/gallery/composition.odin", 0},
