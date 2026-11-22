@@ -29,6 +29,7 @@ SECTIONS :: [?]Section {
 	{"Dividers", "/dividers"},
 	{"Chips", "/chips"},
 	{"Accordions", "/accordions"},
+	{"Breadcrumbs", "/breadcrumbs"},
 	// System
 	{"Typography", "/typography"},
 	{"Composition", "/composition"},
@@ -42,8 +43,8 @@ Section_Group :: struct {
 }
 
 GROUPS :: [?]Section_Group {
-	{"WIDGETS", 0, 18},
-	{"SYSTEM", 18, 3},
+	{"WIDGETS", 0, 19},
+	{"SYSTEM", 19, 3},
 }
 
 index :: proc(path: string) -> (int, bool) {
