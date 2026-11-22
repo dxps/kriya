@@ -53,6 +53,9 @@ Context :: struct {
 	commands:                [dynamic]Command,
 	mx, my:                  f32,
 	pressed, released, down: bool,
+	// Right mouse button press this frame. One-shot like 'pressed';
+	// cleared in end(). Used by context_menu to open at the cursor.
+	right_pressed:           bool,
 	active:                  u64,
 	measure_text:            proc(text: string, size: f32) -> f32,
 	pointer_cursor:          bool,
@@ -199,7 +202,7 @@ begin :: proc(c: ^Context) {clear(&c.commands); c.pointer_cursor = false; c.offs
 		}
 	}
 	c.focus_count = 0}
-end :: proc(c: ^Context) {c.pressed = false; c.released = false; c.moved = false; c.wheel_y = 0
+end :: proc(c: ^Context) {c.pressed = false; c.released = false; c.right_pressed = false; c.moved = false; c.wheel_y = 0
 	c.wheel_x = 0
 	c.typed_len = 0
 	c.backspace = false

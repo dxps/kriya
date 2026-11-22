@@ -44,6 +44,7 @@ event :: proc "c" (e: ^sapp.Event) {
 			last_click_x = ctx.mx
 			last_click_y = ctx.my
 		}
+		if e.mouse_button == .RIGHT {ctx.right_pressed = true}
 	case .MOUSE_UP:
 		if e.mouse_button == .LEFT {ctx.released = true; ctx.down = false}
 	case .UNFOCUSED:

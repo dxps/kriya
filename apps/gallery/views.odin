@@ -36,6 +36,8 @@ views := [?]View {
 	{draw_breadcrumbs, "apps/gallery/breadcrumbs.odin", 0},
 	{draw_toasts, "apps/gallery/toasts.odin", 0},
 	{draw_steppers, "apps/gallery/steppers.odin", 0},
+	{draw_context_menus, "apps/gallery/context_menus.odin", 0},
+	{draw_cards, "apps/gallery/cards.odin", 500},
 	// System
 	{draw_typography, "apps/gallery/typography.odin", 0},
 	{draw_composition, "apps/gallery/composition.odin", 0},
