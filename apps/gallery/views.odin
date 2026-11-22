@@ -32,6 +32,7 @@ views := [?]View {
 	{draw_avatars, "apps/gallery/avatars.odin", 0},
 	{draw_dividers, "apps/gallery/dividers.odin", 0},
 	{draw_chips, "apps/gallery/chips.odin", 0},
+	{draw_accordions, "apps/gallery/accordions.odin", 500},
 	// System
 	{draw_typography, "apps/gallery/typography.odin", 0},
 	{draw_composition, "apps/gallery/composition.odin", 0},
